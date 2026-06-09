@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
@@ -40,6 +40,70 @@ function buildGridZones(p: GridParams) {
     });
   }
   return zones;
+}
+
+// ── Compute chip positions dynamically from current gridParams ────────────────
+// This guarantees chips sit exactly on grid boundaries (splits on column/row
+// edges, corners at intersections, streets & sixlines at headerY).
+function buildDynamicPositions(p: GridParams): Map<string, { x: number; y: number }> {
+  const rowH    = (p.botY - p.headerY) / 3;
+  const colCx   = (c: number) => (p.colX[c] + p.colX[c + 1]) / 2;
+  const rowCy   = (r: number) => p.headerY + (2 - r) * rowH + rowH / 2;
+  const rowTopY = (r: number) => p.headerY + (2 - r) * rowH;
+  const getCol  = (n: number) => Math.floor((n - 1) / 3);
+  const getRow  = (n: number) => (n - 1) % 3;
+
+  const map = new Map<string, { x: number; y: number }>();
+
+  // ── Zero straight up ───────────────────────────────────────────────────────
+  map.set('su-0', { x: (p.zeroX1 + p.colX[0]) / 2, y: (p.headerY + p.botY) / 2 });
+
+  // ── Split 0-n: on the boundary between zero cell and col 0 ─────────────────
+  ([1, 2, 3] as const).forEach(n => {
+    map.set(`sp-0-${n}`, { x: p.colX[0], y: rowCy(getRow(n)) });
+  });
+
+  // ── Street 0-1-2 / 0-2-3: at zero/col-0 boundary, on row boundary ──────────
+  map.set('st-0-12', { x: p.colX[0], y: rowTopY(0) });
+  map.set('st-0-23', { x: p.colX[0], y: rowTopY(1) });
+
+  // ── Corner 0-1-2-3: intersection of zero right edge and mid-row boundary ───
+  map.set('co-0', { x: p.colX[0], y: rowTopY(0) });
+
+  // ── Straight 1–36: cell centre ─────────────────────────────────────────────
+  for (let n = 1; n <= 36; n++) {
+    map.set(`su-${n}`, { x: colCx(getCol(n)), y: rowCy(getRow(n)) });
+  }
+
+  // ── Split horizontal (n / n+3): exactly on the vertical column boundary ────
+  for (let n = 1; n <= 33; n++) {
+    const c = getCol(n);
+    map.set(`sp-h-${n}`, { x: p.colX[c + 1], y: rowCy(getRow(n)) });
+  }
+
+  // ── Split vertical (n / n+1): exactly on the horizontal row boundary ───────
+  for (let n = 1; n <= 35; n++) {
+    if (n % 3 === 0) continue;
+    map.set(`sp-v-${n}`, { x: colCx(getCol(n)), y: rowTopY(getRow(n)) });
+  }
+
+  // ── Street: column centre, at headerY (top outer edge) ─────────────────────
+  for (let c = 0; c <= 11; c++) {
+    map.set(`st-${c}`, { x: colCx(c), y: p.headerY });
+  }
+
+  // ── Corner: intersection of column boundary × row boundary ─────────────────
+  for (let n = 1; n <= 32; n++) {
+    if (n % 3 === 0) continue;
+    map.set(`co-${n}`, { x: p.colX[getCol(n) + 1], y: rowTopY(getRow(n)) });
+  }
+
+  // ── Six-line: column boundary × headerY ────────────────────────────────────
+  for (let c = 0; c <= 10; c++) {
+    map.set(`sl-${c}`, { x: p.colX[c + 1], y: p.headerY });
+  }
+
+  return map;
 }
 
 // ── localStorage persistence ──────────────────────────────────────────────────
@@ -91,6 +155,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const gridZones   = buildGridZones(gridParams);
   const trackZones  = buildTrackZones(trackParams);
   const sectorBands = buildSectorBands(trackParams);
+  const chipPosMap  = useMemo(() => buildDynamicPositions(gridParams), [gridParams]);
 
   // ── Grid param setters ──────────────────────────────────────────────────────
   const setHeaderY = useCallback((v: number) => setGridParams(p => ({ ...p, headerY: v })), []);
@@ -237,7 +302,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
           {/* Chips */}
           {game && game.chips.map(stack => {
-            const pos = BET_POSITIONS_MAP.get(stack.positionId);
+            const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const count = stack.count;
             return (
