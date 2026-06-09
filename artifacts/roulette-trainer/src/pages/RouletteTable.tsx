@@ -246,8 +246,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           {showTrack ? "Скрыть трек" : "Показать трек"}
         </button>
         <button className={`grid-toggle-btn ${editMode ? "active" : ""}`}
-          onClick={() => { setEditMode(v => !v); if (!editMode) { setShowGrid(true); setShowTrack(true); } }}>
-          {editMode ? "Закрыть редактор" : "Настроить сетку"}
+          onClick={() => { setEditMode(v => !v); if (!editMode) { setShowTrack(true); } }}>
+          {editMode ? "Закрыть редактор" : "Настроить трек"}
         </button>
       </div>
 
@@ -412,45 +412,19 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         <div className="editor-panel">
           <div className="editor-header">
             <div className="editor-tabs">
-              <button className={`tab-btn ${editTab === "grid" ? "active" : ""}`}
-                onClick={() => setEditTab("grid")}>Основная сетка</button>
-              <button className={`tab-btn ${editTab === "track" ? "active" : ""}`}
-                onClick={() => setEditTab("track")}>Нижний трек</button>
+              <button className="tab-btn active">Нижний трек</button>
             </div>
             <div className="editor-actions">
               <span className="autosave-badge">✓ Автосохранение</span>
-              <button className="reset-btn" onClick={() => {
-                if (editTab === "grid") { setGridParams(DEFAULT_GRID); }
-                else { setTrackParams(DEFAULT_TRACK_PARAMS); }
-              }}>Сбросить</button>
+              <button className="reset-btn" onClick={() => setTrackParams(DEFAULT_TRACK_PARAMS)}>Сбросить</button>
               <button className="copy-btn" onClick={exportCode}>
                 {copied ? "✓ Скопировано!" : "Скопировать код"}
               </button>
             </div>
           </div>
 
-          {/* ── Main grid editor ── */}
-          {editTab === "grid" && (
-            <div className="editor-grid">
-              <div className="editor-section">
-                <div className="editor-section-title">Вертикальные границы</div>
-                <SliderRow label="Верхняя (headerY)" value={gridParams.headerY} min={50} max={300} onChange={setHeaderY} />
-                <SliderRow label="Нижняя (botY)" value={gridParams.botY} min={300} max={600} onChange={setBotY} />
-                <SliderRow label="Левый край нуля" value={gridParams.zeroX1} min={0} max={100} onChange={setZeroX1} />
-              </div>
-              <div className="editor-section">
-                <div className="editor-section-title">Границы столбцов</div>
-                {gridParams.colX.map((v, i) => {
-                  const labels = ["← нуль|3", "3|6", "6|9", "9|12", "12|15 (1▸2)", "15|18", "18|21", "21|24", "24|27 (2▸3)", "27|30", "30|33", "33|36", "36 →"];
-                  return <SliderRow key={i} label={labels[i]} value={v} min={0} max={1480} onChange={v => setColX(i, v)} />;
-                })}
-              </div>
-            </div>
-          )}
-
           {/* ── Track editor ── */}
-          {editTab === "track" && (
-            <div className="editor-grid-4">
+          <div className="editor-grid-4">
               {/* Vertical bounds */}
               <div className="editor-section">
                 <div className="editor-section-title">Общие границы трека</div>
@@ -501,7 +475,6 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 })}
               </div>
             </div>
-          )}
         </div>
       )}
     </div>
