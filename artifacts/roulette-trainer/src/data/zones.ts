@@ -44,9 +44,9 @@ const G = {
   headerY: 162,   // bottom edge of "1ST 12 / 2ND 12 / 3RD 12" header row
   botY: 520,      // bottom edge of the bottom number row
   zeroX1: 28,     // left edge of the 0 cell
-  zeroX2: 148,    // right edge of the 0 cell / left edge of number grid
-  colStart: 148,
-  colEnd: 1338,   // right edge of number grid (before the 2TO1 column)
+  zeroX2: 173,    // right edge of the 0 cell / left edge of number grid
+  colStart: 173,
+  colEnd: 1363,   // right edge of number grid (before the 2TO1 column)
   colCount: 12,
   rowCount: 3,
 } as const;
