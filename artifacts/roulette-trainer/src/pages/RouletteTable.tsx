@@ -242,11 +242,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const count = stack.count;
             return (
               <g key={stack.positionId} style={{ pointerEvents: "none" }}>
-                <circle cx={pos.x} cy={pos.y} r={18}
+                <circle cx={pos.x} cy={pos.y} r={22.5}
                   fill="#c8a84b" stroke="#fff" strokeWidth="2.5"
                   opacity="0.92" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={count >= 10 ? "12" : "14"} fontWeight="bold" fill="#1a0a00">
+                  fontSize={count >= 10 ? "15" : "17.5"} fontWeight="bold" fill="#1a0a00">
                   {count}
                 </text>
               </g>
