@@ -285,6 +285,45 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
           </div>
+
+          {/* Breakdown — shown when the answer is wrong */}
+          {game.checkResult === "incorrect" && (
+            <div className="game-breakdown">
+              <div className="game-breakdown-title">Расчёт выплаты:</div>
+              {game.breakdown.length === 0 ? (
+                <div className="game-breakdown-empty">Нет выигрышных ставок — выплата 0</div>
+              ) : (
+                <table className="breakdown-table">
+                  <thead>
+                    <tr>
+                      <th>Ставка</th>
+                      <th>Фишек</th>
+                      <th>Номинал</th>
+                      <th>Коэфф.</th>
+                      <th>Итого</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {game.breakdown.map((line, i) => (
+                      <tr key={i}>
+                        <td>{line.label}</td>
+                        <td className="bd-num">{line.chips}</td>
+                        <td className="bd-num">{line.chipValue}</td>
+                        <td className="bd-num">×{line.payout}</td>
+                        <td className="bd-num bd-total">{line.subtotal}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} className="bd-sum-label">Всего выплата:</td>
+                      <td className="bd-num bd-grand">{game.correctAnswer}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -1,14 +1,23 @@
-import { ALL_BET_POSITIONS, BET_POSITIONS_MAP } from "@/data/betPositions";
+import { ALL_BET_POSITIONS, BET_POSITIONS_MAP, PAYOUT } from "@/data/betPositions";
 
 export interface ChipStack {
   positionId: string;
   count: number;
 }
 
+export interface PayoutLine {
+  label: string;   // e.g. "Страйт №5"
+  chips: number;
+  payout: number;  // multiplier
+  chipValue: number;
+  subtotal: number; // chips * payout * chipValue
+}
+
 export interface GameState {
   drawnNumber: number;
   chips: ChipStack[];
   correctAnswer: number;
+  breakdown: PayoutLine[];
   userAnswer: string;
   checkResult: "correct" | "incorrect" | null;
 }
@@ -21,6 +30,14 @@ export function getNumberColor(n: number): "green" | "red" | "black" {
   if (n === 0) return "green";
   return RED_NUMBERS.has(n) ? "red" : "black";
 }
+
+const TYPE_LABELS: Record<string, string> = {
+  straight: "Страйт-ап",
+  split:    "Сплит",
+  street:   "Стрит",
+  corner:   "Корнер",
+  sixline:  "Сикс-лайн",
+};
 
 export function spinGame(chipCount: number, chipValue: number): GameState {
   const drawnNumber = Math.floor(Math.random() * 37); // 0–36
@@ -37,12 +54,13 @@ export function spinGame(chipCount: number, chipValue: number): GameState {
     ([positionId, count]) => ({ positionId, count })
   );
 
-  const correctAnswer = calculatePayout(drawnNumber, chips, chipValue);
+  const { total: correctAnswer, breakdown } = calculatePayout(drawnNumber, chips, chipValue);
 
   return {
     drawnNumber,
     chips,
     correctAnswer,
+    breakdown,
     userAnswer: "",
     checkResult: null,
   };
@@ -52,14 +70,34 @@ export function calculatePayout(
   drawnNumber: number,
   chips: ChipStack[],
   chipValue: number
-): number {
+): { total: number; breakdown: PayoutLine[] } {
   let total = 0;
+  const breakdown: PayoutLine[] = [];
+
   for (const stack of chips) {
     const pos = BET_POSITIONS_MAP.get(stack.positionId);
     if (!pos) continue;
-    if (pos.numbers.includes(drawnNumber)) {
-      total += stack.count * chipValue * pos.payout;
-    }
+    if (!pos.numbers.includes(drawnNumber)) continue;
+
+    const subtotal = stack.count * chipValue * pos.payout;
+    total += subtotal;
+
+    const nums = pos.numbers.join(", ");
+    const typeLabel = TYPE_LABELS[pos.type] ?? pos.type;
+    breakdown.push({
+      label: `${typeLabel} [${nums}]`,
+      chips: stack.count,
+      payout: pos.payout,
+      chipValue,
+      subtotal,
+    });
   }
-  return total;
+
+  // Sort by subtotal descending for readability
+  breakdown.sort((a, b) => b.subtotal - a.subtotal);
+
+  return { total, breakdown };
 }
+
+// Re-export payout table for reference
+export { PAYOUT };
