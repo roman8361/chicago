@@ -13,6 +13,96 @@
 //   Right arc  :  3  26   0
 //   Bottom row : 11  36  13  27   6  34  17  25   2  21   4  19  15  32
 //   Left arc   : 23   8  30
+//
+// Sectors (classic French roulette):
+//   Serie 5/8  (Tiers) : 5,8,10,11,13,16,23,24,27,30,33,36
+//   Orphelins          : 1,6,9,14,17,20,31,34
+//   Serie 0/2/3 (Voisins): 2,4,7,18,19,21,22,25,28,29
+//   Zero Spiel         : 0,3,12,15,26,32,35
+
+// ── Sector definitions ────────────────────────────────────────────────────────
+export type SectorId = "serie58" | "orphelins" | "serie023" | "zerospiel";
+
+export interface SectorDef {
+  id: SectorId;
+  label: string;
+  color: string;
+  fill: string;
+  numbers: Set<number>;
+}
+
+export const SECTORS: SectorDef[] = [
+  {
+    id: "serie58",
+    label: "Serie 5/8",
+    color: "#3BAFDA",
+    fill: "rgba(59,175,218,0.22)",
+    numbers: new Set([5, 8, 10, 11, 13, 16, 23, 24, 27, 30, 33, 36]),
+  },
+  {
+    id: "orphelins",
+    label: "Orphelins",
+    color: "#F6A623",
+    fill: "rgba(246,166,35,0.22)",
+    numbers: new Set([1, 6, 9, 14, 17, 20, 31, 34]),
+  },
+  {
+    id: "serie023",
+    label: "Serie 0/2/3",
+    color: "#7ED321",
+    fill: "rgba(126,211,33,0.22)",
+    numbers: new Set([2, 4, 7, 18, 19, 21, 22, 25, 28, 29]),
+  },
+  {
+    id: "zerospiel",
+    label: "Zero Spiel",
+    color: "#BD10E0",
+    fill: "rgba(189,16,224,0.22)",
+    numbers: new Set([0, 3, 12, 15, 26, 32, 35]),
+  },
+];
+
+export function sectorFor(n: number): SectorDef | undefined {
+  return SECTORS.find(s => s.numbers.has(n));
+}
+
+// ── Sector band (middle label area between top and bottom rows) ───────────────
+export interface SectorBand {
+  sector: SectorDef;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  cx: number;
+  cy: number;
+}
+
+// Top-row sector split indices (0-based):
+//   Serie 5/8  → top[0..4]  (10,5,24,16,33)  → x: topX[0]..topX[5]
+//   Orphelins  → top[5..9]  (1,20,14,31,9)   → x: topX[5]..topX[10]
+//   Serie 0/2/3→ top[10..14](22,18,29,7,28)  → x: topX[10]..topX[15]
+//   Zero Spiel → top[15..16](12,35)           → x: topX[15]..arcRX2
+const SECTOR_TOP_SPLITS = [5, 10, 15]; // indices into topX
+
+export function buildSectorBands(p: TrackParams): SectorBand[] {
+  const y1 = p.topY2;
+  const y2 = p.botY1;
+  const cy = (y1 + y2) / 2;
+
+  const xEdges = [
+    p.arcLX1,
+    p.topX[SECTOR_TOP_SPLITS[0]],
+    p.topX[SECTOR_TOP_SPLITS[1]],
+    p.topX[SECTOR_TOP_SPLITS[2]],
+    p.arcRX2,
+  ];
+
+  return SECTORS.map((sector, i) => {
+    const x1 = xEdges[i];
+    const x2 = xEdges[i + 1];
+    return { sector, x1, y1, x2, y2, cx: (x1 + x2) / 2, cy };
+  });
+}
 
 export interface TrackZone {
   number: number;

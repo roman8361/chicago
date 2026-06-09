@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
-import { DEFAULT_TRACK_PARAMS, buildTrackZones, type TrackParams } from "@/data/trackZones";
+import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
 
 // ── Main grid default params ──────────────────────────────────────────────────
@@ -79,8 +79,9 @@ export default function RouletteTable() {
     localStorage.setItem(STORAGE_KEY_TRACK, JSON.stringify(trackParams));
   }, [trackParams]);
 
-  const gridZones  = buildGridZones(gridParams);
-  const trackZones = buildTrackZones(trackParams);
+  const gridZones   = buildGridZones(gridParams);
+  const trackZones  = buildTrackZones(trackParams);
+  const sectorBands = buildSectorBands(trackParams);
 
   // ── Grid param setters ──────────────────────────────────────────────────────
   const setHeaderY = useCallback((v: number) => setGridParams(p => ({ ...p, headerY: v })), []);
@@ -167,17 +168,35 @@ export default function RouletteTable() {
             </g>
           ))}
 
-          {/* Track */}
-          {showTrack && trackZones.map(z => (
-            <g key={`t-${z.number}-${z.section}`}>
-              <polygon points={z.pts} fill="rgba(100,200,255,0.18)" stroke="#00CFFF" strokeWidth="1.5" />
-              <text x={z.cx} y={z.cy} textAnchor="middle" dominantBaseline="central"
-                fontSize="11" fontWeight="bold" fill="#00CFFF"
-                stroke="rgba(0,0,0,0.6)" strokeWidth="0.4" paintOrder="stroke">
-                {z.number}
+          {/* Track — sector bands (middle label area) */}
+          {showTrack && sectorBands.map(b => (
+            <g key={`sb-${b.sector.id}`}>
+              <rect x={b.x1} y={b.y1} width={b.x2 - b.x1} height={b.y2 - b.y1}
+                fill={b.sector.fill} stroke={b.sector.color} strokeWidth="1.5" />
+              <text x={b.cx} y={b.cy} textAnchor="middle" dominantBaseline="central"
+                fontSize="22" fontWeight="bold" fill={b.sector.color}
+                stroke="rgba(0,0,0,0.7)" strokeWidth="0.6" paintOrder="stroke">
+                {b.sector.label}
               </text>
             </g>
           ))}
+
+          {/* Track — individual number cells colored by sector */}
+          {showTrack && trackZones.map(z => {
+            const sec = sectorFor(z.number);
+            const color = sec?.color ?? "#00CFFF";
+            const fill  = sec?.fill  ?? "rgba(100,200,255,0.18)";
+            return (
+              <g key={`t-${z.number}-${z.section}`}>
+                <polygon points={z.pts} fill={fill} stroke={color} strokeWidth="1.5" />
+                <text x={z.cx} y={z.cy} textAnchor="middle" dominantBaseline="central"
+                  fontSize="11" fontWeight="bold" fill={color}
+                  stroke="rgba(0,0,0,0.6)" strokeWidth="0.4" paintOrder="stroke">
+                  {z.number}
+                </text>
+              </g>
+            );
+          })}
         </svg>
       </div>
 
