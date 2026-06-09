@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Roulette Dealer Trainer"
+version = "1.0.0"
+id = "artifacts/roulette-trainer"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23920
+
+[services.development]
+run = "pnpm --filter @workspace/roulette-trainer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/roulette-trainer", "run", "build" ]
+publicDir = "artifacts/roulette-trainer/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23920"
+BASE_PATH = "/"
