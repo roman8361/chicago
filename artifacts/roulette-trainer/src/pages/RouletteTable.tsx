@@ -55,20 +55,20 @@ function buildDynamicPositions(p: GridParams): Map<string, { x: number; y: numbe
 
   const map = new Map<string, { x: number; y: number }>();
 
-  // ── Zero straight up ───────────────────────────────────────────────────────
+  // ── Zero straight up: centre of the zero cell ─────────────────────────────
   map.set('su-0', { x: (p.zeroX1 + p.colX[0]) / 2, y: (p.headerY + p.botY) / 2 });
 
-  // ── Split 0-n: on the boundary between zero cell and col 0 ─────────────────
+  // ── Split 0-n: slightly inside zero cell (14px from right edge) at row centre
   ([1, 2, 3] as const).forEach(n => {
-    map.set(`sp-0-${n}`, { x: p.colX[0], y: rowCy(getRow(n)) });
+    map.set(`sp-0-${n}`, { x: p.colX[0] - 14, y: rowCy(getRow(n)) });
   });
 
-  // ── Street 0-1-2 / 0-2-3: at zero/col-0 boundary, on row boundary ──────────
-  map.set('st-0-12', { x: p.colX[0], y: rowTopY(0) });
-  map.set('st-0-23', { x: p.colX[0], y: rowTopY(1) });
+  // ── Street 0-1-2 / 0-2-3: same x as splits, at row boundaries ─────────────
+  map.set('st-0-12', { x: p.colX[0] - 14, y: rowTopY(0) });
+  map.set('st-0-23', { x: p.colX[0] - 14, y: rowTopY(1) });
 
-  // ── Corner 0-1-2-3: intersection of zero right edge and mid-row boundary ───
-  map.set('co-0', { x: p.colX[0], y: rowTopY(0) });
+  // ── Corner 0-1-2-3: centre of zero cell horizontally, at row-0/1 boundary ─
+  map.set('co-0', { x: (p.zeroX1 + p.colX[0]) / 2, y: rowTopY(0) });
 
   // ── Straight 1–36: cell centre ─────────────────────────────────────────────
   for (let n = 1; n <= 36; n++) {
