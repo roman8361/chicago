@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
@@ -39,6 +39,26 @@ function buildGridZones(p: GridParams) {
   return zones;
 }
 
+// ── localStorage persistence ──────────────────────────────────────────────────
+const STORAGE_KEY_GRID  = "roulette_grid_params";
+const STORAGE_KEY_TRACK = "roulette_track_params";
+
+function loadGrid(): GridParams {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_GRID);
+    if (raw) return { ...DEFAULT_GRID, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return DEFAULT_GRID;
+}
+
+function loadTrack(): TrackParams {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_TRACK);
+    if (raw) return { ...DEFAULT_TRACK_PARAMS, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return DEFAULT_TRACK_PARAMS;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function RouletteTable() {
   const [showGrid,  setShowGrid]  = useState(false);
@@ -47,8 +67,17 @@ export default function RouletteTable() {
   const [editTab,   setEditTab]   = useState<"grid" | "track">("grid");
   const [copied,    setCopied]    = useState(false);
 
-  const [gridParams,  setGridParams]  = useState<GridParams>(DEFAULT_GRID);
-  const [trackParams, setTrackParams] = useState<TrackParams>(DEFAULT_TRACK_PARAMS);
+  const [gridParams,  setGridParams]  = useState<GridParams>(loadGrid);
+  const [trackParams, setTrackParams] = useState<TrackParams>(loadTrack);
+
+  // Auto-save to localStorage whenever params change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_GRID, JSON.stringify(gridParams));
+  }, [gridParams]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_TRACK, JSON.stringify(trackParams));
+  }, [trackParams]);
 
   const gridZones  = buildGridZones(gridParams);
   const trackZones = buildTrackZones(trackParams);
@@ -162,9 +191,16 @@ export default function RouletteTable() {
               <button className={`tab-btn ${editTab === "track" ? "active" : ""}`}
                 onClick={() => setEditTab("track")}>Нижний трек</button>
             </div>
-            <button className="copy-btn" onClick={exportCode}>
-              {copied ? "✓ Скопировано!" : "Скопировать код"}
-            </button>
+            <div className="editor-actions">
+              <span className="autosave-badge">✓ Автосохранение</span>
+              <button className="reset-btn" onClick={() => {
+                if (editTab === "grid") { setGridParams(DEFAULT_GRID); }
+                else { setTrackParams(DEFAULT_TRACK_PARAMS); }
+              }}>Сбросить</button>
+              <button className="copy-btn" onClick={exportCode}>
+                {copied ? "✓ Скопировано!" : "Скопировать код"}
+              </button>
+            </div>
           </div>
 
           {/* ── Main grid editor ── */}
