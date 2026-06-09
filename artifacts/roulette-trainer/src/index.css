@@ -62,6 +62,113 @@
   pointer-events: none;
 }
 
+/* ── Controls bar ───────────────────────────────────────────────── */
+.controls-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Editor panel ───────────────────────────────────────────────── */
+.editor-panel {
+  width: 100%;
+  max-width: 1080px;
+  background: rgba(10, 28, 14, 0.96);
+  border: 1px solid #c8a84b;
+  border-radius: 8px;
+  padding: 16px 20px 20px;
+  color: #f0d080;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffe87a;
+}
+
+.copy-btn {
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #c8a84b;
+  border-radius: 5px;
+  background: rgba(200,168,75,0.18);
+  color: #f0d080;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.copy-btn:hover { background: rgba(200,168,75,0.35); }
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 700px) {
+  .editor-grid { grid-template-columns: 1fr; }
+}
+
+.editor-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c8a84b;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(200,168,75,0.3);
+  padding-bottom: 5px;
+}
+
+/* ── Slider rows ───────────────────────────────────────────────── */
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.slider-label {
+  font-size: 11.5px;
+  color: #d4b96a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slider-input {
+  width: 100%;
+  accent-color: #c8a84b;
+  cursor: pointer;
+  height: 4px;
+}
+
+.number-input {
+  width: 58px;
+  padding: 2px 5px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #c8a84b55;
+  border-radius: 4px;
+  color: #ffe87a;
+  font-size: 12px;
+  font-family: monospace;
+  text-align: right;
+}
+.number-input:focus {
+  outline: none;
+  border-color: #c8a84b;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
