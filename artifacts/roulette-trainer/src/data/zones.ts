@@ -27,49 +27,63 @@ function centroid(pts: ZonePoint[]): { cx: number; cy: number } {
 // ─── Image natural dimensions ─────────────────────────────────────────────────
 // Image: rulet_track2_1781011699361.png — 1480 × 1063 pixels
 //
-// Layout of the UPPER table (main betting grid):
-//   Outer frame    : x₁=28   y₁=28   x₂=1452  y₂=522
-//   Header row     : y₁=28   y₂=112             (1ST 12 / 2ND 12 / 3RD 12)
-//   Number rows    : y₁=112  y₂=522             (height 410 → 3 rows × 136.7)
-//   Zero cell      : x₁=28   x₂=148             (full row height)
-//   Number columns : x₁=148  x₂=1350            (12 cols × 100.2 px)
-//   2-TO-1 col     : x₁=1350 x₂=1452
+// The image has THICKER gold dividers between the 1st/2nd and 2nd/3rd dozen
+// sections. Uniform column widths drift visually at those boundaries.
+// Each column boundary is therefore specified manually.
 //
-//   Row y ranges:
-//     Top row  (3  6 … 36) : y₁=112  y₂=249
-//     Mid row  (2  5 … 35) : y₁=249  y₂=386
-//     Bot row  (1  4 … 34) : y₁=386  y₂=522
+// Vertical layout:
+//   headerY = 147  (top of the number rows — bottom edge of 1ST/2ND/3RD header)
+//   botY    = 505  (bottom of the number rows)
+//   rowH    = (505-147)/3 = 119.3 px  (per row)
+//
+//   Top row  (3  6 … 36) : y₁=147  y₂=266
+//   Mid row  (2  5 … 35) : y₁=266  y₂=386
+//   Bot row  (1  4 … 34) : y₁=386  y₂=505
+//
+// Horizontal layout  (13 boundary x-values for 12 columns):
+//   Regular cell width ≈ 99 px
+//   Extra gap at 1st↔2nd and 2nd↔3rd dozen borders ≈ 3 px each
 
-const G = {
-  headerY: 162,   // bottom edge of "1ST 12 / 2ND 12 / 3RD 12" header row
-  botY: 520,      // bottom edge of the bottom number row
-  zeroX1: 28,     // left edge of the 0 cell
-  zeroX2: 173,    // right edge of the 0 cell / left edge of number grid
-  colStart: 173,
-  colEnd: 1363,   // right edge of number grid (before the 2TO1 column)
-  colCount: 12,
-  rowCount: 3,
-} as const;
+const headerY = 147;
+const botY    = 505;
+const rowH    = (botY - headerY) / 3;  // ≈ 119.3
 
-const colW = (G.colEnd - G.colStart) / G.colCount; // ≈ 100.2
-const rowH = (G.botY - G.headerY) / G.rowCount;    // ≈ 136.7
+// 13 x-positions (left edges of each column, plus right edge of last column)
+// Col 0–3  : 1st dozen (numbers 3,6,9,12 / 2,5,8,11 / 1,4,7,10)
+// Col 4–7  : 2nd dozen (15,18,21,24 / 14,17,20,23 / 13,16,19,22)
+// Col 8–11 : 3rd dozen (27,30,33,36 / 26,29,32,35 / 25,28,31,34)
+const COL_X: readonly number[] = [
+   173,  // left  of col  0  (3 / 2 / 1)
+   272,  // left  of col  1  (6 / 5 / 4)
+   371,  // left  of col  2  (9 / 8 / 7)
+   470,  // left  of col  3  (12/11/10)
+   573,  // left  of col  4  (15/14/13)  ← after thick 1ST→2ND border
+   672,  // left  of col  5  (18/17/16)
+   771,  // left  of col  6  (21/20/19)
+   870,  // left  of col  7  (24/23/22)
+   973,  // left  of col  8  (27/26/25)  ← after thick 2ND→3RD border
+  1072,  // left  of col  9  (30/29/28)
+  1171,  // left  of col 10  (33/32/31)
+  1270,  // left  of col 11  (36/35/34)
+  1355,  // right of col 11  (colEnd — before 2TO1 column)
+];
 
-// x left-edge of column c (0 = leftmost)
-const colX = (c: number) => G.colStart + c * colW;
+const ZERO_X1 = 28;
+const ZERO_X2 = COL_X[0]; // right edge of 0 cell = left edge of col 0
 
-// y top-edge of row r (r=2→top, r=1→mid, r=0→bottom)
-const rowY = (r: number) => G.headerY + (2 - r) * rowH;
+// y top-edge of row  (r=2→top, r=1→mid, r=0→bottom)
+const rowY = (r: number) => headerY + (2 - r) * rowH;
 
 function makeCell(c: number, r: number): ZonePoint[] {
-  const x1 = colX(c);
-  const x2 = colX(c + 1);
+  const x1 = COL_X[c];
+  const x2 = COL_X[c + 1];
   const y1 = rowY(r);
   const y2 = rowY(r) + rowH;
   return poly(x1, y1, x2, y1, x2, y2, x1, y2);
 }
 
 function makeZone(n: number): RouletteZone {
-  // Column: floor((n-1)/3),   Row: 0=bot 1=mid 2=top
+  // col = floor((n-1)/3),  row: 0=bot 1=mid 2=top
   const col = Math.floor((n - 1) / 3);
   const row = (n - 1) % 3;
   const points = makeCell(col, row);
@@ -77,12 +91,12 @@ function makeZone(n: number): RouletteZone {
   return { number: n, points, centerX: cx, centerY: cy };
 }
 
-// Number 0 — tall trapezoid on the left
+// Number 0 — tall rectangle on the left
 const zeroPoints = poly(
-  G.zeroX1, G.headerY,
-  G.zeroX2, G.headerY,
-  G.zeroX2, G.botY,
-  G.zeroX1, G.botY,
+  ZERO_X1, headerY,
+  ZERO_X2, headerY,
+  ZERO_X2, botY,
+  ZERO_X1, botY,
 );
 const { cx: zeroCX, cy: zeroCY } = centroid(zeroPoints);
 const zeroZone: RouletteZone = {
@@ -92,7 +106,6 @@ const zeroZone: RouletteZone = {
   centerY: zeroCY,
 };
 
-// Build zones for 1–36
 const numberZones: RouletteZone[] = Array.from({ length: 36 }, (_, i) =>
   makeZone(i + 1)
 );
@@ -102,6 +115,5 @@ export const ROULETTE_ZONES: RouletteZone[] = [zeroZone, ...numberZones];
 export const ZONE_BY_NUMBER: Record<number, RouletteZone> =
   Object.fromEntries(ROULETTE_ZONES.map((z) => [z.number, z]));
 
-// Natural image dimensions — used as the SVG viewBox
-export const BASE_WIDTH = 1480;
+export const BASE_WIDTH  = 1480;
 export const BASE_HEIGHT = 1063;
