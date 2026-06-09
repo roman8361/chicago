@@ -253,26 +253,6 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Drawn number highlight */}
-          {game && (() => {
-            const n = game.drawnNumber;
-            const color = getNumberColor(n);
-            const fillMap = { green: "rgba(34,197,94,0.35)", red: "rgba(220,38,38,0.35)", black: "rgba(30,30,30,0.35)" };
-            const strokeMap = { green: "#22c55e", red: "#ef4444", black: "#aaa" };
-            return (
-              <rect
-                x={n === 0 ? 28 : (() => { const c = Math.floor((n-1)/3); return [173,272,371,470,573,672,771,870,973,1072,1171,1270][c]; })()}
-                y={147}
-                width={n === 0 ? 145 : (() => { const c = Math.floor((n-1)/3); return [99,99,99,103,99,99,99,103,99,99,99,85][c]; })()}
-                height={n === 0 ? 358 : (() => { const r = (n-1)%3; return 119; })()}
-                {...(n !== 0 && { y: 147 + (2 - (n-1)%3) * (358/3), height: 358/3 })}
-                fill={fillMap[color]}
-                stroke={strokeMap[color]}
-                strokeWidth="3"
-                rx="2"
-              />
-            );
-          })()}
         </svg>
       </div>
 
