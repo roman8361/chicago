@@ -3,6 +3,8 @@ import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
 import { GameSettings } from "@/types/gameSettings";
+import { BET_POSITIONS_MAP } from "@/data/betPositions";
+import { spinGame, calculatePayout, getNumberColor, type GameState } from "@/lib/rouletteGame";
 
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
@@ -66,12 +68,13 @@ interface RouletteTableProps {
   onOpenSettings: () => void;
 }
 
-export default function RouletteTable({ settings: _settings, onOpenSettings }: RouletteTableProps) {
+export default function RouletteTable({ settings, onOpenSettings }: RouletteTableProps) {
   const [showGrid,  setShowGrid]  = useState(false);
   const [showTrack, setShowTrack] = useState(false);
   const [editMode,  setEditMode]  = useState(false);
   const [editTab,   setEditTab]   = useState<"grid" | "track">("grid");
   const [copied,    setCopied]    = useState(false);
+  const [game,      setGame]      = useState<GameState | null>(null);
 
   const [gridParams,  setGridParams]  = useState<GridParams>(loadGrid);
   const [trackParams, setTrackParams] = useState<TrackParams>(loadTrack);
@@ -109,6 +112,28 @@ export default function RouletteTable({ settings: _settings, onOpenSettings }: R
   const setArcRY = useCallback((i: number, v: number) =>
     setTrackParams(p => { const arcRY = [...p.arcRY] as TrackParams["arcRY"]; arcRY[i] = v; return { ...p, arcRY }; }), []);
 
+  // ── Spin ────────────────────────────────────────────────────────────────────
+  const handleSpin = useCallback(() => {
+    const chipCount = settings.chipsInField ?? 100;
+    const chipValue = settings.chipValue ?? 10;
+    setGame(spinGame(chipCount, chipValue));
+    setEditMode(false);
+  }, [settings.chipsInField, settings.chipValue]);
+
+  const handleCheck = useCallback(() => {
+    if (!game) return;
+    const answer = parseInt(game.userAnswer, 10);
+    const correct = game.correctAnswer;
+    setGame(g => g ? {
+      ...g,
+      checkResult: answer === correct ? "correct" : "incorrect",
+    } : g);
+  }, [game]);
+
+  const setUserAnswer = useCallback((v: string) => {
+    setGame(g => g ? { ...g, userAnswer: v, checkResult: null } : g);
+  }, []);
+
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
     const g = gridParams, t = trackParams;
@@ -143,6 +168,9 @@ export default function RouletteTable({ settings: _settings, onOpenSettings }: R
         <button className="grid-toggle-btn settings-open-btn"
           onClick={onOpenSettings}>
           ⚙ Настройки
+        </button>
+        <button className="grid-toggle-btn spin-btn" onClick={handleSpin}>
+          ▶ Spin
         </button>
         <button className={`grid-toggle-btn ${showGrid ? "active" : ""}`}
           onClick={() => setShowGrid(v => !v)}>
@@ -207,8 +235,78 @@ export default function RouletteTable({ settings: _settings, onOpenSettings }: R
               </g>
             );
           })}
+          {/* Chips */}
+          {game && game.chips.map(stack => {
+            const pos = BET_POSITIONS_MAP.get(stack.positionId);
+            if (!pos) return null;
+            const count = stack.count;
+            return (
+              <g key={stack.positionId} style={{ pointerEvents: "none" }}>
+                <circle cx={pos.x} cy={pos.y} r={18}
+                  fill="#c8a84b" stroke="#fff" strokeWidth="2.5"
+                  opacity="0.92" />
+                <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={count >= 10 ? "12" : "14"} fontWeight="bold" fill="#1a0a00">
+                  {count}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Drawn number highlight */}
+          {game && (() => {
+            const n = game.drawnNumber;
+            const color = getNumberColor(n);
+            const fillMap = { green: "rgba(34,197,94,0.35)", red: "rgba(220,38,38,0.35)", black: "rgba(30,30,30,0.35)" };
+            const strokeMap = { green: "#22c55e", red: "#ef4444", black: "#aaa" };
+            return (
+              <rect
+                x={n === 0 ? 28 : (() => { const c = Math.floor((n-1)/3); return [173,272,371,470,573,672,771,870,973,1072,1171,1270][c]; })()}
+                y={147}
+                width={n === 0 ? 145 : (() => { const c = Math.floor((n-1)/3); return [99,99,99,103,99,99,99,103,99,99,99,85][c]; })()}
+                height={n === 0 ? 358 : (() => { const r = (n-1)%3; return 119; })()}
+                {...(n !== 0 && { y: 147 + (2 - (n-1)%3) * (358/3), height: 358/3 })}
+                fill={fillMap[color]}
+                stroke={strokeMap[color]}
+                strokeWidth="3"
+                rx="2"
+              />
+            );
+          })()}
         </svg>
       </div>
+
+      {/* Game panel */}
+      {game && (
+        <div className="game-panel">
+          <div className="game-result-row">
+            <div className={`number-badge number-badge--${getNumberColor(game.drawnNumber)}`}>
+              {game.drawnNumber}
+            </div>
+            <div className="game-answer-area">
+              <span className="game-answer-label">Сумма выплаты:</span>
+              <input
+                type="number"
+                className="game-answer-input"
+                placeholder="введите ответ"
+                value={game.userAnswer}
+                onChange={e => setUserAnswer(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleCheck()}
+              />
+              <button className="game-check-btn" onClick={handleCheck}>
+                Проверить
+              </button>
+            </div>
+            {game.checkResult && (
+              <div className={`game-verdict game-verdict--${game.checkResult}`}>
+                {game.checkResult === "correct"
+                  ? "✅ Верно"
+                  : `❌ Неверно. Правильный ответ: ${game.correctAnswer}`}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Editor panel */}
       {editMode && (

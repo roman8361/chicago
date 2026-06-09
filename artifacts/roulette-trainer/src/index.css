@@ -387,6 +387,148 @@
   color: #f0d080;
 }
 
+.spin-btn {
+  border-color: #5ec97a;
+  color: #5ec97a;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.spin-btn:hover {
+  background: rgba(94, 201, 122, 0.2);
+  color: #7fffaa;
+  border-color: #7fffaa;
+}
+
+/* ── Game panel ───────────────────────────────────────────────── */
+
+.game-panel {
+  width: 100%;
+  max-width: 1080px;
+  background: rgba(8, 22, 10, 0.96);
+  border: 1px solid #c8a84b;
+  border-radius: 8px;
+  padding: 16px 24px;
+  flex-shrink: 0;
+}
+
+.game-result-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Drawn number badge */
+.number-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 3px solid rgba(255,255,255,0.3);
+  box-shadow: 0 0 18px rgba(0,0,0,0.6);
+}
+
+.number-badge--green {
+  background: #166534;
+  color: #bbf7d0;
+  border-color: #22c55e;
+}
+
+.number-badge--red {
+  background: #7f1d1d;
+  color: #fecaca;
+  border-color: #ef4444;
+}
+
+.number-badge--black {
+  background: #1c1917;
+  color: #e5e7eb;
+  border-color: #6b7280;
+}
+
+/* Answer area */
+.game-answer-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.game-answer-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4b96a;
+  white-space: nowrap;
+}
+
+.game-answer-input {
+  padding: 8px 12px;
+  width: 130px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #c8a84b77;
+  border-radius: 5px;
+  color: #ffe87a;
+  font-size: 16px;
+  font-family: monospace;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.game-answer-input:focus {
+  border-color: #c8a84b;
+}
+
+.game-answer-input::placeholder {
+  color: #7a6030;
+  font-size: 12px;
+}
+
+.game-check-btn {
+  padding: 8px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid #c8a84b;
+  border-radius: 5px;
+  background: rgba(200,168,75,0.18);
+  color: #ffe87a;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.game-check-btn:hover {
+  background: rgba(200,168,75,0.36);
+}
+
+/* Verdict */
+.game-verdict {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.game-verdict--correct {
+  background: rgba(34,197,94,0.15);
+  border: 1px solid #22c55e;
+  color: #4ade80;
+}
+
+.game-verdict--incorrect {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid #ef4444;
+  color: #f87171;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
