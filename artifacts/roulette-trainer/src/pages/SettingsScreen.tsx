@@ -130,7 +130,7 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
         <div className="settings-divider" />
         <div className="settings-footer">
           <button className="settings-start-btn" onClick={handleStart}>
-            Начать
+            Spin
           </button>
         </div>
       </div>
