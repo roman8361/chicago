@@ -40,7 +40,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export function spinGame(chipCount: number, chipValue: number): GameState {
-  const drawnNumber = Math.floor(Math.random() * 37); // 0–36
+  const drawnNumber = 0; // TODO: remove — fixed for testing
 
   // Distribute chips randomly across all positions
   const stackMap = new Map<string, number>();
