@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
+import { GameSettings } from "@/types/gameSettings";
 
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
@@ -60,7 +61,12 @@ function loadTrack(): TrackParams {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function RouletteTable() {
+interface RouletteTableProps {
+  settings: GameSettings;
+  onOpenSettings: () => void;
+}
+
+export default function RouletteTable({ settings: _settings, onOpenSettings }: RouletteTableProps) {
   const [showGrid,  setShowGrid]  = useState(false);
   const [showTrack, setShowTrack] = useState(false);
   const [editMode,  setEditMode]  = useState(false);
@@ -134,6 +140,10 @@ export default function RouletteTable() {
     <div className="roulette-page">
       {/* Controls */}
       <div className="controls-bar">
+        <button className="grid-toggle-btn settings-open-btn"
+          onClick={onOpenSettings}>
+          ⚙ Настройки
+        </button>
         <button className={`grid-toggle-btn ${showGrid ? "active" : ""}`}
           onClick={() => setShowGrid(v => !v)}>
           {showGrid ? "Скрыть сетку" : "Показать сетку"}

@@ -1,15 +1,35 @@
+import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RouletteTable from "@/pages/RouletteTable";
+import SettingsScreen from "@/pages/SettingsScreen";
 import NotFound from "@/pages/not-found";
+import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 const queryClient = new QueryClient();
 
-function Router() {
+type Screen = "roulette" | "settings";
+
+function AppContent() {
+  const [screen, setScreen] = useState<Screen>("roulette");
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
+
   return (
     <Switch>
-      <Route path="/" component={RouletteTable} />
+      <Route path="/">
+        {screen === "settings" ? (
+          <SettingsScreen
+            initialSettings={settings}
+            onStart={(s) => { setSettings(s); setScreen("roulette"); }}
+          />
+        ) : (
+          <RouletteTable
+            settings={settings}
+            onOpenSettings={() => setScreen("settings")}
+          />
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -20,7 +40,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <AppContent />
         </WouterRouter>
       </TooltipProvider>
     </QueryClientProvider>
