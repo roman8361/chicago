@@ -29,11 +29,11 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=3000 BASE_PATH=/ pnpm --filter @workspace/roulette-trainer run dev"
-waitForPort = 3000
+args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/roulette-trainer run dev"
+waitForPort = 5000
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
 
 [postMerge]
@@ -43,6 +43,10 @@ timeoutMs = 20000
 [[ports]]
 localPort = 3000
 externalPort = 3001
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
 
 [[ports]]
 localPort = 8080
