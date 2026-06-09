@@ -121,11 +121,14 @@ for (let n = 1; n <= 35; n++) {
 }
 
 // ── Street {3c+1, 3c+2, 3c+3} ────────────────────────────────────────────────
+// In this horizontal layout the Street chip goes on the TOP OUTER EDGE of the
+// column — i.e. on the line between the dozen header and the top number row.
+// x = centre of the column; y = headerY (top boundary of the number rows).
 for (let c = 0; c <= 11; c++) {
   positions.push({
     id: `st-${c}`, type: 'street', numbers: [3 * c + 1, 3 * c + 2, 3 * c + 3],
-    x: COL_X[c],               // left edge of the column
-    y: (headerY + botY) / 2,   // vertically centered
+    x: colCx(c),               // horizontal centre of the column
+    y: headerY,                // top boundary of number rows = bottom of dozen strip
     payout: PAYOUT.street,
   });
 }
@@ -143,12 +146,14 @@ for (let n = 1; n <= 32; n++) {
 }
 
 // ── Six-Line {3c+1 … 3c+6} ───────────────────────────────────────────────────
+// The Six-Line chip sits on the TOP OUTER EDGE, at the column boundary
+// between the two streets that make up the six-line.
 for (let c = 0; c <= 10; c++) {
   positions.push({
     id: `sl-${c}`, type: 'sixline',
     numbers: [3*c+1, 3*c+2, 3*c+3, 3*c+4, 3*c+5, 3*c+6],
-    x: COL_X[c + 1],           // boundary between two column groups
-    y: botY,                   // bottom edge — distinct from corner chips
+    x: COL_X[c + 1],           // boundary between the two column groups
+    y: headerY,                // top edge (same strip as Street chips)
     payout: PAYOUT.sixline,
   });
 }
