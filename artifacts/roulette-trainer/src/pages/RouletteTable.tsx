@@ -305,7 +305,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const wz = gridZones.find(z => z.number === game.drawnNumber);
             if (!wz) return null;
             return (
-              <g className="winning-cell-highlight">
+              <g style={{ pointerEvents: "none" }}>
                 <polygon points={wz.pts}
                   fill="rgba(255,255,60,0.55)"
                   stroke="#FFE500"
