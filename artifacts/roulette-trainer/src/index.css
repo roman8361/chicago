@@ -997,3 +997,12 @@
     inset: -1px;
   }
 }
+/* ── Winning number highlight ────────────────────────────────────────────────── */
+@keyframes winning-pulse {
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 0.35; }
+}
+.winning-cell-highlight {
+  animation: winning-pulse 0.9s ease-in-out infinite;
+  pointer-events: none;
+}

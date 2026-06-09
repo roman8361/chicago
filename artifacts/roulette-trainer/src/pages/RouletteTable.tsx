@@ -300,6 +300,21 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </g>
             );
           })}
+          {/* Winning number highlight */}
+          {game && (() => {
+            const wz = gridZones.find(z => z.number === game.drawnNumber);
+            if (!wz) return null;
+            return (
+              <g className="winning-cell-highlight">
+                <polygon points={wz.pts}
+                  fill="rgba(255,255,60,0.55)"
+                  stroke="#FFE500"
+                  strokeWidth="4"
+                  strokeLinejoin="round" />
+              </g>
+            );
+          })()}
+
           {/* Chips */}
           {game && game.chips.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
