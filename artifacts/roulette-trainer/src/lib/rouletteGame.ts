@@ -13,6 +13,14 @@ export interface PayoutLine {
   subtotal: number; // chips * payout * chipValue
 }
 
+export interface TrackBet {
+  type: "SERIE_5_8" | "ORPHELINS" | "SERIE_0_2_3" | "ZERO_SPIEL";
+  label: string;
+  amount: number;
+  position: { x: number; y: number };
+  source: "TRACK";
+}
+
 export interface GameState {
   drawnNumber: number;
   chips: ChipStack[];
@@ -20,6 +28,7 @@ export interface GameState {
   breakdown: PayoutLine[];
   userAnswer: string;
   checkResult: "correct" | "incorrect" | null;
+  trackBets: TrackBet[];
 }
 
 const RED_NUMBERS = new Set([
@@ -63,6 +72,7 @@ export function spinGame(chipCount: number, chipValue: number): GameState {
     breakdown,
     userAnswer: "",
     checkResult: null,
+    trackBets: [],
   };
 }
 

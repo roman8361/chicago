@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rulet_track2_1781011699361.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
-import { spinGame, calculatePayout, getNumberColor, type GameState } from "@/lib/rouletteGame";
+import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet } from "@/lib/rouletteGame";
 
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
@@ -177,13 +177,53 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const setArcRY = useCallback((i: number, v: number) =>
     setTrackParams(p => { const arcRY = [...p.arcRY] as TrackParams["arcRY"]; arcRY[i] = v; return { ...p, arcRY }; }), []);
 
+  // ── Random track bet amount: 100–5000, multiples of 50 ──────────────────────
+  function randomTrackAmount(): number {
+    return 100 + Math.floor(Math.random() * 99) * 50;
+  }
+
   // ── Spin ────────────────────────────────────────────────────────────────────
   const handleSpin = useCallback(() => {
     const chipCount = settings.chipsInField ?? 100;
     const chipValue = settings.chipValue ?? 10;
-    setGame(spinGame(chipCount, chipValue));
+    const base = spinGame(chipCount, chipValue);
+
+    // Compute sector band centres from current trackParams
+    const bands = buildSectorBands(trackParams);
+    // bands order: [serie58, orphelins, serie023, zerospiel]
+    const seriesCfg: Array<{
+      enabled: boolean;
+      type: TrackBet["type"];
+      label: string;
+      band: (typeof bands)[0];
+    }> = [
+      { enabled: settings.bet58       === "yes", type: "SERIE_5_8",   label: "Serie 5/8",   band: bands[0] },
+      { enabled: settings.betOrphelins === "yes", type: "ORPHELINS",  label: "Orphelins",   band: bands[1] },
+      { enabled: settings.betSeria023  === "yes", type: "SERIE_0_2_3",label: "Serie 0/2/3", band: bands[2] },
+      { enabled: settings.betZeroSpiel === "yes", type: "ZERO_SPIEL", label: "Zero Spiel",  band: bands[3] },
+    ];
+
+    const trackBets: TrackBet[] = seriesCfg
+      .filter(s => s.enabled)
+      .map(s => ({
+        type:     s.type,
+        label:    s.label,
+        amount:   randomTrackAmount(),
+        position: { x: s.band.cx, y: s.band.cy },
+        source:   "TRACK" as const,
+      }));
+
+    setGame({ ...base, trackBets });
     setEditMode(false);
-  }, [settings.chipsInField, settings.chipValue]);
+  }, [
+    settings.chipsInField,
+    settings.chipValue,
+    settings.bet58,
+    settings.betOrphelins,
+    settings.betSeria023,
+    settings.betZeroSpiel,
+    trackParams,
+  ]);
 
   const handleCheck = useCallback(() => {
     if (!game) return;
@@ -330,6 +370,37 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
                   fontSize={count >= 10 ? "12.75" : "14.9"} fontWeight="bold" fill="#fff">
                   {count}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Track series chips — ~3× larger than normal chips (r=57) */}
+          {game && game.trackBets.map(tb => {
+            const sec = sectorBands.find(b =>
+              (b.sector.id === "serie58"   && tb.type === "SERIE_5_8")  ||
+              (b.sector.id === "orphelins" && tb.type === "ORPHELINS")  ||
+              (b.sector.id === "serie023"  && tb.type === "SERIE_0_2_3")||
+              (b.sector.id === "zerospiel" && tb.type === "ZERO_SPIEL")
+            );
+            const color = sec?.sector.color ?? "#fff";
+            const { x, y } = tb.position;
+            const amt = String(tb.amount);
+            const fs = amt.length >= 4 ? "22" : "26";
+            return (
+              <g key={tb.type} style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={62} fill="none" stroke={color} strokeWidth="2" opacity="0.35" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={57} fill="rgba(8,18,10,0.93)" stroke={color} strokeWidth="4.5" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={49} fill="none" stroke={color} strokeWidth="1.5" opacity="0.55" />
+                {/* Amount text */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill={color}
+                  stroke="rgba(0,0,0,0.7)" strokeWidth="0.8" paintOrder="stroke"
+                  letterSpacing="0.5">
+                  {amt}
                 </text>
               </g>
             );
