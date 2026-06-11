@@ -504,18 +504,57 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         <div className="editor-panel">
           <div className="editor-header">
             <div className="editor-tabs">
-              <button className="tab-btn active">Нижний трек</button>
+              <button
+                className={`tab-btn ${editTab === "grid" ? "active" : ""}`}
+                onClick={() => setEditTab("grid")}
+              >
+                Верхнее поле
+              </button>
+              <button
+                className={`tab-btn ${editTab === "track" ? "active" : ""}`}
+                onClick={() => setEditTab("track")}
+              >
+                Нижний трек
+              </button>
             </div>
             <div className="editor-actions">
               <span className="autosave-badge">✓ Автосохранение</span>
-              <button className="reset-btn" onClick={() => setTrackParams(DEFAULT_TRACK_PARAMS)}>Сбросить</button>
+              {editTab === "grid"
+                ? <button className="reset-btn" onClick={() => setGridParams(DEFAULT_GRID)}>Сбросить</button>
+                : <button className="reset-btn" onClick={() => setTrackParams(DEFAULT_TRACK_PARAMS)}>Сбросить</button>
+              }
               <button className="copy-btn" onClick={exportCode}>
                 {copied ? "✓ Скопировано!" : "Скопировать код"}
               </button>
             </div>
           </div>
 
+          {/* ── Grid editor ── */}
+          {editTab === "grid" && (
+            <div className="editor-grid-4">
+              <div className="editor-section">
+                <div className="editor-section-title">Вертикальные границы</div>
+                <SliderRow label="Верх заголовка (headerY)" value={gridParams.headerY} min={50} max={300} onChange={setHeaderY} />
+                <SliderRow label="Низ поля (botY)" value={gridParams.botY} min={400} max={700} onChange={setBotY} />
+                <SliderRow label="Левый край нуля (zeroX1)" value={gridParams.zeroX1} min={0} max={100} onChange={setZeroX1} />
+              </div>
+              <div className="editor-section">
+                <div className="editor-section-title">X-разделители колонок</div>
+                {gridParams.colX.map((v, i) => {
+                  const colNums = [0,3,6,9,12,15,18,21,24,27,30,33,36];
+                  const lbl = i === 0 ? "← левый край (нуль|1)"
+                    : i === gridParams.colX.length - 1 ? "правый край →"
+                    : `${colNums[i-1]*3+1}...|${colNums[i]*3+1}...`;
+                  return (
+                    <SliderRow key={i} label={`Колонка ${i}: X=${v}`} value={v} min={0} max={1480} onChange={val => setColX(i, val)} />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* ── Track editor ── */}
+          {editTab === "track" && (
           <div className="editor-grid-4">
               {/* Vertical bounds */}
               <div className="editor-section">
@@ -567,6 +606,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 })}
               </div>
             </div>
+          )}
         </div>
       )}
     </div>
