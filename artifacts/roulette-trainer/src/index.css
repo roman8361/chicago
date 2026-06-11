@@ -412,6 +412,18 @@
   opacity: 0.7;
 }
 
+.settings-input--error {
+  border-color: #e05c5c !important;
+  background: rgba(80, 10, 10, 0.45) !important;
+}
+
+.settings-field-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #e05c5c;
+  font-family: sans-serif;
+}
+
 .settings-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8a84b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;

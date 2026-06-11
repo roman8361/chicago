@@ -66,6 +66,8 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [chipValue, setChipValue] = useState(String(initialSettings.chipValue));
   const [chipsInField, setChipsInField] = useState(String(initialSettings.chipsInField));
   const [cashOnField, setCashOnField] = useState(String(initialSettings.cashOnField));
+  const [multiplicity, setMultiplicity] = useState(String(initialSettings.multiplicity));
+  const [multiplicityError, setMultiplicityError] = useState<string | null>(null);
 
   function parseNum(val: string, def: number): number {
     const n = Number(val);
@@ -73,6 +75,12 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   }
 
   function handleStart() {
+    const parsedMultiplicity = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
+    if (parsedMultiplicity <= 0 || parsedMultiplicity % 10 !== 0) {
+      setMultiplicityError("Кратность должна быть кратна 10 (например: 10, 20, 50, 100)");
+      return;
+    }
+    setMultiplicityError(null);
     const settings: GameSettings = {
       minBet: parseNum(minBet, DEFAULT_SETTINGS.minBet),
       maxBet: parseNum(maxBet, DEFAULT_SETTINGS.maxBet),
@@ -84,6 +92,7 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
       chipValue: parseNum(chipValue, DEFAULT_SETTINGS.chipValue),
       chipsInField: parseNum(chipsInField, DEFAULT_SETTINGS.chipsInField),
       cashOnField: parseNum(cashOnField, DEFAULT_SETTINGS.cashOnField),
+      multiplicity: parsedMultiplicity,
     };
     onStart(settings);
   }
@@ -125,6 +134,29 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
           <NumField label="Номинал цвета на рулетке" value={chipValue} defaultVal={DEFAULT_SETTINGS.chipValue} onChange={setChipValue} />
           <NumField label="Количество фишек цвета в поле" value={chipsInField} defaultVal={DEFAULT_SETTINGS.chipsInField} onChange={setChipsInField} />
           <NumField label="Сумма кэша на поле" value={cashOnField} defaultVal={DEFAULT_SETTINGS.cashOnField} onChange={setCashOnField} />
+        </div>
+
+        <div className="settings-divider" />
+        <div className="settings-section-title">Кратность</div>
+        <div className="settings-grid-2">
+          <div className="settings-field">
+            <label className="settings-label">Кратность (кратно 10)</label>
+            <input
+              type="number"
+              className={`settings-input${multiplicityError ? " settings-input--error" : ""}`}
+              value={multiplicity}
+              placeholder={String(DEFAULT_SETTINGS.multiplicity)}
+              step={10}
+              min={10}
+              onChange={(e) => {
+                setMultiplicity(e.target.value);
+                setMultiplicityError(null);
+              }}
+            />
+            {multiplicityError && (
+              <div className="settings-field-error">{multiplicityError}</div>
+            )}
+          </div>
         </div>
 
         <div className="settings-divider" />

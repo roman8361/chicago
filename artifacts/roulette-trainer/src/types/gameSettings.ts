@@ -9,6 +9,7 @@ export interface GameSettings {
   chipValue: number;
   chipsInField: number;
   cashOnField: number;
+  multiplicity: number;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -22,4 +23,5 @@ export const DEFAULT_SETTINGS: GameSettings = {
   chipValue: 10,
   chipsInField: 100,
   cashOnField: 1000,
+  multiplicity: 10,
 };
