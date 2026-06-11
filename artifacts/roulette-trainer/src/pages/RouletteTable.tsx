@@ -6,6 +6,47 @@ import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet } from "@/lib/rouletteGame";
 
+// ── Series quiz ────────────────────────────────────────────────────────────────
+const SERIES_DIVISORS: Record<TrackBet["type"], number> = {
+  SERIE_5_8: 6,
+  ORPHELINS: 5,
+  SERIE_0_2_3: 9,
+  ZERO_SPIEL: 4,
+};
+const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
+  "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
+];
+
+function calcSeriesResult(amount: number, divisor: number, multiplicity: number) {
+  const rawPerUnit = amount / divisor;
+  const playPerUnit = Math.floor(rawPerUnit / multiplicity) * multiplicity;
+  const acceptedAmount = playPerUnit * divisor;
+  const change = amount - acceptedAmount;
+  return { playPerUnit, change, acceptedAmount, rawPerUnit };
+}
+
+type QuizPhase = { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
+
+interface SeriesQuizRecord {
+  type: TrackBet["type"];
+  label: string;
+  amount: number;
+  divisor: number;
+  multiplicity: number;
+  rawPerUnit: number;
+  correctPlayPerUnit: number;
+  correctChange: number;
+  userPlayPerUnit: number;
+  userChange: number;
+  correct: boolean;
+}
+
+interface FieldQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+}
+
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
   headerY: 147,
@@ -140,6 +181,15 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [copied,    setCopied]    = useState(false);
   const [game,      setGame]      = useState<GameState | null>(null);
 
+  // ── Quiz state ──────────────────────────────────────────────────────────────
+  const [quizPhase,         setQuizPhase]         = useState<QuizPhase | null>(null);
+  const [activeSeries,      setActiveSeries]      = useState<TrackBet[]>([]);
+  const [seriesRecords,     setSeriesRecords]     = useState<SeriesQuizRecord[]>([]);
+  const [fieldRecord,       setFieldRecord]       = useState<FieldQuizRecord | null>(null);
+  const [seriesPlayInput,   setSeriesPlayInput]   = useState("");
+  const [seriesChangeInput, setSeriesChangeInput] = useState("");
+  const [fieldInput,        setFieldInput]        = useState("");
+
   const [gridParams,  setGridParams]  = useState<GridParams>(loadGrid);
   const [trackParams, setTrackParams] = useState<TrackParams>(loadTrack);
 
@@ -214,6 +264,19 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       }));
 
     setGame({ ...base, trackBets });
+
+    // Build quiz queue from active series in fixed order
+    const ordered = SERIES_QUIZ_ORDER
+      .map(t => trackBets.find(tb => tb.type === t))
+      .filter((tb): tb is TrackBet => tb !== undefined);
+    setActiveSeries(ordered);
+    setSeriesRecords([]);
+    setFieldRecord(null);
+    setSeriesPlayInput("");
+    setSeriesChangeInput("");
+    setFieldInput("");
+    setQuizPhase(ordered.length > 0 ? { kind: "series", idx: 0 } : { kind: "field" });
+
     setEditMode(false);
   }, [
     settings.chipsInField,
@@ -225,19 +288,35 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     trackParams,
   ]);
 
-  const handleCheck = useCallback(() => {
-    if (!game) return;
-    const answer = parseInt(game.userAnswer, 10);
-    const correct = game.correctAnswer;
-    setGame(g => g ? {
-      ...g,
-      checkResult: answer === correct ? "correct" : "incorrect",
-    } : g);
-  }, [game]);
+  const handleCheckSeries = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "series") return;
+    const tb = activeSeries[quizPhase.idx];
+    if (!tb) return;
+    const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const divisor = SERIES_DIVISORS[tb.type];
+    const { playPerUnit, change, rawPerUnit } = calcSeriesResult(tb.amount, divisor, mult);
+    const userPlay = parseInt(seriesPlayInput  || "0", 10) || 0;
+    const userChg  = parseInt(seriesChangeInput || "0", 10) || 0;
+    const record: SeriesQuizRecord = {
+      type: tb.type, label: tb.label, amount: tb.amount,
+      divisor, multiplicity: mult, rawPerUnit,
+      correctPlayPerUnit: playPerUnit, correctChange: change,
+      userPlayPerUnit: userPlay, userChange: userChg,
+      correct: userPlay === playPerUnit && userChg === change,
+    };
+    setSeriesRecords(prev => [...prev, record]);
+    setSeriesPlayInput("");
+    setSeriesChangeInput("");
+    const nextIdx = quizPhase.idx + 1;
+    setQuizPhase(nextIdx < activeSeries.length ? { kind: "series", idx: nextIdx } : { kind: "field" });
+  }, [game, quizPhase, activeSeries, seriesPlayInput, seriesChangeInput, settings.multiplicity]);
 
-  const setUserAnswer = useCallback((v: string) => {
-    setGame(g => g ? { ...g, userAnswer: v, checkResult: null } : g);
-  }, []);
+  const handleCheckField = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "field") return;
+    const userAnswer = parseInt(fieldInput || "0", 10) || 0;
+    setFieldRecord({ userAnswer, correctAnswer: game.correctAnswer, correct: userAnswer === game.correctAnswer });
+    setQuizPhase({ kind: "report" });
+  }, [game, quizPhase, fieldInput]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
@@ -428,71 +507,128 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       </div>
       </div>{/* /table-row */}
 
-      {/* Game panel */}
-      {game && (
+      {/* Quiz panel */}
+      {game && quizPhase && (
         <div className="game-panel">
           <div className="game-result-row">
+            {/* Drawn number */}
             <div className={`number-badge number-badge--${getNumberColor(game.drawnNumber)}`}>
               {game.drawnNumber}
             </div>
-            <div className="game-answer-area">
-              <span className="game-answer-label">Сумма выплаты:</span>
-              <input
-                type="number"
-                className="game-answer-input"
-                placeholder="введите ответ"
-                value={game.userAnswer}
-                onChange={e => setUserAnswer(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleCheck()}
-              />
-              <button className="game-check-btn" onClick={handleCheck}>
-                Проверить
-              </button>
-            </div>
-            {game.checkResult && (
-              <div className={`game-verdict game-verdict--${game.checkResult}`}>
-                {game.checkResult === "correct"
-                  ? "✅ Верно"
-                  : `❌ Неверно. Правильный ответ: ${game.correctAnswer}`}
+
+            {/* Series question */}
+            {quizPhase.kind === "series" && (() => {
+              const tb = activeSeries[quizPhase.idx];
+              if (!tb) return null;
+              return (
+                <div className="game-answer-area">
+                  <div className="quiz-series-header">
+                    <span className="quiz-series-title">{tb.label}</span>
+                    <span className="quiz-series-sub">Рассчитайте ставку серии</span>
+                  </div>
+                  <input
+                    type="number"
+                    className="game-answer-input"
+                    placeholder="По сколько играет"
+                    value={seriesPlayInput}
+                    onChange={e => setSeriesPlayInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
+                    autoFocus
+                  />
+                  <input
+                    type="number"
+                    className="game-answer-input"
+                    placeholder="Сдача"
+                    value={seriesChangeInput}
+                    onChange={e => setSeriesChangeInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
+                  />
+                  <button className="game-check-btn" onClick={handleCheckSeries}>Проверить</button>
+                </div>
+              );
+            })()}
+
+            {/* Field question */}
+            {quizPhase.kind === "field" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">Выплата по полю</span>
+                  <span className="quiz-series-sub">Сумма выплаты</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="введите ответ"
+                  value={fieldInput}
+                  onChange={e => setFieldInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCheckField()}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckField}>Проверить</button>
               </div>
+            )}
+
+            {quizPhase.kind === "report" && (
+              <span className="quiz-series-title" style={{ marginLeft: 8 }}>Отчёт по раунду</span>
             )}
           </div>
 
-          {/* Breakdown — shown when the answer is wrong */}
-          {game.checkResult === "incorrect" && (
-            <div className="game-breakdown">
-              <div className="game-breakdown-title">Расчёт выплаты:</div>
-              {game.breakdown.length === 0 ? (
-                <div className="game-breakdown-empty">Нет выигрышных ставок — выплата 0</div>
-              ) : (
-                <table className="breakdown-table">
-                  <thead>
-                    <tr>
-                      <th>Ставка</th>
-                      <th>Фишек</th>
-                      <th>Номинал</th>
-                      <th>Коэфф.</th>
-                      <th>Итого</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {game.breakdown.map((line, i) => (
-                      <tr key={i}>
-                        <td>{line.label}</td>
-                        <td className="bd-num">{line.chips}</td>
-                        <td className="bd-num">{line.chipValue}</td>
-                        <td className="bd-num">×{line.payout}</td>
-                        <td className="bd-num bd-total">{line.subtotal}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colSpan={4} className="bd-sum-label">Всего выплата:</td>
-                      <td className="bd-num bd-grand">{game.correctAnswer}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+          {/* Full report */}
+          {quizPhase.kind === "report" && (
+            <div className="quiz-report">
+              {seriesRecords.map((rec, i) => (
+                <div key={i} className={`quiz-report-item ${rec.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{rec.label}</div>
+                  {rec.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">По сколько играет: {rec.correctPlayPerUnit} · Сдача: {rec.correctChange}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: по сколько играет {rec.userPlayPerUnit}, сдача {rec.userChange}</div>
+                      <div className="quiz-report-detail">Правильный ответ: по сколько играет {rec.correctPlayPerUnit}, сдача {rec.correctChange}</div>
+                      <div className="quiz-report-calc">
+                        Ставка серии: {rec.amount} / Делитель: {rec.divisor} / Кратность: {rec.multiplicity}<br/>
+                        {rec.amount} / {rec.divisor} = {rec.rawPerUnit.toFixed(2)}<br/>
+                        Округляем вниз до ближайшей кратности {rec.multiplicity} = {rec.correctPlayPerUnit}<br/>
+                        Принятая сумма: {rec.correctPlayPerUnit} × {rec.divisor} = {rec.correctPlayPerUnit * rec.divisor}<br/>
+                        Сдача: {rec.amount} − {rec.correctPlayPerUnit * rec.divisor} = {rec.correctChange}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+
+              {fieldRecord && (
+                <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Выплата по полю</div>
+                  {fieldRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {fieldRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {fieldRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {fieldRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {game.breakdown.length === 0 ? (
+                          <span>Нет выигрышных ставок — выплата 0</span>
+                        ) : (
+                          <>
+                            {game.breakdown.map((line, j) => (
+                              <div key={j}>{line.label}: {line.chips} фишки × {line.chipValue} × {line.payout} = {line.subtotal}</div>
+                            ))}
+                            <div className="quiz-report-total">Итого: {fieldRecord.correctAnswer}</div>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           )}

@@ -75,11 +75,8 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   }
 
   function handleStart() {
-    const parsedMultiplicity = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
-    if (parsedMultiplicity <= 0 || parsedMultiplicity % 10 !== 0) {
-      setMultiplicityError("Кратность должна быть кратна 10 (например: 10, 20, 50, 100)");
-      return;
-    }
+    const raw = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
+    const parsedMultiplicity = raw < 10 ? 10 : raw > 1000 ? 1000 : raw;
     setMultiplicityError(null);
     const settings: GameSettings = {
       minBet: parseNum(minBet, DEFAULT_SETTINGS.minBet),
