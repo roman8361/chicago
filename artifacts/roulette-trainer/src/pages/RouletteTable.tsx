@@ -251,6 +251,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         </button>
       </div>
 
+      {/* Table + info sidebar */}
+      <div className="table-row">
       {/* Table image + SVG overlay */}
       <div className="roulette-wrapper">
         <img src={ruletImage} alt="Roulette table" className="roulette-image" draggable={false} />
@@ -335,6 +337,25 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
         </svg>
       </div>
+
+      {/* Info sidebar */}
+      <div className="table-info-sidebar">
+        <div className="info-sidebar-title">Лимиты и фишки</div>
+        <div className="info-sidebar-row">
+          <span className="info-sidebar-label">Минимум</span>
+          <span className="info-sidebar-value">{settings.minBet}</span>
+        </div>
+        <div className="info-sidebar-row">
+          <span className="info-sidebar-label">Максимум</span>
+          <span className="info-sidebar-value">{settings.maxBet}</span>
+        </div>
+        <div className="info-sidebar-divider" />
+        <div className="info-sidebar-row">
+          <span className="info-sidebar-label">Номинал цвета</span>
+          <span className="info-sidebar-value info-sidebar-chip">{settings.chipValue}</span>
+        </div>
+      </div>
+      </div>{/* /table-row */}
 
       {/* Game panel */}
       {game && (
