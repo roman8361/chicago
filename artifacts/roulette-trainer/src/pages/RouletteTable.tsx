@@ -504,6 +504,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           <span className="info-sidebar-label">Номинал цвета</span>
           <span className="info-sidebar-value info-sidebar-chip">{settings.chipValue}</span>
         </div>
+        <div className="info-sidebar-divider" />
+        <div className="info-sidebar-row">
+          <span className="info-sidebar-label">Кратность</span>
+          <span className="info-sidebar-value">{settings.multiplicity}</span>
+        </div>
       </div>
       </div>{/* /table-row */}
 
