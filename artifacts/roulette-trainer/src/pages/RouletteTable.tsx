@@ -227,9 +227,13 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const setArcRY = useCallback((i: number, v: number) =>
     setTrackParams(p => { const arcRY = [...p.arcRY] as TrackParams["arcRY"]; arcRY[i] = v; return { ...p, arcRY }; }), []);
 
-  // ── Random track bet amount: 100–5000, multiples of 50 ──────────────────────
-  function randomTrackAmount(): number {
-    return 100 + Math.floor(Math.random() * 99) * 50;
+  // ── Random track bet amount: minAmount–5000, multiples of 50 ────────────────
+  function randomTrackAmount(minAmount: number): number {
+    const minRounded = Math.ceil(minAmount / 50) * 50;
+    const safeMin = Math.max(50, minRounded);
+    const count = Math.floor((5000 - safeMin) / 50) + 1;
+    if (count <= 0) return safeMin;
+    return safeMin + Math.floor(Math.random() * count) * 50;
   }
 
   // ── Spin ────────────────────────────────────────────────────────────────────
@@ -253,12 +257,14 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       { enabled: settings.betZeroSpiel === "yes", type: "ZERO_SPIEL", label: "Zero Spiel",  band: bands[3] },
     ];
 
+    const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+
     const trackBets: TrackBet[] = seriesCfg
       .filter(s => s.enabled)
       .map(s => ({
         type:     s.type,
         label:    s.label,
-        amount:   randomTrackAmount(),
+        amount:   randomTrackAmount(mult * SERIES_DIVISORS[s.type]),
         position: { x: s.band.cx, y: s.band.cy },
         source:   "TRACK" as const,
       }));
@@ -281,6 +287,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   }, [
     settings.chipsInField,
     settings.chipValue,
+    settings.multiplicity,
     settings.bet58,
     settings.betOrphelins,
     settings.betSeria023,
