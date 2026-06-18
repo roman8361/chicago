@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
-import ruletImage from "@assets/rulet_track2_1781011699361.png";
+import ruletImage from "@assets/rulet_track3_1781811646616.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet } from "@/lib/rouletteGame";
