@@ -125,17 +125,19 @@ function ViewMode({ rules, onEdit }: { rules: RulesData; onEdit: () => void }) {
       <table style={tableStyle}>
         <thead>
           <tr>
-            <th style={thStyle}>Параметр</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>Значение</th>
+            <th style={thStyle}>Дюжина</th>
+            <th style={{ ...thStyle, textAlign: "right" }}>Фишек</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style={tdStyle}>Фишек</td>
-            <td style={{ ...tdStyle, textAlign: "right", color: "#C9A227", fontWeight: 700 }}>
-              {rules.dozenComplete.chipsRequired}
-            </td>
-          </tr>
+          {rules.dozenComplete.dozens.map(d => (
+            <tr key={d.dozen}>
+              <td style={tdStyle}>{d.dozen === 1 ? "1-я (1–12)" : d.dozen === 2 ? "2-я (13–24)" : "3-я (25–36)"}</td>
+              <td style={{ ...tdStyle, textAlign: "right", color: "#C9A227", fontWeight: 700 }}>
+                {d.chipsRequired}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
 

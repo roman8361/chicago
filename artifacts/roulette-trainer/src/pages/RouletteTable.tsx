@@ -560,8 +560,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const lines: CompleteLineSummary[] = [];
 
     if (game.dozenCompleteBet) {
-      const { amount } = game.dozenCompleteBet;
-      const chipsRequired = rules.dozenComplete.chipsRequired;
+      const { amount, dozen } = game.dozenCompleteBet;
+      const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+      const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
+      const chipsRequired = dozenRule?.chipsRequired ?? 100;
       const { rawPlay, playPerUnit, acceptedAmount, change } = calcOneCompleteChange(amount, chipsRequired, maxBet, multiplicity);
       lines.push({ label: "Неполный комплит дюжины", amount, chipsRequired, rawPlay, playPerUnit, acceptedAmount, change, maxBet, multiplicity });
     }

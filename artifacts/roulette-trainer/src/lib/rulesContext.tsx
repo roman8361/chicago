@@ -39,7 +39,13 @@ const RulesContext = createContext<RouletteRulesService | null>(null);
 function loadRules(): RulesData {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as RulesData;
+    if (stored) {
+      const parsed = JSON.parse(stored) as RulesData;
+      if (!Array.isArray((parsed as any)?.dozenComplete?.dozens)) {
+        parsed.dozenComplete = defaultRules.dozenComplete;
+      }
+      return parsed;
+    }
   } catch {}
   return defaultRules;
 }
