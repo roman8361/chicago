@@ -38,6 +38,11 @@ export interface NumberCompleteBet {
   position: { x: number; y: number };
 }
 
+export interface CashChipStack {
+  positionId: string;
+  totalAmount: number;
+}
+
 export interface GameState {
   drawnNumber: number;
   chips: ChipStack[];
@@ -48,6 +53,7 @@ export interface GameState {
   trackBets: TrackBet[];
   dozenCompleteBet?: DozenCompleteBet;
   numberCompleteBets: NumberCompleteBet[];
+  cashChipStacks: CashChipStack[];
 }
 
 const RED_NUMBERS = new Set([
@@ -101,7 +107,58 @@ export function spinGame(
     checkResult: null,
     trackBets: [],
     numberCompleteBets: [],
+    cashChipStacks: [],
   };
+}
+
+export function generateCashChips(
+  cashOnField: number,
+  cashChipValues: string[],
+  occupiedPositionIds: Set<string>,
+): CashChipStack[] {
+  if (!cashOnField || cashOnField <= 0) return [];
+
+  const denomValues = (cashChipValues.length > 0 ? cashChipValues : ["100"])
+    .map(Number)
+    .filter(n => n > 0)
+    .sort((a, b) => b - a);
+
+  const chipsToPlace: number[] = [];
+
+  if (denomValues.length === 1) {
+    const d = denomValues[0];
+    const count = Math.floor(cashOnField / d);
+    for (let i = 0; i < count; i++) chipsToPlace.push(d);
+  } else {
+    const sumDenoms = denomValues.reduce((a, b) => a + b, 0);
+    const k = Math.floor(cashOnField / sumDenoms);
+    let remaining = cashOnField - k * sumDenoms;
+    for (const d of denomValues) {
+      for (let i = 0; i < k; i++) chipsToPlace.push(d);
+    }
+    for (const d of denomValues) {
+      if (remaining >= d) {
+        chipsToPlace.push(d);
+        remaining -= d;
+      }
+    }
+  }
+
+  if (chipsToPlace.length === 0) return [];
+
+  const available = ALL_BET_POSITIONS.filter(p => !occupiedPositionIds.has(p.id));
+  if (available.length === 0) return [];
+
+  const posAmounts = new Map<string, number>();
+  for (const chip of chipsToPlace) {
+    const pos = available[Math.floor(Math.random() * available.length)];
+    posAmounts.set(pos.id, (posAmounts.get(pos.id) ?? 0) + chip);
+  }
+
+  return Array.from(posAmounts.entries()).map(([positionId, totalAmount]) => ({
+    positionId,
+    totalAmount,
+  }));
 }
 
 export function calculatePayout(
