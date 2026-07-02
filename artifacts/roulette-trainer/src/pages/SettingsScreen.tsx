@@ -167,10 +167,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
         </div>
 
         <div className="settings-divider" />
-        <div className="settings-section-title">Кратность</div>
+        <div className="settings-section-title">Кратность серии</div>
         <div className="settings-grid-2">
           <div className="settings-field">
-            <label className="settings-label">Кратность (кратно 10)</label>
+            <label className="settings-label">Кратность серии (кратно 10)</label>
             <input
               type="number"
               className={`settings-input${multiplicityError ? " settings-input--error" : ""}`}
