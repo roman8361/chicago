@@ -98,7 +98,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeField, setCompleteField] = useState<"yes" | "no">(initialSettings.completeField);
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
-  const [cashChipValues, setCashChipValues] = useState<Array<"10" | "25" | "50" | "100" | "250" | "500" | "1000" | "5000" | "10000" | "50000" | "100000">>(
+  const [cashChipValues, setCashChipValues] = useState<Array<"10" | "25" | "50" | "100" | "250" | "500" | "1000" | "5000" | "10000" | "50000">>(
     initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : ["10", "25", "50", "100"]
   );
 
@@ -172,7 +172,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
           <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
             <label className="settings-label">Номинал кэша на поле</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-              {(["10", "25", "50", "100", "250", "500", "1000", "5000", "10000", "50000", "100000"] as const).map((val) => {
+              {(["10", "25", "50", "100", "250", "500", "1000", "5000", "10000", "50000"] as const).map((val) => {
                 const checked = cashChipValues.includes(val);
                 return (
                   <label
