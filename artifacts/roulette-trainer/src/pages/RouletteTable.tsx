@@ -769,6 +769,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           <span className="info-sidebar-label">Кратность серии</span>
           <span className="info-sidebar-value">{settings.multiplicity}</span>
         </div>
+        <div className="info-sidebar-row">
+          <span className="info-sidebar-label">Кратность комплита</span>
+          <span className="info-sidebar-value">{settings.completeMultiplicity}</span>
+        </div>
         {game?.dozenCompleteBet && (
           <>
             <div className="info-sidebar-divider" />
