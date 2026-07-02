@@ -5,7 +5,7 @@ import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet } from "@/lib/rouletteGame";
-import { useRules } from "@/lib/rulesContext";
+import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
 ];
@@ -220,23 +220,29 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
   const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
-  const { rules } = useRules();
+  const { getPayouts, getTrackBetRule, getAllRules } = useRouletteRules();
 
-  // Series divisors and payout map — derived from live rules so edits take effect immediately
+  // Series divisors and payout map — re-derived whenever rules change
   const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
-    SERIE_5_8:   rules.trackBets.SERIE_5_8.divisor,
-    ORPHELINS:   rules.trackBets.ORPHELINS.divisor,
-    SERIE_0_2_3: rules.trackBets.SERIE_0_2_3.divisor,
-    ZERO_SPIEL:  rules.trackBets.ZERO_SPIEL.divisor,
-  }), [rules]);
+    SERIE_5_8:   getTrackBetRule("SERIE_5_8").divisor,
+    ORPHELINS:   getTrackBetRule("ORPHELINS").divisor,
+    SERIE_0_2_3: getTrackBetRule("SERIE_0_2_3").divisor,
+    ZERO_SPIEL:  getTrackBetRule("ZERO_SPIEL").divisor,
+  }), [getTrackBetRule]);
 
-  const payoutMap = useMemo<Record<string, number>>(() => ({
-    straight: rules.payouts.straightUp,
-    split:    rules.payouts.split,
-    street:   rules.payouts.street,
-    corner:   rules.payouts.corner,
-    sixline:  rules.payouts.sixLine,
-  }), [rules]);
+  const payoutMap = useMemo<Record<string, number>>(() => {
+    const p = getPayouts();
+    return {
+      straight: p.straightUp,
+      split:    p.split,
+      street:   p.street,
+      corner:   p.corner,
+      sixline:  p.sixLine,
+    };
+  }, [getPayouts]);
+
+  // Keep getAllRules accessible for any future per-spin rule reads
+  const _getAllRules = getAllRules;
 
   // Auto-save to localStorage whenever params change
   useEffect(() => {

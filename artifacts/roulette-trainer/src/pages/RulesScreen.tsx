@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRules, type RulesData } from "@/lib/rulesContext";
+import { useRouletteRules, type RulesData } from "@/lib/rulesContext";
 
 interface Props {
   onBack: () => void;
@@ -220,12 +220,13 @@ function EditMode({
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function RulesScreen({ onBack }: Props) {
-  const { rules, setRules, resetRules } = useRules();
+  const { getAllRules, updateRules, resetRules } = useRouletteRules();
+  const rules = getAllRules();
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [saved, setSaved] = useState(false);
 
   function handleSave(raw: string) {
-    setRules(JSON.parse(raw) as RulesData);
+    updateRules(JSON.parse(raw) as RulesData);
     setMode("view");
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

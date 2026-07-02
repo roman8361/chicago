@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { RulesProvider } from "@/lib/rulesContext";
+import { RulesProvider } from "@/lib/rulesContext"; // rouletteRulesService entry point
 import RouletteTable from "@/pages/RouletteTable";
 import SettingsScreen from "@/pages/SettingsScreen";
 import RulesScreen from "@/pages/RulesScreen";
