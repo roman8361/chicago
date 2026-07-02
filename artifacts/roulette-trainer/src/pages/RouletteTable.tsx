@@ -698,12 +698,13 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 {/* Inner decorative ring */}
                 <circle cx={x} cy={y} r={33} fill="none" stroke="#E0C060" strokeWidth="1.2" opacity="0.55" />
                 {/* Number label at top */}
-                <text x={x} y={y - 13} textAnchor="middle" dominantBaseline="central"
-                  fontSize="10" fontWeight="700" fill="#E0C060" opacity="0.8">
+                <text x={x} y={y - 11} textAnchor="middle" dominantBaseline="central"
+                  fontSize="16" fontWeight="800" fill="#E0C060"
+                  stroke="rgba(0,0,0,0.8)" strokeWidth="0.5" paintOrder="stroke">
                   №{ncb.number}
                 </text>
                 {/* Amount text */}
-                <text x={x} y={y + 8} textAnchor="middle" dominantBaseline="central"
+                <text x={x} y={y + 12} textAnchor="middle" dominantBaseline="central"
                   fontSize={fs} fontWeight="900" fill="#E0C060"
                   stroke="rgba(0,0,0,0.8)" strokeWidth="0.7" paintOrder="stroke"
                   letterSpacing="0.3">
