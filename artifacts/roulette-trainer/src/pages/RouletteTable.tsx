@@ -736,25 +736,25 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Cash chips — Chicago 1932 plaque style */}
+          {/* Cash chips — round, slightly larger than color chips */}
           {game && game.cashChipStacks && game.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.totalAmount);
             const len = amt.length;
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
-            const W = 40, H = 26;
+            const r = 22;
             return (
               <g key={`cash-${stack.positionId}`} style={{ pointerEvents: "none" }}>
-                <rect x={pos.x - W/2 + 1} y={pos.y - H/2 + 1.5} width={W} height={H} rx={5} ry={5}
+                <circle cx={pos.x + 1} cy={pos.y + 1.5} r={r}
                   fill="rgba(0,0,0,0.3)" />
-                <rect x={pos.x - W/2} y={pos.y - H/2} width={W} height={H} rx={5} ry={5}
-                  fill="#F5EDBE" stroke="#1A4A2A" strokeWidth="2" />
-                <rect x={pos.x - W/2 + 3} y={pos.y - H/2 + 3} width={W - 6} height={H - 6} rx={3} ry={3}
-                  fill="none" stroke="#1A4A2A" strokeWidth="0.7" opacity="0.55" />
+                <circle cx={pos.x} cy={pos.y} r={r}
+                  fill="#F5EDBE" stroke="#1A4A2A" strokeWidth="2.5" opacity="0.95" />
+                <circle cx={pos.x} cy={pos.y} r={r - 4}
+                  fill="none" stroke="#1A4A2A" strokeWidth="0.8" opacity="0.5" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
                   fontSize={fs} fontWeight="800" fill="#1A4A2A"
-                  stroke="rgba(245,237,190,0.4)" strokeWidth="0.5" paintOrder="stroke">
+                  stroke="rgba(245,237,190,0.5)" strokeWidth="0.5" paintOrder="stroke">
                   {amt}
                 </text>
               </g>
