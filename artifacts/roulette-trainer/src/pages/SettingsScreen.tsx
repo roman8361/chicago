@@ -98,6 +98,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeField, setCompleteField] = useState<"yes" | "no">(initialSettings.completeField);
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
+  const [cashChipMode, setCashChipMode] = useState<GameSettings["cashChipMode"]>(initialSettings.cashChipMode ?? "random");
 
   function parseNum(val: string, def: number): number {
     const n = Number(val);
@@ -124,6 +125,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       completeField,
       completeCount,
       completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
+      cashChipMode,
     };
     onStart(settings);
   }
@@ -165,6 +167,40 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
           <NumField label="Номинал цвета на рулетке" value={chipValue} defaultVal={DEFAULT_SETTINGS.chipValue} onChange={setChipValue} />
           <NumField label="Количество фишек цвета в поле" value={chipsInField} defaultVal={DEFAULT_SETTINGS.chipsInField} onChange={setChipsInField} />
           <NumField label="Сумма кэша на поле" value={cashOnField} defaultVal={DEFAULT_SETTINGS.cashOnField} onChange={setCashOnField} />
+          <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
+            <label className="settings-label">Номинал кэша на поле</label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+              {(["10", "25", "50", "100", "random"] as const).map((mode) => (
+                <label
+                  key={mode}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    cursor: "pointer",
+                    padding: "4px 12px",
+                    borderRadius: 4,
+                    border: cashChipMode === mode ? "1px solid #C9A227" : "1px solid #5a4a2a",
+                    background: cashChipMode === mode ? "rgba(201,162,39,0.12)" : "transparent",
+                    color: cashChipMode === mode ? "#C9A227" : "#8a7a5a",
+                    fontSize: 13,
+                    fontFamily: "inherit",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="cashChipMode"
+                    value={mode}
+                    checked={cashChipMode === mode}
+                    onChange={() => setCashChipMode(mode)}
+                    style={{ display: "none" }}
+                  />
+                  {mode === "random" ? "случайно" : mode}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="settings-divider" />
