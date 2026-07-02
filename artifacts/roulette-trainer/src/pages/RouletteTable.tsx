@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
-import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet } from "@/lib/rouletteGame";
+import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet } from "@/lib/rouletteGame";
 
 // ── Series quiz ────────────────────────────────────────────────────────────────
 const SERIES_DIVISORS: Record<TrackBet["type"], number> = {
@@ -314,7 +314,29 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         source:   "TRACK" as const,
       }));
 
-    setGame({ ...base, trackBets });
+    // ── Dozen complete bet ──────────────────────────────────────────────────────
+    let dozenCompleteBet: DozenCompleteBet | undefined;
+    if (settings.completeDozen === "yes") {
+      const DOZEN_IDS = ["1ST_12", "2ND_12", "3RD_12"] as const;
+      const idx = Math.floor(Math.random() * 3);
+      const { x, y1, y2 } = dozensParams;
+      const cx = (x[idx] + x[idx + 1]) / 2;
+      const cy = (y1 + y2) / 2;
+      const minBet = Math.max(1, settings.minBet);
+      const maxBet = Math.max(minBet, settings.maxBet);
+      const X = minBet + Math.floor(Math.random() * (maxBet - minBet + 1));
+      dozenCompleteBet = {
+        type:      "DOZEN_COMPLETE",
+        label:     "Комплит дюжины",
+        dozen:     DOZEN_IDS[idx],
+        baseValue: X,
+        amount:    X * 100 + 25,
+        position:  { x: cx, y: cy },
+        source:    "DOZEN_COMPLETE",
+      };
+    }
+
+    setGame({ ...base, trackBets, dozenCompleteBet });
 
     // Build quiz queue from active series in fixed order
     const ordered = SERIES_QUIZ_ORDER
@@ -337,7 +359,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     settings.betOrphelins,
     settings.betSeria023,
     settings.betZeroSpiel,
+    settings.completeDozen,
+    settings.minBet,
+    settings.maxBet,
     trackParams,
+    dozensParams,
   ]);
 
   const handleCheckSeries = useCallback(() => {
@@ -525,6 +551,30 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </g>
             );
           })}
+
+          {/* Dozen complete chip — ~3× larger than normal chips (r=57), gold style */}
+          {game?.dozenCompleteBet && (() => {
+            const { x, y } = game.dozenCompleteBet.position;
+            const amt = String(game.dozenCompleteBet.amount);
+            const fs = amt.length >= 5 ? "19" : amt.length >= 4 ? "22" : "26";
+            return (
+              <g style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={62} fill="none" stroke="#C9A227" strokeWidth="2" opacity="0.4" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={57} fill="rgba(8,18,10,0.93)" stroke="#C9A227" strokeWidth="4.5" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={49} fill="none" stroke="#C9A227" strokeWidth="1.5" opacity="0.6" />
+                {/* Amount text */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#C9A227"
+                  stroke="rgba(0,0,0,0.7)" strokeWidth="0.8" paintOrder="stroke"
+                  letterSpacing="0.5">
+                  {amt}
+                </text>
+              </g>
+            );
+          })()}
 
           {/* Track series chips — ~3× larger than normal chips (r=57) */}
           {game && game.trackBets.map(tb => {

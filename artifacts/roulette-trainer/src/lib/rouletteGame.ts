@@ -21,6 +21,16 @@ export interface TrackBet {
   source: "TRACK";
 }
 
+export interface DozenCompleteBet {
+  type: "DOZEN_COMPLETE";
+  label: string;
+  dozen: "1ST_12" | "2ND_12" | "3RD_12";
+  baseValue: number;
+  amount: number;
+  position: { x: number; y: number };
+  source: "DOZEN_COMPLETE";
+}
+
 export interface GameState {
   drawnNumber: number;
   chips: ChipStack[];
@@ -29,6 +39,7 @@ export interface GameState {
   userAnswer: string;
   checkResult: "correct" | "incorrect" | null;
   trackBets: TrackBet[];
+  dozenCompleteBet?: DozenCompleteBet;
 }
 
 const RED_NUMBERS = new Set([
