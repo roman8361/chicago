@@ -38,7 +38,29 @@
     }
   },
   "completeBets": [
-    { "number": 0,  "chipsRequired": 17,   "payoutInChips": 235  },
+    {
+      "number": 0,
+      "chipsRequired": 17,
+      "payoutInChips": 235,
+      "bets": {
+        "straightUp": [
+          { "numbers": [0], "chips": 1 }
+        ],
+        "splits": [
+          { "numbers": [0, 1], "chips": 2 },
+          { "numbers": [0, 2], "chips": 2 },
+          { "numbers": [0, 3], "chips": 2 }
+        ],
+        "streets": [
+          { "numbers": [0, 1, 2], "chips": 3 },
+          { "numbers": [0, 2, 3], "chips": 3 }
+        ],
+        "corners": [
+          { "numbers": [0, 1, 2, 3], "chips": 4 }
+        ],
+        "sixLines": []
+      }
+    },
     { "number": 1,  "chipsRequired": 27,   "payoutInChips": 297  },
     { "number": 2,  "chipsRequired": 36,   "payoutInChips": 396  },
     { "number": 3,  "chipsRequired": 27,   "payoutInChips": 297  },
