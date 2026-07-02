@@ -56,6 +56,29 @@ const DEFAULT_GRID = {
 };
 type GridParams = typeof DEFAULT_GRID;
 
+// ── Dozens (1st 12 / 2nd 12 / 3rd 12) default params ──────────────────────────
+const DEFAULT_DOZENS = {
+  y1: 110,
+  y2: 205,
+  x: [146, 524, 900, 1277],
+};
+type DozensParams = typeof DEFAULT_DOZENS;
+
+// ── Build dozens zones ─────────────────────────────────────────────────────────
+function buildDozensZones(p: DozensParams) {
+  const labels = ["1st 12", "2nd 12", "3rd 12"];
+  const zones: { id: string; label: string; pts: string; cx: number; cy: number }[] = [];
+  for (let i = 0; i < 3; i++) {
+    const x1 = p.x[i], x2 = p.x[i + 1];
+    zones.push({
+      id: `dz-${i}`, label: labels[i],
+      pts: `${x1},${p.y1} ${x2},${p.y1} ${x2},${p.y2} ${x1},${p.y2}`,
+      cx: (x1 + x2) / 2, cy: (p.y1 + p.y2) / 2,
+    });
+  }
+  return zones;
+}
+
 // ── Build main grid zones ─────────────────────────────────────────────────────
 function buildGridZones(p: GridParams) {
   const rowH = (p.botY - p.headerY) / 3;
@@ -148,8 +171,9 @@ function buildDynamicPositions(p: GridParams): Map<string, { x: number; y: numbe
 }
 
 // ── localStorage persistence ──────────────────────────────────────────────────
-const STORAGE_KEY_GRID  = "roulette_grid_params_v2";
-const STORAGE_KEY_TRACK = "roulette_track_params_v2";
+const STORAGE_KEY_GRID   = "roulette_grid_params_v2";
+const STORAGE_KEY_TRACK  = "roulette_track_params_v2";
+const STORAGE_KEY_DOZENS = "roulette_dozens_params_v1";
 
 function loadGrid(): GridParams {
   try {
@@ -167,6 +191,14 @@ function loadTrack(): TrackParams {
   return DEFAULT_TRACK_PARAMS;
 }
 
+function loadDozens(): DozensParams {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DOZENS);
+    if (raw) return { ...DEFAULT_DOZENS, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return DEFAULT_DOZENS;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 interface RouletteTableProps {
   settings: GameSettings;
@@ -174,10 +206,11 @@ interface RouletteTableProps {
 }
 
 export default function RouletteTable({ settings, onOpenSettings }: RouletteTableProps) {
-  const [showGrid,  setShowGrid]  = useState(false);
-  const [showTrack, setShowTrack] = useState(false);
+  const [showGrid,   setShowGrid]   = useState(false);
+  const [showTrack,  setShowTrack]  = useState(false);
+  const [showDozens, setShowDozens] = useState(false);
   const [editMode,  setEditMode]  = useState(false);
-  const [editTab,   setEditTab]   = useState<"grid" | "track">("grid");
+  const [editTab,   setEditTab]   = useState<"grid" | "track" | "dozens">("grid");
   const [copied,    setCopied]    = useState(false);
   const [game,      setGame]      = useState<GameState | null>(null);
 
@@ -190,8 +223,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [seriesChangeInput, setSeriesChangeInput] = useState("");
   const [fieldInput,        setFieldInput]        = useState("");
 
-  const [gridParams,  setGridParams]  = useState<GridParams>(loadGrid);
-  const [trackParams, setTrackParams] = useState<TrackParams>(loadTrack);
+  const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
+  const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
+  const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
   // Auto-save to localStorage whenever params change
   useEffect(() => {
@@ -202,9 +236,14 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     localStorage.setItem(STORAGE_KEY_TRACK, JSON.stringify(trackParams));
   }, [trackParams]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DOZENS, JSON.stringify(dozensParams));
+  }, [dozensParams]);
+
   const gridZones   = buildGridZones(gridParams);
   const trackZones  = buildTrackZones(trackParams);
   const sectorBands = buildSectorBands(trackParams);
+  const dozensZones = buildDozensZones(dozensParams);
   const chipPosMap  = useMemo(() => buildDynamicPositions(gridParams), [gridParams]);
 
   // ── Grid param setters ──────────────────────────────────────────────────────
@@ -213,6 +252,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const setZeroX1  = useCallback((v: number) => setGridParams(p => ({ ...p, zeroX1: v })), []);
   const setColX    = useCallback((i: number, v: number) =>
     setGridParams(p => { const colX = [...p.colX]; colX[i] = v; return { ...p, colX }; }), []);
+
+  // ── Dozens param setters ─────────────────────────────────────────────────────
+  const setDozensY1 = useCallback((v: number) => setDozensParams(p => ({ ...p, y1: v })), []);
+  const setDozensY2 = useCallback((v: number) => setDozensParams(p => ({ ...p, y2: v })), []);
+  const setDozensX  = useCallback((i: number, v: number) =>
+    setDozensParams(p => { const x = [...p.x]; x[i] = v; return { ...p, x }; }), []);
 
   // ── Track param setters ─────────────────────────────────────────────────────
   const setTP = useCallback(<K extends keyof TrackParams>(k: K, v: TrackParams[K]) =>
@@ -327,7 +372,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
-    const g = gridParams, t = trackParams;
+    const g = gridParams, t = trackParams, d = dozensParams;
     const text = [
       `// ── Main grid ──`,
       `const headerY = ${g.headerY};`,
@@ -346,6 +391,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       `arcRY: [${t.arcRY.join(", ")}],`,
       `topX: [${t.topX.join(", ")}],`,
       `botX: [${t.botX.join(", ")}],`,
+      ``,
+      `// ── Dozens ──`,
+      `y1: ${d.y1}, y2: ${d.y2},`,
+      `x: [${d.x.join(", ")}],`,
     ].join("\n");
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true); setTimeout(() => setCopied(false), 2000);
@@ -371,8 +420,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           onClick={() => setShowTrack(v => !v)}>
           {showTrack ? "Скрыть трек" : "Показать трек"}
         </button>
+        <button className={`grid-toggle-btn ${showDozens ? "active" : ""}`}
+          onClick={() => setShowDozens(v => !v)}>
+          {showDozens ? "Скрыть дюжины" : "Показать дюжины"}
+        </button>
         <button className={`grid-toggle-btn ${editMode ? "active" : ""}`}
-          onClick={() => { setEditMode(v => !v); if (!editMode) { setShowTrack(true); } }}>
+          onClick={() => { setEditMode(v => !v); if (!editMode) { setShowTrack(true); setShowDozens(true); } }}>
           {editMode ? "Закрыть редактор" : "Настроить трек"}
         </button>
       </div>
@@ -395,6 +448,18 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 fontSize="13" fontWeight="bold" fill="#FFD700"
                 stroke="rgba(0,0,0,0.6)" strokeWidth="0.4" paintOrder="stroke">
                 {z.number}
+              </text>
+            </g>
+          ))}
+
+          {/* Dozens — 1st 12 / 2nd 12 / 3rd 12 */}
+          {showDozens && dozensZones.map(z => (
+            <g key={z.id}>
+              <polygon points={z.pts} fill="rgba(0,220,255,0.18)" stroke="#00CFFF" strokeWidth="1.5" />
+              <text x={z.cx} y={z.cy} textAnchor="middle" dominantBaseline="central"
+                fontSize="16" fontWeight="bold" fill="#00CFFF"
+                stroke="rgba(0,0,0,0.6)" strokeWidth="0.4" paintOrder="stroke">
+                {z.label}
               </text>
             </g>
           ))}
@@ -664,12 +729,20 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               >
                 Нижний трек
               </button>
+              <button
+                className={`tab-btn ${editTab === "dozens" ? "active" : ""}`}
+                onClick={() => setEditTab("dozens")}
+              >
+                Дюжины
+              </button>
             </div>
             <div className="editor-actions">
               <span className="autosave-badge">✓ Автосохранение</span>
               {editTab === "grid"
                 ? <button className="reset-btn" onClick={() => setGridParams(DEFAULT_GRID)}>Сбросить</button>
-                : <button className="reset-btn" onClick={() => setTrackParams(DEFAULT_TRACK_PARAMS)}>Сбросить</button>
+                : editTab === "track"
+                ? <button className="reset-btn" onClick={() => setTrackParams(DEFAULT_TRACK_PARAMS)}>Сбросить</button>
+                : <button className="reset-btn" onClick={() => setDozensParams(DEFAULT_DOZENS)}>Сбросить</button>
               }
               <button className="copy-btn" onClick={exportCode}>
                 {copied ? "✓ Скопировано!" : "Скопировать код"}
@@ -751,6 +824,29 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                     : i === trackParams.botX.length - 1 ? "правый край →"
                     : `${botNums[i-1]}|${botNums[i]}`;
                   return <SliderRow key={i} label={lbl} value={v} min={100} max={1400} onChange={v => setBotX(i, v)} />;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Dozens editor ── */}
+          {editTab === "dozens" && (
+            <div className="editor-grid-4">
+              <div className="editor-section">
+                <div className="editor-section-title">Вертикальные границы</div>
+                <SliderRow label="Верх ряда (y1)" value={dozensParams.y1} min={0} max={300} onChange={setDozensY1} />
+                <SliderRow label="Низ ряда (y2)" value={dozensParams.y2} min={0} max={400} onChange={setDozensY2} />
+              </div>
+              <div className="editor-section">
+                <div className="editor-section-title">X-разделители дюжин</div>
+                {dozensParams.x.map((v, i) => {
+                  const lbl = i === 0 ? "← левый край (1st 12)"
+                    : i === dozensParams.x.length - 1 ? "правый край →"
+                    : i === 1 ? "1st 12 | 2nd 12"
+                    : "2nd 12 | 3rd 12";
+                  return (
+                    <SliderRow key={i} label={lbl} value={v} min={0} max={1480} onChange={val => setDozensX(i, val)} />
+                  );
                 })}
               </div>
             </div>
