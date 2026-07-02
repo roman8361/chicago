@@ -1,0 +1,80 @@
+{
+  "version": "1.0.0",
+  "payouts": {
+    "straightUp": 35,
+    "split": 17,
+    "street": 11,
+    "corner": 8,
+    "sixLine": 5
+  },
+  "trackBets": {
+    "SERIE_5_8": {
+      "label": "Serie 5/8",
+      "divisor": 6,
+      "settingKey": "bet58",
+      "displayZoneKey": "serie58",
+      "numbers": [5, 8, 10, 11, 13, 16, 23, 24, 27, 30, 33, 36]
+    },
+    "ORPHELINS": {
+      "label": "Orphelins",
+      "divisor": 5,
+      "settingKey": "betOrphelins",
+      "displayZoneKey": "orphelins",
+      "numbers": [1, 6, 9, 14, 17, 20, 31, 34]
+    },
+    "SERIE_0_2_3": {
+      "label": "Serie 0/2/3",
+      "divisor": 9,
+      "settingKey": "betSeria023",
+      "displayZoneKey": "serie023",
+      "numbers": [2, 4, 7, 18, 19, 21, 22, 25, 28, 29]
+    },
+    "ZERO_SPIEL": {
+      "label": "Zero Spiel",
+      "divisor": 4,
+      "settingKey": "betZeroSpiel",
+      "displayZoneKey": "zerospiel",
+      "numbers": [0, 3, 12, 15, 26, 32, 35]
+    }
+  },
+  "completeBets": [
+    { "number": 0,  "chipsRequired": 17, "payoutInChips": 235 },
+    { "number": 1,  "chipsRequired": 27, "payoutInChips": 297 },
+    { "number": 2,  "chipsRequired": 36, "payoutInChips": 396 },
+    { "number": 3,  "chipsRequired": 27, "payoutInChips": 297 },
+    { "number": 4,  "chipsRequired": 30, "payoutInChips": 294 },
+    { "number": 5,  "chipsRequired": 40, "payoutInChips": 392 },
+    { "number": 6,  "chipsRequired": 30, "payoutInChips": 294 },
+    { "number": 7,  "chipsRequired": null, "payoutInChips": null },
+    { "number": 8,  "chipsRequired": null, "payoutInChips": null },
+    { "number": 9,  "chipsRequired": null, "payoutInChips": null },
+    { "number": 10, "chipsRequired": null, "payoutInChips": null },
+    { "number": 11, "chipsRequired": null, "payoutInChips": null },
+    { "number": 12, "chipsRequired": null, "payoutInChips": null },
+    { "number": 13, "chipsRequired": null, "payoutInChips": null },
+    { "number": 14, "chipsRequired": null, "payoutInChips": null },
+    { "number": 15, "chipsRequired": null, "payoutInChips": null },
+    { "number": 16, "chipsRequired": null, "payoutInChips": null },
+    { "number": 17, "chipsRequired": null, "payoutInChips": null },
+    { "number": 18, "chipsRequired": null, "payoutInChips": null },
+    { "number": 19, "chipsRequired": null, "payoutInChips": null },
+    { "number": 20, "chipsRequired": null, "payoutInChips": null },
+    { "number": 21, "chipsRequired": null, "payoutInChips": null },
+    { "number": 22, "chipsRequired": null, "payoutInChips": null },
+    { "number": 23, "chipsRequired": null, "payoutInChips": null },
+    { "number": 24, "chipsRequired": null, "payoutInChips": null },
+    { "number": 25, "chipsRequired": null, "payoutInChips": null },
+    { "number": 26, "chipsRequired": null, "payoutInChips": null },
+    { "number": 27, "chipsRequired": null, "payoutInChips": null },
+    { "number": 28, "chipsRequired": null, "payoutInChips": null },
+    { "number": 29, "chipsRequired": null, "payoutInChips": null },
+    { "number": 30, "chipsRequired": null, "payoutInChips": null },
+    { "number": 31, "chipsRequired": 30, "payoutInChips": 294 },
+    { "number": 32, "chipsRequired": 40, "payoutInChips": 392 },
+    { "number": 33, "chipsRequired": 30, "payoutInChips": 294 },
+    { "number": 34, "chipsRequired": 18, "payoutInChips": 198 },
+    { "number": 35, "chipsRequired": 24, "payoutInChips": 264 },
+    { "number": 36, "chipsRequired": 18, "payoutInChips": 198 }
+  ],
+  "neighbours": {}
+}

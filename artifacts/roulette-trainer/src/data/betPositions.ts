@@ -21,6 +21,8 @@ function rowCy(r: number): number { return headerY + (2 - r) * rowH + rowH / 2; 
 // y at the TOP boundary of row r (boundary between row r and row r+1)
 function rowTopY(r: number): number { return headerY + (2 - r) * rowH; }
 
+import rules from "./rouletteRules.json";
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type BetType = 'straight' | 'split' | 'street' | 'corner' | 'sixline';
 
@@ -34,11 +36,11 @@ export interface BetPosition {
 }
 
 export const PAYOUT: Record<BetType, number> = {
-  straight: 35,
-  split:    17,
-  street:   11,
-  corner:    8,
-  sixline:   5,
+  straight: rules.payouts.straightUp,
+  split:    rules.payouts.split,
+  street:   rules.payouts.street,
+  corner:   rules.payouts.corner,
+  sixline:  rules.payouts.sixLine,
 };
 
 // ── Build all positions ───────────────────────────────────────────────────────

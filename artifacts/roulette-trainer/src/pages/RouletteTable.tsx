@@ -5,13 +5,14 @@ import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet } from "@/lib/rouletteGame";
+import rules from "@/data/rouletteRules.json";
 
 // ── Series quiz ────────────────────────────────────────────────────────────────
 const SERIES_DIVISORS: Record<TrackBet["type"], number> = {
-  SERIE_5_8: 6,
-  ORPHELINS: 5,
-  SERIE_0_2_3: 9,
-  ZERO_SPIEL: 4,
+  SERIE_5_8:   rules.trackBets.SERIE_5_8.divisor,
+  ORPHELINS:   rules.trackBets.ORPHELINS.divisor,
+  SERIE_0_2_3: rules.trackBets.SERIE_0_2_3.divisor,
+  ZERO_SPIEL:  rules.trackBets.ZERO_SPIEL.divisor,
 };
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",

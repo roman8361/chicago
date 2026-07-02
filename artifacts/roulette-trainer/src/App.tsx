@@ -4,12 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RouletteTable from "@/pages/RouletteTable";
 import SettingsScreen from "@/pages/SettingsScreen";
+import RulesScreen from "@/pages/RulesScreen";
 import NotFound from "@/pages/not-found";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 const queryClient = new QueryClient();
 
-type Screen = "roulette" | "settings";
+type Screen = "roulette" | "settings" | "rules";
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>("roulette");
@@ -22,7 +23,10 @@ function AppContent() {
           <SettingsScreen
             initialSettings={settings}
             onStart={(s) => { setSettings(s); setScreen("roulette"); }}
+            onOpenRules={() => setScreen("rules")}
           />
+        ) : screen === "rules" ? (
+          <RulesScreen onBack={() => setScreen("settings")} />
         ) : (
           <RouletteTable
             settings={settings}
