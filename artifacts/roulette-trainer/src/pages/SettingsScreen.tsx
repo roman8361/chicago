@@ -99,7 +99,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
   const [cashChipValues, setCashChipValues] = useState<Array<"10" | "25" | "50" | "100" | "250" | "500" | "1000" | "5000" | "10000" | "50000">>(
-    initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : ["10", "25", "50", "100"]
+    initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues
   );
 
   function parseNum(val: string, def: number): number {
@@ -127,7 +127,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       completeField,
       completeCount,
       completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
-      cashChipValues: cashChipValues.length ? cashChipValues : ["10", "25", "50", "100"],
+      cashChipValues: cashChipValues.length ? cashChipValues : DEFAULT_SETTINGS.cashChipValues,
     };
     onStart(settings);
   }

@@ -18,9 +18,9 @@ export interface GameSettings {
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  minBet: 10,
-  maxBet: 1000,
-  neighborsCount: 50,
+  minBet: 1,
+  maxBet: 100,
+  neighborsCount: 5,
   bet58: "no",
   betOrphelins: "no",
   betSeria023: "no",
@@ -30,8 +30,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   cashOnField: 1000,
   multiplicity: 10,
   completeDozen: "no",
-  completeField: "no",
+  completeField: "yes",
   completeCount: 1,
-  completeMultiplicity: 10,
-  cashChipValues: ["10", "25", "50", "100"],
+  completeMultiplicity: 25,
+  cashChipValues: ["100"],
 };
