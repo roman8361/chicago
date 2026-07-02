@@ -14,7 +14,7 @@ export interface GameSettings {
   completeField: "yes" | "no";
   completeCount: number;
   completeMultiplicity: number;
-  cashChipValues: Array<"10" | "25" | "50" | "100">;
+  cashChipValues: Array<"10" | "25" | "50" | "100" | "250" | "500" | "1000" | "5000" | "10000" | "50000" | "100000">;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
