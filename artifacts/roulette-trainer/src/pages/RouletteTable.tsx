@@ -18,7 +18,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
 
 interface SeriesQuizRecord {
   type: TrackBet["type"];
@@ -38,6 +38,37 @@ interface FieldQuizRecord {
   userAnswer: number;
   correctAnswer: number;
   correct: boolean;
+}
+
+interface CompleteLineSummary {
+  label: string;
+  amount: number;
+  chipsRequired: number;
+  rawPlay: number;
+  playPerUnit: number;
+  acceptedAmount: number;
+  change: number;
+  maxBet: number;
+  multiplicity: number;
+}
+
+interface CompleteQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+  lines: CompleteLineSummary[];
+}
+
+function calcOneCompleteChange(
+  amount: number,
+  chipsRequired: number,
+  maxBet: number,
+  multiplicity: number,
+): { rawPlay: number; playPerUnit: number; acceptedAmount: number; change: number } {
+  const rawPlay = amount / chipsRequired;
+  const playPerUnit = Math.floor(Math.min(rawPlay, maxBet) / multiplicity) * multiplicity;
+  const acceptedAmount = playPerUnit * chipsRequired;
+  return { rawPlay, playPerUnit, acceptedAmount, change: amount - acceptedAmount };
 }
 
 // ── Main grid default params ──────────────────────────────────────────────────
@@ -215,6 +246,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [seriesPlayInput,   setSeriesPlayInput]   = useState("");
   const [seriesChangeInput, setSeriesChangeInput] = useState("");
   const [fieldInput,        setFieldInput]        = useState("");
+  const [completesInput,    setCompletesInput]    = useState("");
+  const [completesRecord,   setCompletesRecord]   = useState<CompleteQuizRecord | null>(null);
 
   const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
@@ -444,13 +477,20 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const ordered = SERIES_QUIZ_ORDER
       .map(t => trackBets.find(tb => tb.type === t))
       .filter((tb): tb is TrackBet => tb !== undefined);
+    const hasCompletes = settings.completeField === "yes" || settings.completeDozen === "yes";
     setActiveSeries(ordered);
     setSeriesRecords([]);
     setFieldRecord(null);
+    setCompletesRecord(null);
     setSeriesPlayInput("");
     setSeriesChangeInput("");
     setFieldInput("");
-    setQuizPhase(ordered.length > 0 ? { kind: "series", idx: 0 } : { kind: "field" });
+    setCompletesInput("");
+    setQuizPhase(
+      hasCompletes ? { kind: "completes" } :
+      ordered.length > 0 ? { kind: "series", idx: 0 } :
+      { kind: "field" }
+    );
 
     setEditMode(false);
   }, [
@@ -504,6 +544,31 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setQuizPhase({ kind: "report" });
   }, [game, quizPhase, fieldInput]);
 
+  const handleCheckCompletes = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "completes") return;
+    const userAnswer = parseInt(completesInput || "0", 10) || 0;
+    const maxBet = Math.max(1, settings.maxBet);
+    const multiplicity = Math.max(1, settings.completeMultiplicity);
+    const rules = getAllRules();
+    const lines: CompleteLineSummary[] = [];
+
+    if (game.dozenCompleteBet) {
+      const { amount } = game.dozenCompleteBet;
+      const chipsRequired = rules.dozenComplete.chipsRequired;
+      const { rawPlay, playPerUnit, acceptedAmount, change } = calcOneCompleteChange(amount, chipsRequired, maxBet, multiplicity);
+      lines.push({ label: "Неполный комплит дюжины", amount, chipsRequired, rawPlay, playPerUnit, acceptedAmount, change, maxBet, multiplicity });
+    }
+    for (const ncb of game.numberCompleteBets) {
+      const { rawPlay, playPerUnit, acceptedAmount, change } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, multiplicity);
+      lines.push({ label: `Комплит №${ncb.number}`, amount: ncb.amount, chipsRequired: ncb.chipsRequired, rawPlay, playPerUnit, acceptedAmount, change, maxBet, multiplicity });
+    }
+
+    const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
+    setCompletesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    setCompletesInput("");
+    setQuizPhase(activeSeries.length > 0 ? { kind: "series", idx: 0 } : { kind: "field" });
+  }, [game, quizPhase, completesInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
+
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
     const g = gridParams, t = trackParams, d = dozensParams;
@@ -534,6 +599,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       setCopied(true); setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
+  const seriesBaseNum = hasCompletesQuestion ? 2 : 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 1 : 0) + activeSeries.length + 1;
 
   return (
     <div className="roulette-page">
@@ -813,6 +882,26 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               {game.drawnNumber}
             </div>
 
+            {/* Completes question */}
+            {quizPhase.kind === "completes" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">1. Сдача кратности комплитов</span>
+                  <span className="quiz-series-sub">Общая сдача</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Общая сдача"
+                  value={completesInput}
+                  onChange={e => setCompletesInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCheckCompletes()}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckCompletes}>Проверить</button>
+              </div>
+            )}
+
             {/* Series question */}
             {quizPhase.kind === "series" && (() => {
               const tb = activeSeries[quizPhase.idx];
@@ -820,7 +909,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               return (
                 <div className="game-answer-area">
                   <div className="quiz-series-header">
-                    <span className="quiz-series-title">{tb.label}</span>
+                    <span className="quiz-series-title">{seriesBaseNum + quizPhase.idx}. {tb.label}</span>
                     <span className="quiz-series-sub">Рассчитайте ставку серии</span>
                   </div>
                   <input
@@ -849,7 +938,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "field" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">Выплата по полю</span>
+                  <span className="quiz-series-title">{fieldQuestionNum}. Выплата по полю</span>
                   <span className="quiz-series-sub">Сумма выплаты</span>
                 </div>
                 <input
@@ -873,6 +962,36 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           {/* Full report */}
           {quizPhase.kind === "report" && (
             <div className="quiz-report">
+              {completesRecord && (
+                <div className={`quiz-report-item ${completesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Сдача кратности комплитов</div>
+                  {completesRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {completesRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {completesRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {completesRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {completesRecord.lines.map((line, li) => (
+                          <div key={li} style={{ marginBottom: 6 }}>
+                            {line.label}: {line.amount} / {line.chipsRequired} = {line.rawPlay.toFixed(3)}<br/>
+                            Максимум: {line.maxBet}, кратность: {line.multiplicity}<br/>
+                            Округляем вниз до {line.playPerUnit}<br/>
+                            Сдача: {line.amount} − {line.playPerUnit} × {line.chipsRequired} = {line.change}
+                          </div>
+                        ))}
+                        <div className="quiz-report-total">
+                          Итого: {completesRecord.lines.map(l => l.change).join(" + ")} = {completesRecord.correctAnswer}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               {seriesRecords.map((rec, i) => (
                 <div key={i} className={`quiz-report-item ${rec.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
                   <div className="quiz-report-name">{rec.label}</div>
