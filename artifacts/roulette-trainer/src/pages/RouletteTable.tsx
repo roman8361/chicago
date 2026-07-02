@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
-import ruletImage from "@assets/rulet_track3_1781811646616.png";
+import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet } from "@/lib/rouletteGame";
@@ -174,8 +174,8 @@ interface RouletteTableProps {
 }
 
 export default function RouletteTable({ settings, onOpenSettings }: RouletteTableProps) {
-  const [showGrid,  setShowGrid]  = useState(false);
-  const [showTrack, setShowTrack] = useState(false);
+  const [showGrid,  setShowGrid]  = useState(true);
+  const [showTrack, setShowTrack] = useState(true);
   const [editMode,  setEditMode]  = useState(false);
   const [editTab,   setEditTab]   = useState<"grid" | "track">("grid");
   const [copied,    setCopied]    = useState(false);
