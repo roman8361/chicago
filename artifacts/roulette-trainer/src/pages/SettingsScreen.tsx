@@ -98,7 +98,9 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeField, setCompleteField] = useState<"yes" | "no">(initialSettings.completeField);
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
-  const [cashChipMode, setCashChipMode] = useState<GameSettings["cashChipMode"]>(initialSettings.cashChipMode ?? "random");
+  const [cashChipValues, setCashChipValues] = useState<Array<"10" | "25" | "50" | "100">>(
+    initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : ["10", "25", "50", "100"]
+  );
 
   function parseNum(val: string, def: number): number {
     const n = Number(val);
@@ -125,7 +127,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       completeField,
       completeCount,
       completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
-      cashChipMode,
+      cashChipValues: cashChipValues.length ? cashChipValues : ["10", "25", "50", "100"],
     };
     onStart(settings);
   }
@@ -170,35 +172,44 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
           <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
             <label className="settings-label">Номинал кэша на поле</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-              {(["10", "25", "50", "100", "random"] as const).map((mode) => (
-                <label
-                  key={mode}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    cursor: "pointer",
-                    padding: "4px 12px",
-                    borderRadius: 4,
-                    border: cashChipMode === mode ? "1px solid #C9A227" : "1px solid #5a4a2a",
-                    background: cashChipMode === mode ? "rgba(201,162,39,0.12)" : "transparent",
-                    color: cashChipMode === mode ? "#C9A227" : "#8a7a5a",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="cashChipMode"
-                    value={mode}
-                    checked={cashChipMode === mode}
-                    onChange={() => setCashChipMode(mode)}
-                    style={{ display: "none" }}
-                  />
-                  {mode === "random" ? "случайно" : mode}
-                </label>
-              ))}
+              {(["10", "25", "50", "100"] as const).map((val) => {
+                const checked = cashChipValues.includes(val);
+                return (
+                  <label
+                    key={val}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                      padding: "4px 12px",
+                      borderRadius: 4,
+                      border: checked ? "1px solid #C9A227" : "1px solid #5a4a2a",
+                      background: checked ? "rgba(201,162,39,0.12)" : "transparent",
+                      color: checked ? "#C9A227" : "#8a7a5a",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        if (checked) {
+                          if (cashChipValues.length > 1) {
+                            setCashChipValues(cashChipValues.filter((v) => v !== val));
+                          }
+                        } else {
+                          setCashChipValues([...cashChipValues, val]);
+                        }
+                      }}
+                      style={{ display: "none" }}
+                    />
+                    {val}
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
