@@ -49,10 +49,10 @@ interface FieldQuizRecord {
 
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
-  headerY: 147,
-  botY: 505,
-  zeroX1: 28,
-  colX: [173, 272, 371, 470, 573, 672, 771, 870, 973, 1072, 1171, 1270, 1355],
+  headerY: 205,
+  botY: 616,
+  zeroX1: 34,
+  colX: [146, 241, 334, 429, 524, 617, 712, 806, 900, 995, 1089, 1183, 1277],
 };
 type GridParams = typeof DEFAULT_GRID;
 
@@ -148,8 +148,8 @@ function buildDynamicPositions(p: GridParams): Map<string, { x: number; y: numbe
 }
 
 // ── localStorage persistence ──────────────────────────────────────────────────
-const STORAGE_KEY_GRID  = "roulette_grid_params";
-const STORAGE_KEY_TRACK = "roulette_track_params";
+const STORAGE_KEY_GRID  = "roulette_grid_params_v2";
+const STORAGE_KEY_TRACK = "roulette_track_params_v2";
 
 function loadGrid(): GridParams {
   try {
@@ -174,8 +174,8 @@ interface RouletteTableProps {
 }
 
 export default function RouletteTable({ settings, onOpenSettings }: RouletteTableProps) {
-  const [showGrid,  setShowGrid]  = useState(true);
-  const [showTrack, setShowTrack] = useState(true);
+  const [showGrid,  setShowGrid]  = useState(false);
+  const [showTrack, setShowTrack] = useState(false);
   const [editMode,  setEditMode]  = useState(false);
   const [editTab,   setEditTab]   = useState<"grid" | "track">("grid");
   const [copied,    setCopied]    = useState(false);

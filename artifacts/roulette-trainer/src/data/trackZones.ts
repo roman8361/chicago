@@ -131,24 +131,24 @@ export interface TrackParams {
 }
 
 export const DEFAULT_TRACK_PARAMS: TrackParams = {
-  topY1:  553,
-  topY2:  648,
-  botY1:  940,
-  botY2: 1042,
+  topY1:  662,
+  topY2:  708,
+  botY1:  882,
+  botY2:  929,
 
-  arcLX1: 115,
-  arcLX2: 218,
-  arcLY: [553, 714, 878, 1042],
+  arcLX1: 107,
+  arcLX2: 188,
+  arcLY: [662, 751, 840, 929],
 
-  arcRX1: 1262,
-  arcRX2: 1375,
-  arcRY: [553, 714, 878, 1042],
+  arcRX1: 1141,
+  arcRX2: 1222,
+  arcRY: [662, 751, 840, 929],
 
   // 18 values for 17 top-row cells (uniform start)
-  topX: [218, 279, 341, 402, 463, 524, 586, 647, 708, 769, 831, 892, 953, 1015, 1076, 1137, 1199, 1262],
+  topX: [188, 244, 300, 356, 412, 468, 524, 580, 636, 692, 748, 804, 860, 916, 972, 1028, 1084, 1141],
 
   // 15 values for 14 bottom-row cells (uniform start)
-  botX: [218, 293, 368, 442, 517, 592, 667, 742, 817, 892, 966, 1041, 1116, 1191, 1262],
+  botX: [188, 256, 324, 392, 460, 528, 596, 664, 732, 801, 869, 937, 1005, 1073, 1141],
 };
 
 const TOP_NUMBERS    = [10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35];
