@@ -108,7 +108,7 @@ function ViewMode({ rules, onEdit }: { rules: RulesData; onEdit: () => void }) {
         <tbody>
           {rules.completeBets.map(cb => (
             <tr key={cb.number}>
-              <td style={{ ...tdStyle, textAlign: "center", fontWeight: 700, color: cb.number === 0 ? "#4caf50" : "inherit" }}>{cb.number}</td>
+              <td style={{ ...tdStyle, textAlign: "center", fontWeight: 700, color: cb.number === 0 ? "#4caf50" : "#C9A227" }}>{cb.number}</td>
               <td style={{ ...tdStyle, textAlign: "center", color: cb.chipsRequired !== null ? "#C9A227" : "#4a4030" }}>
                 {cb.chipsRequired !== null ? cb.chipsRequired : "—"}
               </td>
@@ -117,6 +117,25 @@ function ViewMode({ rules, onEdit }: { rules: RulesData; onEdit: () => void }) {
               </td>
             </tr>
           ))}
+        </tbody>
+      </table>
+
+      <div className="settings-divider" />
+      <div className="settings-section-title">Комплит дюжины</div>
+      <table style={tableStyle}>
+        <thead>
+          <tr>
+            <th style={thStyle}>Параметр</th>
+            <th style={{ ...thStyle, textAlign: "right" }}>Значение</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={tdStyle}>Фишек</td>
+            <td style={{ ...tdStyle, textAlign: "right", color: "#C9A227", fontWeight: 700 }}>
+              {rules.dozenComplete.chipsRequired}
+            </td>
+          </tr>
         </tbody>
       </table>
 

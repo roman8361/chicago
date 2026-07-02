@@ -76,5 +76,9 @@
     { "number": 35, "chipsRequired": 24,   "payoutInChips": 264  },
     { "number": 36, "chipsRequired": 30,   "payoutInChips": 294  }
   ],
+  "dozenComplete": {
+    "label": "Комплит дюжины",
+    "chipsRequired": 100
+  },
   "neighbours": {}
 }
