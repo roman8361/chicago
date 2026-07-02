@@ -41,7 +41,7 @@ const PAYOUT_ROWS = [
 ];
 const TRACK_ORDER = ["SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL"] as const;
 
-function ViewMode({ rules, onEdit }: { rules: RulesData; onEdit: () => void }) {
+function ViewMode({ rules, onEdit, onReset }: { rules: RulesData; onEdit: () => void; onReset: () => void }) {
   return (
     <>
       <div style={{ textAlign: "center", color: "#8a7a5a", fontSize: 13, marginTop: -6, marginBottom: 4, letterSpacing: 1 }}>
@@ -148,10 +148,14 @@ function ViewMode({ rules, onEdit }: { rules: RulesData; onEdit: () => void }) {
       </div>
 
       <div className="settings-divider" />
-      <div className="settings-footer" style={{ gap: 12, display: "flex", justifyContent: "center" }}>
+      <div className="settings-footer" style={{ gap: 12, display: "flex", justifyContent: "center", flexWrap: "wrap" }}>
         <button className="settings-start-btn" onClick={onEdit}
           style={{ background: "transparent", border: "1px solid #C9A227", color: "#C9A227" }}>
           ✏️ Редактировать
+        </button>
+        <button className="settings-start-btn" onClick={onReset}
+          style={{ background: "transparent", border: "1px solid #7b241c", color: "#c0392b" }}>
+          ↺ Сбросить к дефолтным
         </button>
       </div>
     </>
@@ -254,6 +258,7 @@ export default function RulesScreen({ onBack }: Props) {
   }
 
   function handleReset() {
+    if (!window.confirm("Сбросить все локальные изменения правил к значениям по умолчанию из файла?")) return;
     resetRules();
     setMode("view");
   }
@@ -279,7 +284,7 @@ export default function RulesScreen({ onBack }: Props) {
         )}
 
         {mode === "view" ? (
-          <ViewMode rules={rules} onEdit={() => setMode("edit")} />
+          <ViewMode rules={rules} onEdit={() => setMode("edit")} onReset={handleReset} />
         ) : (
           <EditMode
             rules={rules}
