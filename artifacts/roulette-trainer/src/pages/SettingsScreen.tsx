@@ -55,6 +55,31 @@ function SelectField({
   );
 }
 
+function CountSelectField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="settings-field">
+      <label className="settings-label">{label}</label>
+      <select
+        className="settings-select"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      >
+        <option value={1}>1</option>
+        <option value={2}>2</option>
+        <option value={3}>3</option>
+      </select>
+    </div>
+  );
+}
+
 export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [minBet, setMinBet] = useState(String(initialSettings.minBet));
   const [maxBet, setMaxBet] = useState(String(initialSettings.maxBet));
@@ -68,6 +93,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [cashOnField, setCashOnField] = useState(String(initialSettings.cashOnField));
   const [multiplicity, setMultiplicity] = useState(String(initialSettings.multiplicity));
   const [multiplicityError, setMultiplicityError] = useState<string | null>(null);
+  const [completeDozen, setCompleteDozen] = useState<"yes" | "no">(initialSettings.completeDozen);
+  const [completeField, setCompleteField] = useState<"yes" | "no">(initialSettings.completeField);
+  const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
+  const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
 
   function parseNum(val: string, def: number): number {
     const n = Number(val);
@@ -90,6 +119,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
       chipsInField: parseNum(chipsInField, DEFAULT_SETTINGS.chipsInField),
       cashOnField: parseNum(cashOnField, DEFAULT_SETTINGS.cashOnField),
       multiplicity: parsedMultiplicity,
+      completeDozen,
+      completeField,
+      completeCount,
+      completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
     };
     onStart(settings);
   }
@@ -154,6 +187,20 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
               <div className="settings-field-error">{multiplicityError}</div>
             )}
           </div>
+        </div>
+
+        <div className="settings-divider" />
+        <div className="settings-section-title">Комплиты</div>
+        <div className="settings-grid-2">
+          <SelectField label="Комплит дюжины" value={completeDozen} onChange={setCompleteDozen} />
+          <SelectField label="Комплит в поле" value={completeField} onChange={setCompleteField} />
+          <CountSelectField label="Количество комплитов сразу" value={completeCount} onChange={setCompleteCount} />
+          <NumField
+            label="Кратность комплита"
+            value={completeMultiplicity}
+            defaultVal={DEFAULT_SETTINGS.completeMultiplicity}
+            onChange={setCompleteMultiplicity}
+          />
         </div>
 
         <div className="settings-divider" />

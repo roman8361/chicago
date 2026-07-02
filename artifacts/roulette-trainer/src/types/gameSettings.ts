@@ -10,6 +10,10 @@ export interface GameSettings {
   chipsInField: number;
   cashOnField: number;
   multiplicity: number;
+  completeDozen: "yes" | "no";
+  completeField: "yes" | "no";
+  completeCount: number;
+  completeMultiplicity: number;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -24,4 +28,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   chipsInField: 100,
   cashOnField: 1000,
   multiplicity: 10,
+  completeDozen: "no",
+  completeField: "no",
+  completeCount: 1,
+  completeMultiplicity: 10,
 };
