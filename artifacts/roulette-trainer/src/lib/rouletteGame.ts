@@ -59,7 +59,7 @@ const TYPE_LABELS: Record<string, string> = {
   sixline:  "Сикс-лайн",
 };
 
-export function spinGame(chipCount: number, chipValue: number): GameState {
+export function spinGame(chipCount: number, chipValue: number, payoutMap?: Record<string, number>): GameState {
   const drawnNumber = Math.floor(Math.random() * 37); // 0–36
 
   // Distribute chips randomly across all positions
@@ -74,7 +74,7 @@ export function spinGame(chipCount: number, chipValue: number): GameState {
     ([positionId, count]) => ({ positionId, count })
   );
 
-  const { total: correctAnswer, breakdown } = calculatePayout(drawnNumber, chips, chipValue);
+  const { total: correctAnswer, breakdown } = calculatePayout(drawnNumber, chips, chipValue, payoutMap);
 
   return {
     drawnNumber,
@@ -90,7 +90,8 @@ export function spinGame(chipCount: number, chipValue: number): GameState {
 export function calculatePayout(
   drawnNumber: number,
   chips: ChipStack[],
-  chipValue: number
+  chipValue: number,
+  payoutMap?: Record<string, number>
 ): { total: number; breakdown: PayoutLine[] } {
   let total = 0;
   const breakdown: PayoutLine[] = [];
@@ -100,7 +101,8 @@ export function calculatePayout(
     if (!pos) continue;
     if (!pos.numbers.includes(drawnNumber)) continue;
 
-    const subtotal = stack.count * chipValue * pos.payout;
+    const payout = payoutMap?.[pos.type] ?? pos.payout;
+    const subtotal = stack.count * chipValue * payout;
     total += subtotal;
 
     const nums = pos.numbers.join(", ");
@@ -108,7 +110,7 @@ export function calculatePayout(
     breakdown.push({
       label: `${typeLabel} [${nums}]`,
       chips: stack.count,
-      payout: pos.payout,
+      payout: payoutMap?.[pos.type] ?? pos.payout,
       chipValue,
       subtotal,
     });

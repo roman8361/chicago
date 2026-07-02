@@ -5,15 +5,7 @@ import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet } from "@/lib/rouletteGame";
-import rules from "@/data/rouletteRules.json";
-
-// ── Series quiz ────────────────────────────────────────────────────────────────
-const SERIES_DIVISORS: Record<TrackBet["type"], number> = {
-  SERIE_5_8:   rules.trackBets.SERIE_5_8.divisor,
-  ORPHELINS:   rules.trackBets.ORPHELINS.divisor,
-  SERIE_0_2_3: rules.trackBets.SERIE_0_2_3.divisor,
-  ZERO_SPIEL:  rules.trackBets.ZERO_SPIEL.divisor,
-};
+import { useRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
 ];
@@ -228,6 +220,24 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
   const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
+  const { rules } = useRules();
+
+  // Series divisors and payout map — derived from live rules so edits take effect immediately
+  const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
+    SERIE_5_8:   rules.trackBets.SERIE_5_8.divisor,
+    ORPHELINS:   rules.trackBets.ORPHELINS.divisor,
+    SERIE_0_2_3: rules.trackBets.SERIE_0_2_3.divisor,
+    ZERO_SPIEL:  rules.trackBets.ZERO_SPIEL.divisor,
+  }), [rules]);
+
+  const payoutMap = useMemo<Record<string, number>>(() => ({
+    straight: rules.payouts.straightUp,
+    split:    rules.payouts.split,
+    street:   rules.payouts.street,
+    corner:   rules.payouts.corner,
+    sixline:  rules.payouts.sixLine,
+  }), [rules]);
+
   // Auto-save to localStorage whenever params change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_GRID, JSON.stringify(gridParams));
@@ -286,7 +296,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const handleSpin = useCallback(() => {
     const chipCount = settings.chipsInField ?? 100;
     const chipValue = settings.chipValue ?? 10;
-    const base = spinGame(chipCount, chipValue);
+    const base = spinGame(chipCount, chipValue, payoutMap);
 
     // Compute sector band centres from current trackParams
     const bands = buildSectorBands(trackParams);
@@ -310,7 +320,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       .map(s => ({
         type:     s.type,
         label:    s.label,
-        amount:   randomTrackAmount(mult * SERIES_DIVISORS[s.type]),
+        amount:   randomTrackAmount(mult * seriesDivisors[s.type]),
         position: { x: s.band.cx, y: s.band.cy },
         source:   "TRACK" as const,
       }));
@@ -365,6 +375,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     settings.maxBet,
     trackParams,
     dozensParams,
+    seriesDivisors,
+    payoutMap,
   ]);
 
   const handleCheckSeries = useCallback(() => {
@@ -372,7 +384,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const tb = activeSeries[quizPhase.idx];
     if (!tb) return;
     const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
-    const divisor = SERIES_DIVISORS[tb.type];
+    const divisor = seriesDivisors[tb.type];
     const { playPerUnit, change, rawPerUnit } = calcSeriesResult(tb.amount, divisor, mult);
     const userPlay = parseInt(seriesPlayInput  || "0", 10) || 0;
     const userChg  = parseInt(seriesChangeInput || "0", 10) || 0;
@@ -388,7 +400,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setSeriesChangeInput("");
     const nextIdx = quizPhase.idx + 1;
     setQuizPhase(nextIdx < activeSeries.length ? { kind: "series", idx: nextIdx } : { kind: "field" });
-  }, [game, quizPhase, activeSeries, seriesPlayInput, seriesChangeInput, settings.multiplicity]);
+  }, [game, quizPhase, activeSeries, seriesPlayInput, seriesChangeInput, settings.multiplicity, seriesDivisors]);
 
   const handleCheckField = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "field") return;
