@@ -749,12 +749,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 <circle cx={pos.x + 1} cy={pos.y + 1.5} r={r}
                   fill="rgba(0,0,0,0.3)" />
                 <circle cx={pos.x} cy={pos.y} r={r}
-                  fill="#F5EDBE" stroke="#1A4A2A" strokeWidth="2.5" opacity="0.95" />
+                  fill="#1a1a1a" stroke="#fff" strokeWidth="2.5" opacity="0.95" />
                 <circle cx={pos.x} cy={pos.y} r={r - 4}
-                  fill="none" stroke="#1A4A2A" strokeWidth="0.8" opacity="0.5" />
+                  fill="none" stroke="#fff" strokeWidth="0.8" opacity="0.5" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#1A4A2A"
-                  stroke="rgba(245,237,190,0.5)" strokeWidth="0.5" paintOrder="stroke">
+                  fontSize={fs} fontWeight="800" fill="#fff"
+                  stroke="rgba(0,0,0,0.5)" strokeWidth="0.5" paintOrder="stroke">
                   {amt}
                 </text>
               </g>
