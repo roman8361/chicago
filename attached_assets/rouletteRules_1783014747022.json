@@ -1,0 +1,4647 @@
+{
+  "version": "1.0.0",
+  "payouts": {
+    "straightUp": 35,
+    "split": 17,
+    "street": 11,
+    "corner": 8,
+    "sixLine": 5
+  },
+  "trackBets": {
+    "SERIE_5_8": {
+      "label": "Serie 5/8",
+      "divisor": 6,
+      "settingKey": "bet58",
+      "displayZoneKey": "serie58",
+      "numbers": [
+        5,
+        8,
+        10,
+        11,
+        13,
+        16,
+        23,
+        24,
+        27,
+        30,
+        33,
+        36
+      ]
+    },
+    "ORPHELINS": {
+      "label": "Orphelins",
+      "divisor": 5,
+      "settingKey": "betOrphelins",
+      "displayZoneKey": "orphelins",
+      "numbers": [
+        1,
+        6,
+        9,
+        14,
+        17,
+        20,
+        31,
+        34
+      ]
+    },
+    "SERIE_0_2_3": {
+      "label": "Serie 0/2/3",
+      "divisor": 9,
+      "settingKey": "betSeria023",
+      "displayZoneKey": "serie023",
+      "numbers": [
+        2,
+        4,
+        7,
+        18,
+        19,
+        21,
+        22,
+        25,
+        28,
+        29
+      ]
+    },
+    "ZERO_SPIEL": {
+      "label": "Zero Spiel",
+      "divisor": 4,
+      "settingKey": "betZeroSpiel",
+      "displayZoneKey": "zerospiel",
+      "numbers": [
+        0,
+        3,
+        12,
+        15,
+        26,
+        32,
+        35
+      ]
+    }
+  },
+  "completeBets": [
+    {
+      "number": 0,
+      "chipsRequired": 17,
+      "payoutInChips": 235,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              0
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              0,
+              1
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              0,
+              2
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              0,
+              3
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              0,
+              1,
+              2
+            ],
+            "chips": 3
+          },
+          {
+            "numbers": [
+              0,
+              2,
+              3
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": []
+      }
+    },
+    {
+      "number": 1,
+      "chipsRequired": 27,
+      "payoutInChips": 297,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              1
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              0,
+              1
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              1,
+              2
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              1,
+              4
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              0,
+              1,
+              2
+            ],
+            "chips": 3
+          },
+          {
+            "numbers": [
+              1,
+              2,
+              3
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              1,
+              2,
+              4,
+              5
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 2,
+      "chipsRequired": 36,
+      "payoutInChips": 396,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              2
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              0,
+              2
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              1,
+              2
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              2,
+              3
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              2,
+              5
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              0,
+              1,
+              2
+            ],
+            "chips": 3
+          },
+          {
+            "numbers": [
+              0,
+              2,
+              3
+            ],
+            "chips": 3
+          },
+          {
+            "numbers": [
+              1,
+              2,
+              3
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              1,
+              2,
+              4,
+              5
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              2,
+              3,
+              5,
+              6
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 3,
+      "chipsRequired": 27,
+      "payoutInChips": 297,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              3
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              0,
+              3
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              2,
+              3
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              3,
+              6
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              0,
+              2,
+              3
+            ],
+            "chips": 3
+          },
+          {
+            "numbers": [
+              1,
+              2,
+              3
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              2,
+              3,
+              5,
+              6
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 4,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              4
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              1,
+              4
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              4,
+              5
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              4,
+              7
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              4,
+              5,
+              6
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              1,
+              2,
+              4,
+              5
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              4,
+              5,
+              7,
+              8
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 5,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              5
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              2,
+              5
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              4,
+              5
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              5,
+              6
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              5,
+              8
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              4,
+              5,
+              6
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              1,
+              2,
+              4,
+              5
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              2,
+              3,
+              5,
+              6
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              4,
+              5,
+              7,
+              8
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              5,
+              6,
+              8,
+              9
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 6,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              6
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              3,
+              6
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              5,
+              6
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              6,
+              9
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              4,
+              5,
+              6
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              2,
+              3,
+              5,
+              6
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              5,
+              6,
+              8,
+              9
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 7,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              7
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              4,
+              7
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              7,
+              8
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              7,
+              10
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              7,
+              8,
+              9
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              4,
+              5,
+              7,
+              8
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              7,
+              8,
+              10,
+              11
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 8,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              8
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              5,
+              8
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              7,
+              8
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              8,
+              9
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              8,
+              11
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              7,
+              8,
+              9
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              4,
+              5,
+              7,
+              8
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              5,
+              6,
+              8,
+              9
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              7,
+              8,
+              10,
+              11
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              8,
+              9,
+              11,
+              12
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 9,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              9
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              6,
+              9
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              8,
+              9
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              9,
+              12
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              7,
+              8,
+              9
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              5,
+              6,
+              8,
+              9
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              8,
+              9,
+              11,
+              12
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 10,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              10
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              7,
+              10
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              10,
+              11
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              10,
+              13
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              10,
+              11,
+              12
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              7,
+              8,
+              10,
+              11
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              10,
+              11,
+              13,
+              14
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 11,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              11
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              8,
+              11
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              10,
+              11
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              11,
+              12
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              11,
+              14
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              10,
+              11,
+              12
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              7,
+              8,
+              10,
+              11
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              8,
+              9,
+              11,
+              12
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              10,
+              11,
+              13,
+              14
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              11,
+              12,
+              14,
+              15
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 12,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              12
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              9,
+              12
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              11,
+              12
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              12,
+              15
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              10,
+              11,
+              12
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              8,
+              9,
+              11,
+              12
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              11,
+              12,
+              14,
+              15
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 13,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              13
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              10,
+              13
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              13,
+              14
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              13,
+              16
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              13,
+              14,
+              15
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              10,
+              11,
+              13,
+              14
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              13,
+              14,
+              16,
+              17
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 14,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              14
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              11,
+              14
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              13,
+              14
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              14,
+              15
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              14,
+              17
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              13,
+              14,
+              15
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              10,
+              11,
+              13,
+              14
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              11,
+              12,
+              14,
+              15
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              13,
+              14,
+              16,
+              17
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              14,
+              15,
+              17,
+              18
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 15,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              15
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              12,
+              15
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              14,
+              15
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              15,
+              18
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              13,
+              14,
+              15
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              11,
+              12,
+              14,
+              15
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              14,
+              15,
+              17,
+              18
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 16,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              16
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              13,
+              16
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              16,
+              17
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              16,
+              19
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              16,
+              17,
+              18
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              13,
+              14,
+              16,
+              17
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              16,
+              17,
+              19,
+              20
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 17,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              17
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              14,
+              17
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              16,
+              17
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              17,
+              18
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              17,
+              20
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              16,
+              17,
+              18
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              13,
+              14,
+              16,
+              17
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              14,
+              15,
+              17,
+              18
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              16,
+              17,
+              19,
+              20
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              17,
+              18,
+              20,
+              21
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 18,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              18
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              15,
+              18
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              17,
+              18
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              18,
+              21
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              16,
+              17,
+              18
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              14,
+              15,
+              17,
+              18
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              17,
+              18,
+              20,
+              21
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              13,
+              14,
+              15,
+              16,
+              17,
+              18
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 19,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              19
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              16,
+              19
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              19,
+              20
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              19,
+              22
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              19,
+              20,
+              21
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              16,
+              17,
+              19,
+              20
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              19,
+              20,
+              22,
+              23
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 20,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              20
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              17,
+              20
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              19,
+              20
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              20,
+              21
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              20,
+              23
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              19,
+              20,
+              21
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              16,
+              17,
+              19,
+              20
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              17,
+              18,
+              20,
+              21
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              19,
+              20,
+              22,
+              23
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              20,
+              21,
+              23,
+              24
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 21,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              21
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              18,
+              21
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              20,
+              21
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              21,
+              24
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              19,
+              20,
+              21
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              17,
+              18,
+              20,
+              21
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              20,
+              21,
+              23,
+              24
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              16,
+              17,
+              18,
+              19,
+              20,
+              21
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 22,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              22
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              19,
+              22
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              22,
+              23
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              22,
+              25
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              22,
+              23,
+              24
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              19,
+              20,
+              22,
+              23
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              22,
+              23,
+              25,
+              26
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 23,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              23
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              20,
+              23
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              22,
+              23
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              23,
+              24
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              23,
+              26
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              22,
+              23,
+              24
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              19,
+              20,
+              22,
+              23
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              20,
+              21,
+              23,
+              24
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              22,
+              23,
+              25,
+              26
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              23,
+              24,
+              26,
+              27
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 24,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              24
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              21,
+              24
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              23,
+              24
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              24,
+              27
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              22,
+              23,
+              24
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              20,
+              21,
+              23,
+              24
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              23,
+              24,
+              26,
+              27
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 25,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              25
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              22,
+              25
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              25,
+              26
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              25,
+              28
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              25,
+              26,
+              27
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              22,
+              23,
+              25,
+              26
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              25,
+              26,
+              28,
+              29
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 26,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              26
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              23,
+              26
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              25,
+              26
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              26,
+              27
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              26,
+              29
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              25,
+              26,
+              27
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              22,
+              23,
+              25,
+              26
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              23,
+              24,
+              26,
+              27
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              25,
+              26,
+              28,
+              29
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              26,
+              27,
+              29,
+              30
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 27,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              27
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              24,
+              27
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              26,
+              27
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              27,
+              30
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              25,
+              26,
+              27
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              23,
+              24,
+              26,
+              27
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              26,
+              27,
+              29,
+              30
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              22,
+              23,
+              24,
+              25,
+              26,
+              27
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 28,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              28
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              25,
+              28
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              28,
+              29
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              28,
+              31
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              28,
+              29,
+              30
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              25,
+              26,
+              28,
+              29
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              28,
+              29,
+              31,
+              32
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 29,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              29
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              26,
+              29
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              28,
+              29
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              29,
+              30
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              29,
+              32
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              28,
+              29,
+              30
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              25,
+              26,
+              28,
+              29
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              26,
+              27,
+              29,
+              30
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              28,
+              29,
+              31,
+              32
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              29,
+              30,
+              32,
+              33
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 30,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              30
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              27,
+              30
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              29,
+              30
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              30,
+              33
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              28,
+              29,
+              30
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              26,
+              27,
+              29,
+              30
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              29,
+              30,
+              32,
+              33
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 31,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              31
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              28,
+              31
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              31,
+              32
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              31,
+              34
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              31,
+              32,
+              33
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              28,
+              29,
+              31,
+              32
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              31,
+              32,
+              34,
+              35
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 32,
+      "chipsRequired": 40,
+      "payoutInChips": 392,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              32
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              29,
+              32
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              31,
+              32
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              32,
+              33
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              32,
+              35
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              31,
+              32,
+              33
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              28,
+              29,
+              31,
+              32
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              29,
+              30,
+              32,
+              33
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              31,
+              32,
+              34,
+              35
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              32,
+              33,
+              35,
+              36
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 33,
+      "chipsRequired": 30,
+      "payoutInChips": 294,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              33
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              30,
+              33
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              32,
+              33
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              33,
+              36
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              31,
+              32,
+              33
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              29,
+              30,
+              32,
+              33
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              32,
+              33,
+              35,
+              36
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              28,
+              29,
+              30,
+              31,
+              32,
+              33
+            ],
+            "chips": 6
+          },
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 34,
+      "chipsRequired": 18,
+      "payoutInChips": 198,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              34
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              31,
+              34
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              34,
+              35
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              34,
+              35,
+              36
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              31,
+              32,
+              34,
+              35
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 35,
+      "chipsRequired": 24,
+      "payoutInChips": 264,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              35
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              32,
+              35
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              34,
+              35
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              35,
+              36
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              34,
+              35,
+              36
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              31,
+              32,
+              34,
+              35
+            ],
+            "chips": 4
+          },
+          {
+            "numbers": [
+              32,
+              33,
+              35,
+              36
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    },
+    {
+      "number": 36,
+      "chipsRequired": 18,
+      "payoutInChips": 198,
+      "bets": {
+        "straightUp": [
+          {
+            "numbers": [
+              36
+            ],
+            "chips": 1
+          }
+        ],
+        "splits": [
+          {
+            "numbers": [
+              33,
+              36
+            ],
+            "chips": 2
+          },
+          {
+            "numbers": [
+              35,
+              36
+            ],
+            "chips": 2
+          }
+        ],
+        "streets": [
+          {
+            "numbers": [
+              34,
+              35,
+              36
+            ],
+            "chips": 3
+          }
+        ],
+        "corners": [
+          {
+            "numbers": [
+              32,
+              33,
+              35,
+              36
+            ],
+            "chips": 4
+          }
+        ],
+        "sixLines": [
+          {
+            "numbers": [
+              31,
+              32,
+              33,
+              34,
+              35,
+              36
+            ],
+            "chips": 6
+          }
+        ]
+      }
+    }
+  ],
+  "dozenComplete": {
+    "label": "Комплит дюжины",
+    "dozens": [
+      {
+        "dozen": 1,
+        "chipsRequired": 100,
+        "bets": {
+          "straightUp": [
+            {
+              "numbers": [
+                1
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                2
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                3
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                4
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                5
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                6
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                7
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                8
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                9
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                10
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                11
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                12
+              ],
+              "chips": 1
+            }
+          ],
+          "splits": [
+            {
+              "numbers": [
+                1,
+                2
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                2,
+                3
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                4,
+                5
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                5,
+                6
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                7,
+                8
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                8,
+                9
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                10,
+                11
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                11,
+                12
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                1,
+                4
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                2,
+                5
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                3,
+                6
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                4,
+                7
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                5,
+                8
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                6,
+                9
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                7,
+                10
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                8,
+                11
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                9,
+                12
+              ],
+              "chips": 2
+            }
+          ],
+          "streets": [
+            {
+              "numbers": [
+                1,
+                2,
+                3
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                4,
+                5,
+                6
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                7,
+                8,
+                9
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                10,
+                11,
+                12
+              ],
+              "chips": 3
+            }
+          ],
+          "corners": [
+            {
+              "numbers": [
+                1,
+                2,
+                4,
+                5
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                2,
+                3,
+                5,
+                6
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                4,
+                5,
+                7,
+                8
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                5,
+                6,
+                8,
+                9
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                7,
+                8,
+                10,
+                11
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                8,
+                9,
+                11,
+                12
+              ],
+              "chips": 4
+            }
+          ],
+          "sixLines": [
+            {
+              "numbers": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "chips": 6
+            }
+          ]
+        }
+      },
+      {
+        "dozen": 2,
+        "chipsRequired": 100,
+        "bets": {
+          "straightUp": [
+            {
+              "numbers": [
+                13
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                14
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                15
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                16
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                17
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                18
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                19
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                20
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                21
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                22
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                23
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                24
+              ],
+              "chips": 1
+            }
+          ],
+          "splits": [
+            {
+              "numbers": [
+                13,
+                14
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                14,
+                15
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                16,
+                17
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                17,
+                18
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                19,
+                20
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                20,
+                21
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                22,
+                23
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                23,
+                24
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                13,
+                16
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                14,
+                17
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                15,
+                18
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                16,
+                19
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                17,
+                20
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                18,
+                21
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                19,
+                22
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                20,
+                23
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                21,
+                24
+              ],
+              "chips": 2
+            }
+          ],
+          "streets": [
+            {
+              "numbers": [
+                13,
+                14,
+                15
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                16,
+                17,
+                18
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                19,
+                20,
+                21
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                22,
+                23,
+                24
+              ],
+              "chips": 3
+            }
+          ],
+          "corners": [
+            {
+              "numbers": [
+                13,
+                14,
+                16,
+                17
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                14,
+                15,
+                17,
+                18
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                16,
+                17,
+                19,
+                20
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                17,
+                18,
+                20,
+                21
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                19,
+                20,
+                22,
+                23
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                20,
+                21,
+                23,
+                24
+              ],
+              "chips": 4
+            }
+          ],
+          "sixLines": [
+            {
+              "numbers": [
+                13,
+                14,
+                15,
+                16,
+                17,
+                18
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                16,
+                17,
+                18,
+                19,
+                20,
+                21
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                19,
+                20,
+                21,
+                22,
+                23,
+                24
+              ],
+              "chips": 6
+            }
+          ]
+        }
+      },
+      {
+        "dozen": 3,
+        "chipsRequired": 100,
+        "bets": {
+          "straightUp": [
+            {
+              "numbers": [
+                25
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                26
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                27
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                28
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                29
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                30
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                31
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                32
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                33
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                34
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                35
+              ],
+              "chips": 1
+            },
+            {
+              "numbers": [
+                36
+              ],
+              "chips": 1
+            }
+          ],
+          "splits": [
+            {
+              "numbers": [
+                25,
+                26
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                26,
+                27
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                28,
+                29
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                29,
+                30
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                31,
+                32
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                32,
+                33
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                34,
+                35
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                35,
+                36
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                25,
+                28
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                26,
+                29
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                27,
+                30
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                28,
+                31
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                29,
+                32
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                30,
+                33
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                31,
+                34
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                32,
+                35
+              ],
+              "chips": 2
+            },
+            {
+              "numbers": [
+                33,
+                36
+              ],
+              "chips": 2
+            }
+          ],
+          "streets": [
+            {
+              "numbers": [
+                25,
+                26,
+                27
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                28,
+                29,
+                30
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                31,
+                32,
+                33
+              ],
+              "chips": 3
+            },
+            {
+              "numbers": [
+                34,
+                35,
+                36
+              ],
+              "chips": 3
+            }
+          ],
+          "corners": [
+            {
+              "numbers": [
+                25,
+                26,
+                28,
+                29
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                26,
+                27,
+                29,
+                30
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                28,
+                29,
+                31,
+                32
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                29,
+                30,
+                32,
+                33
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                31,
+                32,
+                34,
+                35
+              ],
+              "chips": 4
+            },
+            {
+              "numbers": [
+                32,
+                33,
+                35,
+                36
+              ],
+              "chips": 4
+            }
+          ],
+          "sixLines": [
+            {
+              "numbers": [
+                25,
+                26,
+                27,
+                28,
+                29,
+                30
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                28,
+                29,
+                30,
+                31,
+                32,
+                33
+              ],
+              "chips": 6
+            },
+            {
+              "numbers": [
+                31,
+                32,
+                33,
+                34,
+                35,
+                36
+              ],
+              "chips": 6
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "neighbours": {}
+}
