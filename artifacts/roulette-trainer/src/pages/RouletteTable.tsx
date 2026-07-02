@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
-import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet } from "@/lib/rouletteGame";
+import { spinGame, calculatePayout, getNumberColor, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
@@ -220,7 +220,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
   const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
-  const { getPayouts, getTrackBetRule, getAllRules } = useRouletteRules();
+  const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule } = useRouletteRules();
 
   // Series divisors and payout map — re-derived whenever rules change
   const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
@@ -298,11 +298,90 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     return safeMin + Math.floor(Math.random() * count) * 50;
   }
 
+  // ── Number complete bet generation ──────────────────────────────────────────
+  function generateNumberCompletes(
+    dozenCompleteBet: DozenCompleteBet | undefined,
+    currentChipPosMap: Map<string, { x: number; y: number }>,
+  ): { bets: NumberCompleteBet[]; excludedIds: Set<string> } {
+    const bets: NumberCompleteBet[] = [];
+    const excludedIds = new Set<string>();
+
+    if (settings.completeField !== "yes") return { bets, excludedIds };
+
+    const count = Math.min(3, Math.max(1, settings.completeCount ?? 1));
+    const minBet = Math.max(1, settings.minBet);
+    const maxBet = Math.max(minBet, settings.maxBet);
+
+    const DOZEN_RANGES: Record<"1ST_12" | "2ND_12" | "3RD_12", number[]> = {
+      "1ST_12": Array.from({ length: 12 }, (_, i) => i + 1),
+      "2ND_12": Array.from({ length: 12 }, (_, i) => i + 13),
+      "3RD_12": Array.from({ length: 12 }, (_, i) => i + 25),
+    };
+
+    let selectedNumbers: number[] = [];
+
+    if (settings.completeDozen === "yes" && dozenCompleteBet) {
+      const primaryDozen = dozenCompleteBet.dozen;
+      const allDozens = ["1ST_12", "2ND_12", "3RD_12"] as const;
+      const otherDozens = allDozens.filter(d => d !== primaryDozen);
+
+      // One number from the primary dozen
+      const primaryPool = [...DOZEN_RANGES[primaryDozen]];
+      const n1 = primaryPool[Math.floor(Math.random() * primaryPool.length)];
+      selectedNumbers.push(n1);
+
+      if (count >= 2) {
+        const d2 = otherDozens[Math.floor(Math.random() * otherDozens.length)];
+        const d2Pool = DOZEN_RANGES[d2].filter(n => !selectedNumbers.includes(n));
+        const n2 = d2Pool[Math.floor(Math.random() * d2Pool.length)];
+        selectedNumbers.push(n2);
+      }
+
+      if (count >= 3) {
+        // Third number goes in the remaining dozen
+        const usedDozens = new Set<string>();
+        selectedNumbers.forEach(n => {
+          if (n <= 12) usedDozens.add("1ST_12");
+          else if (n <= 24) usedDozens.add("2ND_12");
+          else usedDozens.add("3RD_12");
+        });
+        const d3 = allDozens.find(d => !usedDozens.has(d));
+        if (d3) {
+          const d3Pool = DOZEN_RANGES[d3].filter(n => !selectedNumbers.includes(n));
+          const n3 = d3Pool[Math.floor(Math.random() * d3Pool.length)];
+          selectedNumbers.push(n3);
+        }
+      }
+    } else {
+      // Any number 0–36, pick unique random
+      const pool = Array.from({ length: 37 }, (_, i) => i);
+      // Fisher-Yates shuffle first `count` picks
+      for (let i = 0; i < count; i++) {
+        const j = i + Math.floor(Math.random() * (pool.length - i));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      selectedNumbers = pool.slice(0, count);
+    }
+
+    for (const num of selectedNumbers) {
+      const rule = getCompleteBetRule(num);
+      if (!rule) continue;
+      const pos = currentChipPosMap.get(`su-${num}`);
+      if (!pos) continue;
+      const X = minBet + Math.floor(Math.random() * (maxBet - minBet + 1));
+      const rawAmount = X * rule.chipsRequired;
+      const amount = Math.floor((rawAmount - 5) / 10) * 10 + 5;
+      bets.push({ number: num, chipsRequired: rule.chipsRequired, amount, position: pos });
+      excludedIds.add(`su-${num}`);
+    }
+
+    return { bets, excludedIds };
+  }
+
   // ── Spin ────────────────────────────────────────────────────────────────────
   const handleSpin = useCallback(() => {
     const chipCount = settings.chipsInField ?? 100;
     const chipValue = settings.chipValue ?? 10;
-    const base = spinGame(chipCount, chipValue, payoutMap);
 
     // Compute sector band centres from current trackParams
     const bands = buildSectorBands(trackParams);
@@ -353,7 +432,13 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       };
     }
 
-    setGame({ ...base, trackBets, dozenCompleteBet });
+    // ── Number complete bets ────────────────────────────────────────────────────
+    const currentChipPosMap = buildDynamicPositions(gridParams);
+    const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
+
+    const base = spinGame(chipCount, chipValue, payoutMap, excludedIds.size > 0 ? excludedIds : undefined);
+
+    setGame({ ...base, trackBets, dozenCompleteBet, numberCompleteBets });
 
     // Build quiz queue from active series in fixed order
     const ordered = SERIES_QUIZ_ORDER
@@ -377,12 +462,16 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     settings.betSeria023,
     settings.betZeroSpiel,
     settings.completeDozen,
+    settings.completeField,
+    settings.completeCount,
     settings.minBet,
     settings.maxBet,
     trackParams,
     dozensParams,
+    gridParams,
     seriesDivisors,
     payoutMap,
+    getCompleteBetRule,
   ]);
 
   const handleCheckSeries = useCallback(() => {
@@ -595,6 +684,35 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })()}
 
+          {/* Number complete chips — large gold chip centered on the straight-up */}
+          {game && game.numberCompleteBets.map(ncb => {
+            const { x, y } = ncb.position;
+            const amt = String(ncb.amount);
+            const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "12" : amt.length >= 4 ? "14" : "17";
+            return (
+              <g key={`ncb-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={45} fill="none" stroke="#E0C060" strokeWidth="2.5" opacity="0.45" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={40} fill="rgba(10,6,2,0.95)" stroke="#E0C060" strokeWidth="4" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={33} fill="none" stroke="#E0C060" strokeWidth="1.2" opacity="0.55" />
+                {/* Number label at top */}
+                <text x={x} y={y - 13} textAnchor="middle" dominantBaseline="central"
+                  fontSize="10" fontWeight="700" fill="#E0C060" opacity="0.8">
+                  №{ncb.number}
+                </text>
+                {/* Amount text */}
+                <text x={x} y={y + 8} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="900" fill="#E0C060"
+                  stroke="rgba(0,0,0,0.8)" strokeWidth="0.7" paintOrder="stroke"
+                  letterSpacing="0.3">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
           {/* Track series chips — ~3× larger than normal chips (r=57) */}
           {game && game.trackBets.map(tb => {
             const sec = sectorBands.find(b =>
@@ -659,6 +777,22 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 {game.dozenCompleteBet.amount}
               </span>
             </div>
+          </>
+        )}
+        {game?.numberCompleteBets && game.numberCompleteBets.length > 0 && (
+          <>
+            <div className="info-sidebar-divider" />
+            <div className="info-sidebar-row">
+              <span className="info-sidebar-label" style={{ color: "#E0C060" }}>Комплиты номеров</span>
+            </div>
+            {game.numberCompleteBets.map(ncb => (
+              <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
+                <span className="info-sidebar-label">№{ncb.number}</span>
+                <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
+                  {ncb.amount}
+                </span>
+              </div>
+            ))}
           </>
         )}
       </div>

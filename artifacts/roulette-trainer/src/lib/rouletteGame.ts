@@ -31,6 +31,13 @@ export interface DozenCompleteBet {
   source: "DOZEN_COMPLETE";
 }
 
+export interface NumberCompleteBet {
+  number: number;
+  chipsRequired: number;
+  amount: number;
+  position: { x: number; y: number };
+}
+
 export interface GameState {
   drawnNumber: number;
   chips: ChipStack[];
@@ -40,6 +47,7 @@ export interface GameState {
   checkResult: "correct" | "incorrect" | null;
   trackBets: TrackBet[];
   dozenCompleteBet?: DozenCompleteBet;
+  numberCompleteBets: NumberCompleteBet[];
 }
 
 const RED_NUMBERS = new Set([
@@ -59,14 +67,22 @@ const TYPE_LABELS: Record<string, string> = {
   sixline:  "Сикс-лайн",
 };
 
-export function spinGame(chipCount: number, chipValue: number, payoutMap?: Record<string, number>): GameState {
+export function spinGame(
+  chipCount: number,
+  chipValue: number,
+  payoutMap?: Record<string, number>,
+  excludedPositionIds?: Set<string>,
+): GameState {
   const drawnNumber = Math.floor(Math.random() * 37); // 0–36
 
-  // Distribute chips randomly across all positions
+  // Distribute chips randomly across all positions, excluding reserved straight-ups
+  const available = excludedPositionIds
+    ? ALL_BET_POSITIONS.filter(p => !excludedPositionIds.has(p.id))
+    : ALL_BET_POSITIONS;
+  const total = available.length;
   const stackMap = new Map<string, number>();
-  const total = ALL_BET_POSITIONS.length;
   for (let i = 0; i < chipCount; i++) {
-    const pos = ALL_BET_POSITIONS[Math.floor(Math.random() * total)];
+    const pos = available[Math.floor(Math.random() * total)];
     stackMap.set(pos.id, (stackMap.get(pos.id) ?? 0) + 1);
   }
 
@@ -84,6 +100,7 @@ export function spinGame(chipCount: number, chipValue: number, payoutMap?: Recor
     userAnswer: "",
     checkResult: null,
     trackBets: [],
+    numberCompleteBets: [],
   };
 }
 
