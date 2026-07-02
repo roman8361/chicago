@@ -556,15 +556,15 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           {game?.dozenCompleteBet && (() => {
             const { x, y } = game.dozenCompleteBet.position;
             const amt = String(game.dozenCompleteBet.amount);
-            const fs = amt.length >= 5 ? "19" : amt.length >= 4 ? "22" : "26";
+            const fs = amt.length >= 6 ? "11" : amt.length >= 5 ? "13" : amt.length >= 4 ? "16" : "19";
             return (
               <g style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={62} fill="none" stroke="#C9A227" strokeWidth="2" opacity="0.4" />
+                <circle cx={x} cy={y} r={45} fill="none" stroke="#C9A227" strokeWidth="2" opacity="0.4" />
                 {/* Main body */}
-                <circle cx={x} cy={y} r={57} fill="rgba(8,18,10,0.93)" stroke="#C9A227" strokeWidth="4.5" />
+                <circle cx={x} cy={y} r={40} fill="rgba(8,18,10,0.93)" stroke="#C9A227" strokeWidth="3.5" />
                 {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={49} fill="none" stroke="#C9A227" strokeWidth="1.5" opacity="0.6" />
+                <circle cx={x} cy={y} r={34} fill="none" stroke="#C9A227" strokeWidth="1.2" opacity="0.6" />
                 {/* Amount text */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
                   fontSize={fs} fontWeight="800" fill="#C9A227"
