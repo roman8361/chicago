@@ -784,11 +784,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           <>
             <div className="info-sidebar-divider" />
             <div className="info-sidebar-row">
-              <span className="info-sidebar-label" style={{ color: "#E0C060" }}>Комплиты номеров</span>
+              <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800, fontSize: "1.1em" }}>Комплиты</span>
             </div>
             {game.numberCompleteBets.map(ncb => (
               <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
-                <span className="info-sidebar-label">№{ncb.number}</span>
+                <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 700, fontSize: "1em" }}>№{ncb.number}</span>
                 <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
                   {ncb.amount}
                 </span>
