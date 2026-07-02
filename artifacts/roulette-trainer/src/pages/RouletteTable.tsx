@@ -631,6 +631,17 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           <span className="info-sidebar-label">Кратность</span>
           <span className="info-sidebar-value">{settings.multiplicity}</span>
         </div>
+        {game?.dozenCompleteBet && (
+          <>
+            <div className="info-sidebar-divider" />
+            <div className="info-sidebar-row">
+              <span className="info-sidebar-label">Комплит дюжины</span>
+              <span className="info-sidebar-value" style={{ color: "#C9A227", fontWeight: 800 }}>
+                {game.dozenCompleteBet.amount}
+              </span>
+            </div>
+          </>
+        )}
       </div>
       </div>{/* /table-row */}
 
