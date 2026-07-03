@@ -514,12 +514,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         const amount = baseAmount * 5;
         let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
         if (num === 30) {
-          // Place in the top-right corner of the zone, shifted left 10% and down 10% of the cell's dimensions
+          // Place in the top-right corner of the zone, shifted left 20% and down 20% of the cell's dimensions
           const cellW = Math.abs(trackParams.arcLX2 - trackParams.arcLX1);
           const cellH = Math.abs(trackParams.arcLY[3] - trackParams.arcLY[2]);
           pos = {
-            x: trackParams.arcLX2 - 0.1 * cellW,
-            y: trackParams.arcLY[2] + 0.1 * cellH,
+            x: trackParams.arcLX2 - 0.2 * cellW,
+            y: trackParams.arcLY[2] + 0.2 * cellH,
           };
         }
         void neighboursRule; // reference-only lookup for future straight-up layout
