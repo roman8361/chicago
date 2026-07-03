@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rul_final_1782983519184.png";
@@ -277,16 +277,26 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   // Keep getAllRules accessible for any future per-spin rule reads
   const _getAllRules = getAllRules;
 
-  // Auto-save to localStorage whenever params change
+  // Auto-save to localStorage whenever params change.
+  // Skip the very first run (initial mount) so that, on first load with no
+  // saved coordinates, the code defaults are used without being immediately
+  // re-persisted verbatim — keeping DEFAULT_GRID/DEFAULT_TRACK_PARAMS/DEFAULT_DOZENS
+  // as the single source of truth for both "first load" and "Сбросить".
+  const isGridFirstRender = useRef(true);
   useEffect(() => {
+    if (isGridFirstRender.current) { isGridFirstRender.current = false; return; }
     localStorage.setItem(STORAGE_KEY_GRID, JSON.stringify(gridParams));
   }, [gridParams]);
 
+  const isTrackFirstRender = useRef(true);
   useEffect(() => {
+    if (isTrackFirstRender.current) { isTrackFirstRender.current = false; return; }
     localStorage.setItem(STORAGE_KEY_TRACK, JSON.stringify(trackParams));
   }, [trackParams]);
 
+  const isDozensFirstRender = useRef(true);
   useEffect(() => {
+    if (isDozensFirstRender.current) { isDozensFirstRender.current = false; return; }
     localStorage.setItem(STORAGE_KEY_DOZENS, JSON.stringify(dozensParams));
   }, [dozensParams]);
 
