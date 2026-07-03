@@ -1,0 +1,181 @@
+ЗАДАЧА
+
+Нужно расширить раздел `trackBets` в `rouletteRules.json`.
+
+Сейчас в `trackBets` уже есть данные серий:
+
+- label
+- divisor
+- settingKey
+- displayZoneKey
+- numbers
+
+Нужно добавить для каждой серии новый раздел `bets`, где будет описано, какие именно ставки ставятся на поле и сколько фишек идёт на каждую позицию.
+
+---
+
+1. SERIE_5_8
+
+Добавить:
+
+"bets": {
+  "splits": [
+    { "numbers": [5, 8], "chips": 1 },
+    { "numbers": [10, 11], "chips": 1 },
+    { "numbers": [13, 16], "chips": 1 },
+    { "numbers": [23, 24], "chips": 1 },
+    { "numbers": [27, 30], "chips": 1 },
+    { "numbers": [33, 36], "chips": 1 }
+  ]
+}
+
+Проверка:
+
+6 сплитов × 1 фишка = 6
+
+Это должно совпадать с:
+
+"divisor": 6
+
+---
+
+2. ORPHELINS
+
+Добавить:
+
+"bets": {
+  "straightUp": [
+    { "numbers": [1], "chips": 1 }
+  ],
+  "splits": [
+    { "numbers": [6, 9], "chips": 1 },
+    { "numbers": [14, 17], "chips": 1 },
+    { "numbers": [17, 20], "chips": 1 },
+    { "numbers": [31, 34], "chips": 1 }
+  ]
+}
+
+Проверка:
+
+1 straight up × 1 = 1  
+4 split × 1 = 4  
+
+Итого:
+
+5 фишек
+
+Это должно совпадать с:
+
+"divisor": 5
+
+---
+
+3. SERIE_0_2_3
+
+Добавить:
+
+"bets": {
+  "streets": [
+    { "numbers": [0, 2, 3], "chips": 2 }
+  ],
+  "splits": [
+    { "numbers": [4, 7], "chips": 1 },
+    { "numbers": [12, 15], "chips": 1 },
+    { "numbers": [18, 21], "chips": 1 },
+    { "numbers": [19, 22], "chips": 1 },
+    { "numbers": [32, 35], "chips": 1 }
+  ],
+  "corners": [
+    { "numbers": [25, 26, 28, 29], "chips": 2 }
+  ]
+}
+
+Проверка:
+
+Street 0-2-3: 2 фишки  
+Splits: 5 × 1 = 5 фишек  
+Corner: 2 фишки  
+
+Итого:
+
+2 + 5 + 2 = 9
+
+Это должно совпадать с:
+
+"divisor": 9
+
+---
+
+4. ZERO_SPIEL
+
+Добавить:
+
+"bets": {
+  "straightUp": [
+    { "numbers": [26], "chips": 1 }
+  ],
+  "splits": [
+    { "numbers": [0, 3], "chips": 1 },
+    { "numbers": [12, 15], "chips": 1 },
+    { "numbers": [32, 35], "chips": 1 }
+  ]
+}
+
+Проверка:
+
+1 straight up = 1  
+3 splits = 3  
+
+Итого:
+
+4 фишки
+
+Это должно совпадать с:
+
+"divisor": 4
+
+---
+
+ВАЖНО ПО СТРУКТУРЕ
+
+Не удалять существующие поля:
+
+- label
+- divisor
+- settingKey
+- displayZoneKey
+- numbers
+
+Нужно только добавить новое поле:
+
+bets
+
+внутрь каждой серии.
+
+Если какой-то тип ставок у серии отсутствует, можно не добавлять пустой массив.
+
+---
+
+ОГРАНИЧЕНИЯ
+
+- Не менять `divisor`.
+- Не менять `settingKey`.
+- Не менять `displayZoneKey`.
+- Не менять существующий массив `numbers`.
+- Не менять генерацию Spin.
+- Не менять отображение фишек серий на треке.
+- Не менять расчёт сдачи по сериям.
+- Только расширить JSON-правила.
+- JSON должен остаться валидным.
+
+---
+
+КРИТЕРИИ ГОТОВНОСТИ
+
+- У каждой серии в `trackBets` появился раздел `bets`.
+- Сумма chips внутри `bets` совпадает с `divisor`.
+- Serie 5/8 содержит 6 split-ставок.
+- Orphelins содержит 1 straight up и 4 split-ставки.
+- Serie 0/2/3 содержит street, splits и corner на 9 фишек.
+- Zero Spiel содержит 1 straight up и 3 split-ставки.
+- Приложение запускается без ошибок.

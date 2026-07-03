@@ -26,7 +26,17 @@
         30,
         33,
         36
-      ]
+      ],
+      "bets": {
+        "splits": [
+          { "numbers": [5, 8], "chips": 1 },
+          { "numbers": [10, 11], "chips": 1 },
+          { "numbers": [13, 16], "chips": 1 },
+          { "numbers": [23, 24], "chips": 1 },
+          { "numbers": [27, 30], "chips": 1 },
+          { "numbers": [33, 36], "chips": 1 }
+        ]
+      }
     },
     "ORPHELINS": {
       "label": "Orphelins",
@@ -42,7 +52,18 @@
         20,
         31,
         34
-      ]
+      ],
+      "bets": {
+        "straightUp": [
+          { "numbers": [1], "chips": 1 }
+        ],
+        "splits": [
+          { "numbers": [6, 9], "chips": 1 },
+          { "numbers": [14, 17], "chips": 1 },
+          { "numbers": [17, 20], "chips": 1 },
+          { "numbers": [31, 34], "chips": 1 }
+        ]
+      }
     },
     "SERIE_0_2_3": {
       "label": "Serie 0/2/3",
@@ -60,7 +81,22 @@
         25,
         28,
         29
-      ]
+      ],
+      "bets": {
+        "streets": [
+          { "numbers": [0, 2, 3], "chips": 2 }
+        ],
+        "splits": [
+          { "numbers": [4, 7], "chips": 1 },
+          { "numbers": [12, 15], "chips": 1 },
+          { "numbers": [18, 21], "chips": 1 },
+          { "numbers": [19, 22], "chips": 1 },
+          { "numbers": [32, 35], "chips": 1 }
+        ],
+        "corners": [
+          { "numbers": [25, 26, 28, 29], "chips": 2 }
+        ]
+      }
     },
     "ZERO_SPIEL": {
       "label": "Zero Spiel",
@@ -75,7 +111,17 @@
         26,
         32,
         35
-      ]
+      ],
+      "bets": {
+        "straightUp": [
+          { "numbers": [26], "chips": 1 }
+        ],
+        "splits": [
+          { "numbers": [0, 3], "chips": 1 },
+          { "numbers": [12, 15], "chips": 1 },
+          { "numbers": [32, 35], "chips": 1 }
+        ]
+      }
     }
   },
   "completeBets": [
