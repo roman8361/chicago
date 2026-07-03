@@ -522,14 +522,13 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             y: trackParams.arcLY[2] + 0.2 * cellH,
           };
         }
-        if (num === 32) {
-          // Bottom-row cell for 32 is the last one (index 13 of BOT_NUMBERS)
-          const x1 = trackParams.botX[13], x2 = trackParams.botX[14];
-          const cellW = Math.abs(x2 - x1);
-          const cellH = Math.abs(trackParams.botY2 - trackParams.botY1);
+        if (num === 3) {
+          // Right-arc cell for 3 is the first one (index 0 of ARC_R_NUMBERS)
+          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+          const cellH = Math.abs(trackParams.arcRY[1] - trackParams.arcRY[0]);
           pos = {
-            x: pos.x - 0.4 * cellW,
-            y: pos.y + 0.4 * cellH,
+            x: pos.x - 0.2 * cellW,
+            y: pos.y + 0.2 * cellH,
           };
         }
         void neighboursRule; // reference-only lookup for future straight-up layout
