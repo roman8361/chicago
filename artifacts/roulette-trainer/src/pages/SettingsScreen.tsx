@@ -161,6 +161,24 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
           <SelectField label='Ставка на "Orphelins"' value={betOrphelins} onChange={setBetOrphelins} />
           <SelectField label='Ставка на "Seria 0/2/3"' value={betSeria023} onChange={setBetSeria023} />
           <SelectField label='Ставка на "Zero Spiel"' value={betZeroSpiel} onChange={setBetZeroSpiel} />
+          <div className="settings-field">
+            <label className="settings-label">Кратность серии (кратно 10)</label>
+            <input
+              type="number"
+              className={`settings-input${multiplicityError ? " settings-input--error" : ""}`}
+              value={multiplicity}
+              placeholder={String(DEFAULT_SETTINGS.multiplicity)}
+              step={10}
+              min={10}
+              onChange={(e) => {
+                setMultiplicity(e.target.value);
+                setMultiplicityError(null);
+              }}
+            />
+            {multiplicityError && (
+              <div className="settings-field-error">{multiplicityError}</div>
+            )}
+          </div>
         </div>
 
         <div className="settings-divider" />
@@ -211,29 +229,6 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
                 );
               })}
             </div>
-          </div>
-        </div>
-
-        <div className="settings-divider" />
-        <div className="settings-section-title">Кратность серии</div>
-        <div className="settings-grid-2">
-          <div className="settings-field">
-            <label className="settings-label">Кратность серии (кратно 10)</label>
-            <input
-              type="number"
-              className={`settings-input${multiplicityError ? " settings-input--error" : ""}`}
-              value={multiplicity}
-              placeholder={String(DEFAULT_SETTINGS.multiplicity)}
-              step={10}
-              min={10}
-              onChange={(e) => {
-                setMultiplicity(e.target.value);
-                setMultiplicityError(null);
-              }}
-            />
-            {multiplicityError && (
-              <div className="settings-field-error">{multiplicityError}</div>
-            )}
           </div>
         </div>
 
