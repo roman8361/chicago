@@ -528,8 +528,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           const cellW = Math.abs(x2 - x1);
           const cellH = Math.abs(trackParams.botY2 - trackParams.botY1);
           pos = {
-            x: pos.x - 0.2 * cellW,
-            y: pos.y + 0.2 * cellH,
+            x: pos.x - 0.4 * cellW,
+            y: pos.y + 0.4 * cellH,
           };
         }
         void neighboursRule; // reference-only lookup for future straight-up layout
