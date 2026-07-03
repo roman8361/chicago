@@ -3,7 +3,7 @@ import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
-import { BET_POSITIONS_MAP } from "@/data/betPositions";
+import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
@@ -18,7 +18,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
 
 interface SeriesQuizRecord {
   type: TrackBet["type"];
@@ -57,6 +57,44 @@ interface CompleteQuizRecord {
   correctAnswer: number;
   correct: boolean;
   lines: CompleteLineSummary[];
+}
+
+interface IntersectionLineSummary {
+  label: string;
+  completePlayPerUnit: number;
+  chips: number;
+  completeAmount: number;
+  existingAmount: number;
+  totalAmount: number;
+  positionLimit: number;
+  change: number;
+}
+
+interface IntersectionQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+  lines: IntersectionLineSummary[];
+}
+
+// Maps a bet category from rouletteRules.json's dozenComplete.bets to the
+// betPositions BetType and its position-limit multiplier (× maximum bet).
+const DOZEN_COMPLETE_CATEGORY_MAP: Record<string, { betType: "straight" | "split" | "street" | "corner" | "sixline"; limitMultiplier: number; label: string }> = {
+  straightUp: { betType: "straight", limitMultiplier: 1, label: "Straight Up" },
+  splits:     { betType: "split",    limitMultiplier: 2, label: "Split" },
+  streets:    { betType: "street",   limitMultiplier: 3, label: "Street" },
+  corners:    { betType: "corner",   limitMultiplier: 4, label: "Corner" },
+  sixLines:   { betType: "sixline",  limitMultiplier: 5, label: "Six-Line" },
+};
+
+// Finds the positionId on the field matching a bet type + set of numbers
+// (order-independent), using the same static position list the field uses.
+function findPositionId(betType: "straight" | "split" | "street" | "corner" | "sixline", numbers: number[]): string | undefined {
+  const target = [...numbers].sort((a, b) => a - b).join(",");
+  const found = ALL_BET_POSITIONS.find(p =>
+    p.type === betType && [...p.numbers].sort((a, b) => a - b).join(",") === target
+  );
+  return found?.id;
 }
 
 function calcOneCompleteChange(
@@ -248,6 +286,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [fieldInput,        setFieldInput]        = useState("");
   const [completesInput,    setCompletesInput]    = useState("");
   const [completesRecord,   setCompletesRecord]   = useState<CompleteQuizRecord | null>(null);
+  const [intersectionInput,  setIntersectionInput]  = useState("");
+  const [intersectionRecord, setIntersectionRecord] = useState<IntersectionQuizRecord | null>(null);
 
   const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
@@ -563,10 +603,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setSeriesRecords([]);
     setFieldRecord(null);
     setCompletesRecord(null);
+    setIntersectionRecord(null);
     setSeriesPlayInput("");
     setSeriesChangeInput("");
     setFieldInput("");
     setCompletesInput("");
+    setIntersectionInput("");
     setQuizPhase(
       hasCompletes ? { kind: "completes" } :
       ordered.length > 0 ? { kind: "series", idx: 0 } :
@@ -651,8 +693,65 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setCompletesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setCompletesInput("");
+    setQuizPhase({ kind: "completesIntersection" });
+  }, [game, quizPhase, completesInput, settings.maxBet, settings.completeMultiplicity, getAllRules]);
+
+  const handleCheckCompletesIntersection = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "completesIntersection") return;
+    const userAnswer = parseInt(intersectionInput || "0", 10) || 0;
+    const maxBet = Math.max(1, settings.maxBet);
+    const multiplicity = Math.max(1, settings.completeMultiplicity);
+    const chipValue = settings.chipValue ?? 10;
+    const rules = getAllRules();
+    const lines: IntersectionLineSummary[] = [];
+
+    if (game.dozenCompleteBet) {
+      const { amount, dozen } = game.dozenCompleteBet;
+      const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+      const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
+      const chipsRequired = dozenRule?.chipsRequired ?? 100;
+      const { playPerUnit } = calcOneCompleteChange(amount, chipsRequired, maxBet, multiplicity);
+
+      if (dozenRule) {
+        const chipCountByPos = new Map<string, number>();
+        for (const c of game.chips) chipCountByPos.set(c.positionId, c.count);
+        const cashByPos = new Map<string, number>();
+        for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
+
+        (Object.keys(DOZEN_COMPLETE_CATEGORY_MAP) as Array<keyof typeof dozenRule.bets>).forEach(categoryKey => {
+          const { betType, limitMultiplier, label } = DOZEN_COMPLETE_CATEGORY_MAP[categoryKey as string];
+          const entries = dozenRule.bets[categoryKey] as Array<{ numbers: number[]; chips: number }>;
+          for (const entry of entries) {
+            const positionId = findPositionId(betType, entry.numbers);
+            if (!positionId) continue;
+            const completeAmount = playPerUnit * entry.chips;
+            const colorAmount = (chipCountByPos.get(positionId) ?? 0) * chipValue;
+            const cashAmount = cashByPos.get(positionId) ?? 0;
+            const existingAmount = colorAmount + cashAmount;
+            const totalAmount = completeAmount + existingAmount;
+            const positionLimit = maxBet * limitMultiplier;
+            if (totalAmount > positionLimit) {
+              lines.push({
+                label: `${label} ${entry.numbers.join("-")}`,
+                completePlayPerUnit: playPerUnit,
+                chips: entry.chips,
+                completeAmount,
+                existingAmount,
+                totalAmount,
+                positionLimit,
+                change: totalAmount - positionLimit,
+              });
+            }
+          }
+        });
+      }
+    }
+
+    const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
+    setIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    setIntersectionInput("");
     setQuizPhase(activeSeries.length > 0 ? { kind: "series", idx: 0 } : { kind: "field" });
-  }, [game, quizPhase, completesInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
+  }, [game, quizPhase, intersectionInput, activeSeries, settings.maxBet, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
@@ -686,8 +785,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   };
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
-  const seriesBaseNum = hasCompletesQuestion ? 2 : 1;
-  const fieldQuestionNum = (hasCompletesQuestion ? 1 : 0) + activeSeries.length + 1;
+  const seriesBaseNum = hasCompletesQuestion ? 3 : 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + activeSeries.length + 1;
 
   return (
     <div className="roulette-page">
@@ -1041,6 +1140,26 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
 
+            {/* Completes intersection question */}
+            {quizPhase.kind === "completesIntersection" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">2. Сдача с пересечения на поле комплитов</span>
+                  <span className="quiz-series-sub">Общая сдача</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Общая сдача"
+                  value={intersectionInput}
+                  onChange={e => setIntersectionInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCheckCompletesIntersection()}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckCompletesIntersection}>Проверить</button>
+              </div>
+            )}
+
             {/* Series question */}
             {quizPhase.kind === "series" && (() => {
               const tb = activeSeries[quizPhase.idx];
@@ -1127,6 +1246,40 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                           Итого: {completesRecord.lines.map(l => l.change).join(" + ")} = {completesRecord.correctAnswer}
                         </div>
                       </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {intersectionRecord && (
+                <div className={`quiz-report-item ${intersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Сдача с пересечения на поле комплитов</div>
+                  {intersectionRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {intersectionRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {intersectionRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {intersectionRecord.correctAnswer}</div>
+                      {intersectionRecord.lines.length === 0 ? (
+                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                      ) : (
+                        <div className="quiz-report-calc">
+                          {intersectionRecord.lines.map((line, li) => (
+                            <div key={li} style={{ marginBottom: 6 }}>
+                              {line.label}: комплит {line.completePlayPerUnit} × {line.chips} фишек = {line.completeAmount}<br/>
+                              На позиции уже стоит: {line.existingAmount}<br/>
+                              Итого на позиции: {line.completeAmount} + {line.existingAmount} = {line.totalAmount}, лимит {line.positionLimit}<br/>
+                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                            </div>
+                          ))}
+                          <div className="quiz-report-total">
+                            Итого: {intersectionRecord.lines.map(l => l.change).join(" + ")} = {intersectionRecord.correctAnswer}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
