@@ -162,7 +162,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
           <SelectField label='Ставка на "Seria 0/2/3"' value={betSeria023} onChange={setBetSeria023} />
           <SelectField label='Ставка на "Zero Spiel"' value={betZeroSpiel} onChange={setBetZeroSpiel} />
           <div className="settings-field">
-            <label className="settings-label">Кратность серии (кратно 10)</label>
+            <label className="settings-label">Кратность серии</label>
             <input
               type="number"
               className={`settings-input${multiplicityError ? " settings-input--error" : ""}`}
