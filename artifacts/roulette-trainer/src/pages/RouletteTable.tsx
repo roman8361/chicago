@@ -894,18 +894,18 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           {game && game.neighboursBets.map(nb => {
             const { x, y } = nb.position;
             const amt = String(nb.amount);
-            const fs = amt.length >= 6 ? "12" : amt.length >= 5 ? "14" : amt.length >= 4 ? "16" : "19";
+            const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
             return (
               <g key={`nb-${nb.number}`} style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={40} fill="none" stroke="#B87333" strokeWidth="2" opacity="0.45" />
+                <circle cx={x} cy={y} r={32} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
                 {/* Main body */}
-                <circle cx={x} cy={y} r={35} fill="#111418" stroke="#B87333" strokeWidth="3.5" />
+                <circle cx={x} cy={y} r={28} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
                 {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={29} fill="none" stroke="#D9D9D9" strokeWidth="1" opacity="0.6" />
+                <circle cx={x} cy={y} r={23} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
                 {/* Dashed rim accent — distinct chip pattern */}
-                <circle cx={x} cy={y} r={32} fill="none" stroke="#D9D9D9" strokeWidth="1.2"
-                  strokeDasharray="4 4" opacity="0.5" />
+                <circle cx={x} cy={y} r={26} fill="none" stroke="#D9D9D9" strokeWidth="1"
+                  strokeDasharray="3 3" opacity="0.5" />
                 {/* Amount text */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
                   fontSize={fs} fontWeight="800" fill="#D9D9D9"
