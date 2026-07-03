@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP } from "@/data/betPositions";
-import { spinGame, calculatePayout, getNumberColor, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet } from "@/lib/rouletteGame";
+import { spinGame, calculatePayout, getNumberColor, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
@@ -253,7 +253,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
   const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
-  const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule } = useRouletteRules();
+  const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule, getNeighboursRule } = useRouletteRules();
 
   // Series divisors and payout map — re-derived whenever rules change
   const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
@@ -305,6 +305,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const sectorBands = buildSectorBands(trackParams);
   const dozensZones = buildDozensZones(dozensParams);
   const chipPosMap  = useMemo(() => buildDynamicPositions(gridParams), [gridParams]);
+  const trackNumberPosMap = useMemo(() => {
+    const m = new Map<number, { x: number; y: number }>();
+    for (const z of trackZones) m.set(z.number, { x: z.cx, y: z.cy });
+    return m;
+  }, [trackZones]);
 
   // ── Grid param setters ──────────────────────────────────────────────────────
   const setHeaderY = useCallback((v: number) => setGridParams(p => ({ ...p, headerY: v })), []);
@@ -486,7 +491,34 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
     const cashChipStacks = generateCashChips(cashOnField, cashChipValues, occupiedIds);
 
-    setGame({ ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks });
+    // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
+    // Reference only — full 5-number layout (getNeighboursRule) is not laid out
+    // on the field at this stage, only a single cash chip per selected number.
+    const neighboursRule = getNeighboursRule();
+    const neighboursCountRaw = settings.neighborsCount ?? 0;
+    const neighboursCount = Math.max(0, Math.min(37, Math.floor(neighboursCountRaw)));
+    let neighboursBets: NeighboursBet[] = [];
+    if (neighboursCount > 0) {
+      const pool = Array.from({ length: 37 }, (_, i) => i);
+      for (let i = 0; i < neighboursCount; i++) {
+        const j = i + Math.floor(Math.random() * (pool.length - i));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const selectedNumbers = pool.slice(0, neighboursCount);
+      const minBet = Math.max(1, settings.minBet);
+      const maxBet = Math.max(minBet, settings.maxBet);
+      const lowerBoundRaw = Math.round(maxBet / 3);
+      const lowerBound = Math.min(Math.max(1, lowerBoundRaw), maxBet);
+      neighboursBets = selectedNumbers.map(num => {
+        const baseAmount = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
+        const amount = baseAmount * 5;
+        const pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
+        void neighboursRule; // reference-only lookup for future straight-up layout
+        return { number: num, baseAmount, amount, position: pos, source: "NEIGHBOURS" as const };
+      });
+    }
+
+    setGame({ ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks, neighboursBets });
 
     // Build quiz queue from active series in fixed order
     const ordered = SERIES_QUIZ_ORDER
@@ -852,6 +884,33 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   fontSize={fs} fontWeight="800" fill={color}
                   stroke="rgba(0,0,0,0.7)" strokeWidth="0.8" paintOrder="stroke"
                   letterSpacing="0.5">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
+          {game && game.neighboursBets.map(nb => {
+            const { x, y } = nb.position;
+            const amt = String(nb.amount);
+            const fs = amt.length >= 6 ? "12" : amt.length >= 5 ? "14" : amt.length >= 4 ? "16" : "19";
+            return (
+              <g key={`nb-${nb.number}`} style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={40} fill="none" stroke="#B87333" strokeWidth="2" opacity="0.45" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={35} fill="#111418" stroke="#B87333" strokeWidth="3.5" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={29} fill="none" stroke="#D9D9D9" strokeWidth="1" opacity="0.6" />
+                {/* Dashed rim accent — distinct chip pattern */}
+                <circle cx={x} cy={y} r={32} fill="none" stroke="#D9D9D9" strokeWidth="1.2"
+                  strokeDasharray="4 4" opacity="0.5" />
+                {/* Amount text */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  letterSpacing="0.3">
                   {amt}
                 </text>
               </g>

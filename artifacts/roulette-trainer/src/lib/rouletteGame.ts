@@ -38,6 +38,14 @@ export interface NumberCompleteBet {
   position: { x: number; y: number };
 }
 
+export interface NeighboursBet {
+  number: number;
+  baseAmount: number;
+  amount: number;
+  position: { x: number; y: number };
+  source: "NEIGHBOURS";
+}
+
 export interface CashChipStack {
   positionId: string;
   totalAmount: number;
@@ -54,6 +62,7 @@ export interface GameState {
   dozenCompleteBet?: DozenCompleteBet;
   numberCompleteBets: NumberCompleteBet[];
   cashChipStacks: CashChipStack[];
+  neighboursBets: NeighboursBet[];
 }
 
 const RED_NUMBERS = new Set([
@@ -108,6 +117,7 @@ export function spinGame(
     trackBets: [],
     numberCompleteBets: [],
     cashChipStacks: [],
+    neighboursBets: [],
   };
 }
 
