@@ -512,7 +512,11 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       neighboursBets = selectedNumbers.map(num => {
         const baseAmount = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
         const amount = baseAmount * 5;
-        const pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
+        let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
+        if (num === 30) {
+          // Place in the top-right corner of the zone instead of its center
+          pos = { x: trackParams.arcLX2, y: trackParams.arcLY[2] };
+        }
         void neighboursRule; // reference-only lookup for future straight-up layout
         return { number: num, baseAmount, amount, position: pos, source: "NEIGHBOURS" as const };
       });
