@@ -61,12 +61,12 @@ interface CompleteQuizRecord {
 
 interface IntersectionLineSummary {
   label: string;
-  completePlayPerUnit: number;
-  chips: number;
-  completeAmount: number;
-  existingAmount: number;
-  totalAmount: number;
   positionLimit: number;
+  dozenCompleteAmount: number;
+  numberCompleteAmounts: Array<{ number: number; amount: number }>;
+  colorAmount: number;
+  cashAmount: number;
+  totalAmount: number;
   change: number;
 }
 
@@ -703,46 +703,99 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const multiplicity = Math.max(1, settings.completeMultiplicity);
     const chipValue = settings.chipValue ?? 10;
     const rules = getAllRules();
-    const lines: IntersectionLineSummary[] = [];
 
+    // Field lookup maps
+    const chipCountByPos = new Map<string, number>();
+    for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
+    const cashByPos = new Map<string, number>();
+    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
+
+    // Per-position accumulator
+    type PosAccum = {
+      limitMultiplier: number;
+      betLabel: string;
+      dozenAmount: number;
+      numberAmounts: Map<number, number>; // roulette number → amount
+    };
+    const posMap = new Map<string, PosAccum>();
+
+    const ensurePos = (
+      positionId: string,
+      limitMultiplier: number,
+      betLabel: string,
+    ): PosAccum => {
+      let entry = posMap.get(positionId);
+      if (!entry) {
+        entry = { limitMultiplier, betLabel, dozenAmount: 0, numberAmounts: new Map() };
+        posMap.set(positionId, entry);
+      }
+      return entry;
+    };
+
+    // --- Dozen complete ---
     if (game.dozenCompleteBet) {
       const { amount, dozen } = game.dozenCompleteBet;
       const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
       const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
-      const chipsRequired = dozenRule?.chipsRequired ?? 100;
-      const { playPerUnit } = calcOneCompleteChange(amount, chipsRequired, maxBet, multiplicity);
-
       if (dozenRule) {
-        const chipCountByPos = new Map<string, number>();
-        for (const c of game.chips) chipCountByPos.set(c.positionId, c.count);
-        const cashByPos = new Map<string, number>();
-        for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
-
-        (Object.keys(DOZEN_COMPLETE_CATEGORY_MAP) as Array<keyof typeof dozenRule.bets>).forEach(categoryKey => {
-          const { betType, limitMultiplier, label } = DOZEN_COMPLETE_CATEGORY_MAP[categoryKey as string];
-          const entries = dozenRule.bets[categoryKey] as Array<{ numbers: number[]; chips: number }>;
-          for (const entry of entries) {
-            const positionId = findPositionId(betType, entry.numbers);
+        const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, multiplicity);
+        for (const [categoryKey, { betType, limitMultiplier, label }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+          const rawEntries = (dozenRule.bets as Record<string, unknown>)[categoryKey];
+          if (!Array.isArray(rawEntries)) continue;
+          for (const entry of rawEntries) {
+            if (!entry || !Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+            const positionId = findPositionId(betType, entry.numbers as number[]);
             if (!positionId) continue;
-            const completeAmount = playPerUnit * entry.chips;
-            const colorAmount = (chipCountByPos.get(positionId) ?? 0) * chipValue;
-            const cashAmount = cashByPos.get(positionId) ?? 0;
-            const existingAmount = colorAmount + cashAmount;
-            const totalAmount = completeAmount + existingAmount;
-            const positionLimit = maxBet * limitMultiplier;
-            if (totalAmount > positionLimit) {
-              lines.push({
-                label: `${label} ${entry.numbers.join("-")}`,
-                completePlayPerUnit: playPerUnit,
-                chips: entry.chips,
-                completeAmount,
-                existingAmount,
-                totalAmount,
-                positionLimit,
-                change: totalAmount - positionLimit,
-              });
-            }
+            const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+            const betLabel = `${label} ${sortedNums}`;
+            const acc = ensurePos(positionId, limitMultiplier, betLabel);
+            acc.dozenAmount += playPerUnit * entry.chips;
           }
+        }
+      }
+    }
+
+    // --- Number completes ---
+    for (const ncb of game.numberCompleteBets) {
+      const completeRule = rules.completeBets.find(cb => cb.number === ncb.number);
+      if (!completeRule) continue;
+      const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, multiplicity);
+      for (const [categoryKey, { betType, limitMultiplier, label }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+        const rawEntries = (completeRule.bets as Record<string, unknown>)[categoryKey];
+        if (!Array.isArray(rawEntries)) continue;
+        for (const entry of rawEntries) {
+          if (!entry || !Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+          const positionId = findPositionId(betType, entry.numbers as number[]);
+          if (!positionId) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          const betLabel = `${label} ${sortedNums}`;
+          const acc = ensurePos(positionId, limitMultiplier, betLabel);
+          const prev = acc.numberAmounts.get(ncb.number) ?? 0;
+          acc.numberAmounts.set(ncb.number, prev + playPerUnit * entry.chips);
+        }
+      }
+    }
+
+    // --- Collect lines with limit overflows ---
+    const lines: IntersectionLineSummary[] = [];
+    for (const [positionId, acc] of posMap.entries()) {
+      const colorAmount = (chipCountByPos.get(positionId) ?? 0) * chipValue;
+      const cashAmount = cashByPos.get(positionId) ?? 0;
+      const numberCompleteTotal = Array.from(acc.numberAmounts.values()).reduce((s, v) => s + v, 0);
+      const totalAmount = acc.dozenAmount + numberCompleteTotal + colorAmount + cashAmount;
+      const positionLimit = maxBet * acc.limitMultiplier;
+      if (totalAmount > positionLimit) {
+        lines.push({
+          label: acc.betLabel,
+          positionLimit,
+          dozenCompleteAmount: acc.dozenAmount,
+          numberCompleteAmounts: Array.from(acc.numberAmounts.entries())
+            .map(([num, amount]) => ({ number: num, amount }))
+            .sort((a, b) => a.number - b.number),
+          colorAmount,
+          cashAmount,
+          totalAmount,
+          change: totalAmount - positionLimit,
         });
       }
     }
@@ -1268,15 +1321,27 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                       ) : (
                         <div className="quiz-report-calc">
                           {intersectionRecord.lines.map((line, li) => (
-                            <div key={li} style={{ marginBottom: 6 }}>
-                              {line.label}: комплит {line.completePlayPerUnit} × {line.chips} фишек = {line.completeAmount}<br/>
-                              На позиции уже стоит: {line.existingAmount}<br/>
-                              Итого на позиции: {line.completeAmount} + {line.existingAmount} = {line.totalAmount}, лимит {line.positionLimit}<br/>
+                            <div key={li} style={{ marginBottom: 8 }}>
+                              <strong>{line.label}</strong><br/>
+                              Лимит: {line.positionLimit}<br/>
+                              {line.dozenCompleteAmount > 0 && (
+                                <>Комплит дюжины: {line.dozenCompleteAmount}<br/></>
+                              )}
+                              {line.numberCompleteAmounts.map(nc => (
+                                <span key={nc.number}>Комплит №{nc.number}: {nc.amount}<br/></span>
+                              ))}
+                              {line.colorAmount > 0 && (
+                                <>Цветные на поле: {line.colorAmount}<br/></>
+                              )}
+                              {line.cashAmount > 0 && (
+                                <>Кэш на поле: {line.cashAmount}<br/></>
+                              )}
+                              Итого: {line.totalAmount}<br/>
                               Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
                             </div>
                           ))}
                           <div className="quiz-report-total">
-                            Итого: {intersectionRecord.lines.map(l => l.change).join(" + ")} = {intersectionRecord.correctAnswer}
+                            Итого сдача: {intersectionRecord.lines.map(l => l.change).join(" + ")} = {intersectionRecord.correctAnswer}
                           </div>
                         </div>
                       )}
