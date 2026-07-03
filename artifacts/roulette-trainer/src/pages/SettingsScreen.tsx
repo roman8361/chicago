@@ -26,7 +26,12 @@ function NumField({
         className="settings-input"
         value={value}
         placeholder={String(defaultVal)}
-        onChange={(e) => onChange(e.target.value)}
+        min="0"
+        onKeyDown={(e) => e.key === "-" && e.preventDefault()}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v !== "" && Number(v) < 0 ? "" : v);
+        }}
       />
     </div>
   );
@@ -170,8 +175,10 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
               placeholder={String(DEFAULT_SETTINGS.multiplicity)}
               step={10}
               min={10}
+              onKeyDown={(e) => e.key === "-" && e.preventDefault()}
               onChange={(e) => {
-                setMultiplicity(e.target.value);
+                const v = e.target.value;
+                setMultiplicity(v !== "" && Number(v) < 0 ? "" : v);
                 setMultiplicityError(null);
               }}
             />

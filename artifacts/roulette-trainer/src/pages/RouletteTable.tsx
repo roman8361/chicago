@@ -1328,8 +1328,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   className="game-answer-input"
                   placeholder="Общая сдача"
                   value={completesInput}
-                  onChange={e => setCompletesInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCheckCompletes()}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckCompletes(); }}
+                  onChange={e => { const v = e.target.value; setCompletesInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
                 <button className="game-check-btn" onClick={handleCheckCompletes}>Проверить</button>
@@ -1348,8 +1349,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   className="game-answer-input"
                   placeholder="Общая сдача"
                   value={intersectionInput}
-                  onChange={e => setIntersectionInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCheckCompletesIntersection()}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckCompletesIntersection(); }}
+                  onChange={e => { const v = e.target.value; setIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
                 <button className="game-check-btn" onClick={handleCheckCompletesIntersection}>Проверить</button>
@@ -1368,8 +1370,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   className="game-answer-input"
                   placeholder="Общая сдача"
                   value={seriesInput}
-                  onChange={e => setSeriesInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckSeries(); }}
+                  onChange={e => { const v = e.target.value; setSeriesInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
                 <button className="game-check-btn" onClick={handleCheckSeries}>Проверить</button>
@@ -1388,8 +1391,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   className="game-answer-input"
                   placeholder="Общая сдача"
                   value={trackIntersectionInput}
-                  onChange={e => setTrackIntersectionInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCheckTrackIntersection()}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckTrackIntersection(); }}
+                  onChange={e => { const v = e.target.value; setTrackIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
                 <button className="game-check-btn" onClick={handleCheckTrackIntersection}>Проверить</button>
@@ -1408,8 +1412,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   className="game-answer-input"
                   placeholder="введите ответ"
                   value={fieldInput}
-                  onChange={e => setFieldInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleCheckField()}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckField(); }}
+                  onChange={e => { const v = e.target.value; setFieldInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
                 <button className="game-check-btn" onClick={handleCheckField}>Проверить</button>
