@@ -1826,7 +1826,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Winning field — merged chips (color+cash, color+other, cash+other, only-other): green chip */}
+          {/* Winning field — merged chips: standard cash chip style (same as solo cash) */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "merged").map(entry => {
             const pos = chipPosMap.get(entry.positionId);
             if (!pos) return null;
@@ -1836,13 +1836,13 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const r = 22;
             return (
               <g key={`wf-merged-${entry.positionId}`} style={{ pointerEvents: "none" }}>
-                <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#22C55E" strokeWidth="1.8" opacity="0.55" />
-                <circle cx={pos.x} cy={pos.y} r={r} fill="#071210" stroke="#22C55E" strokeWidth="2.8" />
-                <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#86EFAC" strokeWidth="0.8" opacity="0.6" />
-                <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#86EFAC" strokeWidth="1"
+                <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
+                <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#D9D9D9" strokeWidth="1"
                   strokeDasharray="3 3" opacity="0.5" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#86EFAC"
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
                   stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
                   letterSpacing="0.3">
                   {amt}
