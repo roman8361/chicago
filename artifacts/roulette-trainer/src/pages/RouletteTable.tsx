@@ -898,31 +898,28 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Track series chips — ~3× larger than normal chips (r=57) */}
+          {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
           {game && game.trackBets.map(tb => {
-            const sec = sectorBands.find(b =>
-              (b.sector.id === "serie58"   && tb.type === "SERIE_5_8")  ||
-              (b.sector.id === "orphelins" && tb.type === "ORPHELINS")  ||
-              (b.sector.id === "serie023"  && tb.type === "SERIE_0_2_3")||
-              (b.sector.id === "zerospiel" && tb.type === "ZERO_SPIEL")
-            );
-            const color = sec?.sector.color ?? "#fff";
             const { x, y } = tb.position;
             const amt = String(tb.amount);
-            const fs = amt.length >= 4 ? "22" : "26";
+            const fs = amt.length >= 4 ? "15" : "18";
+            const r = 40;
             return (
               <g key={tb.type} style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={62} fill="none" stroke={color} strokeWidth="2" opacity="0.35" />
+                <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#B87333" strokeWidth="2.2" opacity="0.45" />
                 {/* Main body */}
-                <circle cx={x} cy={y} r={57} fill="rgba(8,18,10,0.93)" stroke={color} strokeWidth="4.5" />
+                <circle cx={x} cy={y} r={r} fill="#111418" stroke="#B87333" strokeWidth="4" />
                 {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={49} fill="none" stroke={color} strokeWidth="1.5" opacity="0.55" />
+                <circle cx={x} cy={y} r={r - 7} fill="none" stroke="#D9D9D9" strokeWidth="1.1" opacity="0.6" />
+                {/* Dashed rim accent — distinct chip pattern */}
+                <circle cx={x} cy={y} r={r - 3} fill="none" stroke="#D9D9D9" strokeWidth="1.4"
+                  strokeDasharray="4 4" opacity="0.5" />
                 {/* Amount text */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill={color}
-                  stroke="rgba(0,0,0,0.7)" strokeWidth="0.8" paintOrder="stroke"
-                  letterSpacing="0.5">
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.8" paintOrder="stroke"
+                  letterSpacing="0.3">
                   {amt}
                 </text>
               </g>
