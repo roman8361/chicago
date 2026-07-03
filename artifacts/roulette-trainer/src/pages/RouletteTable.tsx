@@ -451,14 +451,27 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       selectedNumbers = pool.slice(0, count);
     }
 
+    const multiplicity = Math.max(1, settings.completeMultiplicity);
     for (const num of selectedNumbers) {
       const rule = getCompleteBetRule(num);
       if (!rule) continue;
       const pos = currentChipPosMap.get(`su-${num}`);
       if (!pos) continue;
-      const X = minBet + Math.floor(Math.random() * (maxBet - minBet + 1));
-      const rawAmount = X * rule.chipsRequired;
-      const amount = Math.floor((rawAmount - 5) / 10) * 10 + 5;
+      // Clamp minPlayUnit to maxBet so minAmount ≤ maxAmount even if multiplicity > maxBet
+      const minPlayUnit = Math.min(Math.max(minBet, multiplicity), maxBet);
+      const minAmount = minPlayUnit * rule.chipsRequired;
+      const maxAmount = maxBet * rule.chipsRequired;
+      const range = Math.max(0, maxAmount - minAmount);
+      const rawAmount = minAmount + Math.floor(Math.random() * (range + 1));
+      // Floor to nearest number ending in 5
+      let amount = Math.floor((rawAmount - 5) / 10) * 10 + 5;
+      // After rounding, clamp back into [minAmount, maxAmount]
+      if (amount < minAmount) {
+        amount = Math.ceil((minAmount - 5) / 10) * 10 + 5;
+      }
+      if (amount > maxAmount) {
+        amount = maxAmount; // rare edge: no 5-ending value fits the range
+      }
       bets.push({ number: num, chipsRequired: rule.chipsRequired, amount, position: pos });
       excludedIds.add(`su-${num}`);
     }
@@ -508,13 +521,30 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       const cy = (y1 + y2) / 2;
       const minBet = Math.max(1, settings.minBet);
       const maxBet = Math.max(minBet, settings.maxBet);
-      const X = minBet + Math.floor(Math.random() * (maxBet - minBet + 1));
+      const multiplicity = Math.max(1, settings.completeMultiplicity);
+      const dozenNum = idx + 1;
+      const chipsRequired = getAllRules().dozenComplete?.dozens?.find(d => d.dozen === dozenNum)?.chipsRequired ?? 100;
+      // Clamp minPlayUnit to maxBet so minAmount ≤ maxAmount even if multiplicity > maxBet
+      const minPlayUnit = Math.min(Math.max(minBet, multiplicity), maxBet);
+      const minAmount = minPlayUnit * chipsRequired;
+      const maxAmount = maxBet * chipsRequired;
+      const range = Math.max(0, maxAmount - minAmount);
+      const rawAmount = minAmount + Math.floor(Math.random() * (range + 1));
+      // Floor to nearest number ending in 5
+      let dozenAmount = Math.floor((rawAmount - 5) / 10) * 10 + 5;
+      // After rounding, clamp back into [minAmount, maxAmount]
+      if (dozenAmount < minAmount) {
+        dozenAmount = Math.ceil((minAmount - 5) / 10) * 10 + 5;
+      }
+      if (dozenAmount > maxAmount) {
+        dozenAmount = maxAmount; // rare edge: no 5-ending value fits the range
+      }
       dozenCompleteBet = {
         type:      "DOZEN_COMPLETE",
         label:     "Комплит дюжины",
         dozen:     DOZEN_IDS[idx],
-        baseValue: X,
-        amount:    X * 100 + 25,
+        baseValue: Math.round(dozenAmount / chipsRequired),
+        amount:    dozenAmount,
         position:  { x: cx, y: cy },
         source:    "DOZEN_COMPLETE",
       };
