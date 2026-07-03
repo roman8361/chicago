@@ -82,9 +82,9 @@ type GridParams = typeof DEFAULT_GRID;
 
 // ── Dozens (1st 12 / 2nd 12 / 3rd 12) default params ──────────────────────────
 const DEFAULT_DOZENS = {
-  y1: 110,
-  y2: 205,
-  x: [146, 524, 900, 1277],
+  y1: 117,
+  y2: 195,
+  x: [151, 539, 925, 1315],
 };
 type DozensParams = typeof DEFAULT_DOZENS;
 
