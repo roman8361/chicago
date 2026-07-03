@@ -18,7 +18,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "field" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "seriesFieldPayout" } | { kind: "field" } | { kind: "report" };
 
 interface SeriesLineSummary {
   type: TrackBet["type"];
@@ -112,6 +112,23 @@ interface TrackFieldIntersectionQuizRecord {
   correctAnswer: number;
   correct: boolean;
   lines: TrackFieldIntersectionLineSummary[];
+}
+
+interface SeriesFieldPayoutLineSummary {
+  seriesLabel: string;
+  amount: number;
+  divisor: number;
+  multiplicity: number;
+  playPerUnit: number;
+  winningPositions: Array<{ label: string; chips: number; positionAmount: number }>;
+  seriesTotal: number;
+}
+
+interface SeriesFieldPayoutQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+  lines: SeriesFieldPayoutLineSummary[];
 }
 
 // Maps a bet category from rouletteRules.json's dozenComplete.bets to the
@@ -328,6 +345,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackIntersectionRecord, setTrackIntersectionRecord] = useState<TrackIntersectionQuizRecord | null>(null);
   const [trackFieldIntersectionInput,  setTrackFieldIntersectionInput]  = useState("");
   const [trackFieldIntersectionRecord, setTrackFieldIntersectionRecord] = useState<TrackFieldIntersectionQuizRecord | null>(null);
+  const [seriesFieldPayoutInput,  setSeriesFieldPayoutInput]  = useState("");
+  const [seriesFieldPayoutRecord, setSeriesFieldPayoutRecord] = useState<SeriesFieldPayoutQuizRecord | null>(null);
 
   const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
@@ -676,12 +695,14 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setIntersectionRecord(null);
     setTrackIntersectionRecord(null);
     setTrackFieldIntersectionRecord(null);
+    setSeriesFieldPayoutRecord(null);
     setSeriesInput("");
     setFieldInput("");
     setCompletesInput("");
     setIntersectionInput("");
     setTrackIntersectionInput("");
     setTrackFieldIntersectionInput("");
+    setSeriesFieldPayoutInput("");
     setQuizPhase(
       hasCompletes ? { kind: "completes" } :
       ordered.length > 0 ? { kind: "series" } :
@@ -1050,8 +1071,69 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setTrackFieldIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setTrackFieldIntersectionInput("");
-    setQuizPhase({ kind: "field" });
+    // Check if any active series won to determine next phase
+    const mult2 = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const seriesWonNow = activeSeries.length > 0 && activeSeries.some(tb => {
+      const trackRule2 = (rules.trackBets as Record<string, { bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
+      if (!trackRule2) return false;
+      return Object.values(trackRule2.bets).some(entries =>
+        Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))
+      );
+    });
+    void mult2;
+    setQuizPhase(seriesWonNow ? { kind: "seriesFieldPayout" } : { kind: "field" });
   }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, getAllRules]);
+
+  // ── Series Field Payout (выигравшие серии → сумма в поле) ───────────────────
+  const handleCheckSeriesFieldPayout = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "seriesFieldPayout") return;
+    const userAnswer = parseInt(seriesFieldPayoutInput || "0", 10) || 0;
+    const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const rules = getAllRules();
+
+    const lines: SeriesFieldPayoutLineSummary[] = [];
+
+    for (const tb of activeSeries) {
+      const trackRule = (rules.trackBets as Record<string, { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
+      if (!trackRule) continue;
+      const { playPerUnit } = calcSeriesResult(tb.amount, trackRule.divisor, mult);
+      if (playPerUnit <= 0) continue;
+
+      const winningPositions: SeriesFieldPayoutLineSummary["winningPositions"] = [];
+
+      for (const [catKey, entries] of Object.entries(trackRule.bets)) {
+        if (!Array.isArray(entries)) continue;
+        const catLabel = DOZEN_COMPLETE_CATEGORY_MAP[catKey]?.label ?? catKey;
+        for (const entry of entries) {
+          if (!Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+          if (!entry.numbers.includes(game.drawnNumber)) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          winningPositions.push({
+            label: `${catLabel} ${sortedNums}`,
+            chips: entry.chips,
+            positionAmount: playPerUnit * entry.chips,
+          });
+        }
+      }
+
+      if (winningPositions.length === 0) continue;
+
+      lines.push({
+        seriesLabel: tb.label,
+        amount: tb.amount,
+        divisor: trackRule.divisor,
+        multiplicity: mult,
+        playPerUnit,
+        winningPositions,
+        seriesTotal: winningPositions.reduce((s, p) => s + p.positionAmount, 0),
+      });
+    }
+
+    const correctAnswer = lines.reduce((s, l) => s + l.seriesTotal, 0);
+    setSeriesFieldPayoutRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    setSeriesFieldPayoutInput("");
+    setQuizPhase({ kind: "field" });
+  }, [game, quizPhase, seriesFieldPayoutInput, activeSeries, settings.multiplicity, getAllRules]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
@@ -1086,10 +1168,22 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
+  const anySeriesWon = (() => {
+    if (!game || activeSeries.length === 0) return false;
+    const rules = getAllRules();
+    return activeSeries.some(tb => {
+      const tr = (rules.trackBets as Record<string, { bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
+      if (!tr) return false;
+      return Object.values(tr.bets).some(entries =>
+        Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))
+      );
+    });
+  })();
   const seriesBaseNum = hasCompletesQuestion ? 3 : 1;
   const trackIntQuestionNum = seriesBaseNum + (activeSeries.length > 0 ? 1 : 0);
   const trackFieldIntQuestionNum = trackIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + 1;
+  const seriesFieldPayoutQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (anySeriesWon ? 1 : 0) + 1;
 
   return (
     <div className="roulette-page">
@@ -1528,6 +1622,27 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
 
+            {/* Series field payout question */}
+            {quizPhase.kind === "seriesFieldPayout" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно поставить в поле с выигрышных серий?</span>
+                  <span className="quiz-series-sub">Сумма</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Сумма"
+                  value={seriesFieldPayoutInput}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckSeriesFieldPayout(); }}
+                  onChange={e => { const v = e.target.value; setSeriesFieldPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckSeriesFieldPayout}>Проверить</button>
+              </div>
+            )}
+
             {/* Field question */}
             {quizPhase.kind === "field" && (
               <div className="game-answer-area">
@@ -1629,6 +1744,39 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                           </div>
                         </div>
                       )}
+                    </>
+                  )}
+                </div>
+              )}
+              {seriesFieldPayoutRecord && (
+                <div className={`quiz-report-item ${seriesFieldPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Какую общую сумму нужно поставить в поле с выигрышных серий?</div>
+                  {seriesFieldPayoutRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {seriesFieldPayoutRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {seriesFieldPayoutRecord.lines.map((line, li) => (
+                          <div key={li} style={{ marginBottom: 8 }}>
+                            <strong>{line.seriesLabel}</strong><br/>
+                            Ставка: {line.amount} / {line.divisor} = {(line.amount / line.divisor).toFixed(2)}<br/>
+                            Играет по: {line.playPerUnit}<br/>
+                            {line.winningPositions.map(p => (
+                              <span key={p.label}>{p.label} (фишек: {p.chips}) → {line.playPerUnit} × {p.chips} = {p.positionAmount}<br/></span>
+                            ))}
+                            Итого по серии: {line.seriesTotal}
+                          </div>
+                        ))}
+                        <div className="quiz-report-total">
+                          Итого: {seriesFieldPayoutRecord.lines.map(l => l.seriesTotal).join(" + ")} = {seriesFieldPayoutRecord.correctAnswer}
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
