@@ -527,8 +527,24 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
           const cellH = Math.abs(trackParams.arcRY[1] - trackParams.arcRY[0]);
           pos = {
-            x: pos.x - 0.2 * cellW,
+            x: pos.x - 0.3 * cellW,
             y: pos.y + 0.2 * cellH,
+          };
+        }
+        if (num === 26) {
+          // Right-arc cell for 26 is the second one (index 1 of ARC_R_NUMBERS)
+          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+          pos = {
+            x: pos.x + 0.1 * cellW,
+            y: pos.y,
+          };
+        }
+        if (num === 0) {
+          // Right-arc cell for 0 is the third one (index 2 of ARC_R_NUMBERS)
+          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+          pos = {
+            x: pos.x - 0.2 * cellW,
+            y: pos.y,
           };
         }
         void neighboursRule; // reference-only lookup for future straight-up layout
