@@ -522,6 +522,16 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             y: trackParams.arcLY[2] + 0.2 * cellH,
           };
         }
+        if (num === 32) {
+          // Bottom-row cell for 32 is the last one (index 13 of BOT_NUMBERS)
+          const x1 = trackParams.botX[13], x2 = trackParams.botX[14];
+          const cellW = Math.abs(x2 - x1);
+          const cellH = Math.abs(trackParams.botY2 - trackParams.botY1);
+          pos = {
+            x: pos.x - 0.2 * cellW,
+            y: pos.y + 0.2 * cellH,
+          };
+        }
         void neighboursRule; // reference-only lookup for future straight-up layout
         return { number: num, baseAmount, amount, position: pos, source: "NEIGHBOURS" as const };
       });
