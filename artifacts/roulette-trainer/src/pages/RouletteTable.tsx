@@ -39,10 +39,19 @@ interface SeriesQuizRecord {
   lines: SeriesLineSummary[];
 }
 
+interface WinningFieldEntry {
+  positionId: string;
+  amount: number;
+  positionType: "straight" | "split" | "street" | "corner" | "sixline";
+  positionNums: number[];
+  payoutMultiplier: number;
+}
+
 interface FieldQuizRecord {
   userAnswer: number;
   correctAnswer: number;
   correct: boolean;
+  entries: WinningFieldEntry[];
 }
 
 interface CompleteLineSummary {
@@ -184,6 +193,125 @@ function calcOneCompleteChange(
   const playPerUnit = Math.floor(Math.min(rawPlay, maxBet) / multiplicity) * multiplicity;
   const acceptedAmount = playPerUnit * chipsRequired;
   return { rawPlay, playPerUnit, acceptedAmount, change: amount - acceptedAmount };
+}
+
+function computeWinningField(
+  game: GameState,
+  activeSeries: TrackBet[],
+  maxBet: number,
+  mult: number,
+  chipValue: number,
+  completeMultiplicity: number,
+  rules: Record<string, unknown>,
+  payoutMap: Record<string, number>,
+): WinningFieldEntry[] {
+  const drawnNumber = game.drawnNumber;
+  const posAmounts = new Map<string, number>();
+
+  const addToPos = (positionId: string, amount: number) => {
+    posAmounts.set(positionId, (posAmounts.get(positionId) ?? 0) + amount);
+  };
+
+  // 1. Color chips (winning positions only)
+  for (const stack of game.chips) {
+    const pos = BET_POSITIONS_MAP.get(stack.positionId);
+    if (!pos || !pos.numbers.includes(drawnNumber)) continue;
+    addToPos(stack.positionId, stack.count * chipValue);
+  }
+
+  // 2. Cash chips (winning positions only)
+  for (const cc of game.cashChipStacks) {
+    const pos = BET_POSITIONS_MAP.get(cc.positionId);
+    if (!pos || !pos.numbers.includes(drawnNumber)) continue;
+    addToPos(cc.positionId, cc.totalAmount);
+  }
+
+  // 3. Series – expand using trackBets bets
+  type TrackRuleT = { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+  for (const tb of activeSeries) {
+    const trackRule = (rules.trackBets as Record<string, TrackRuleT> | undefined)?.[tb.type];
+    if (!trackRule) continue;
+    const { playPerUnit } = calcSeriesResult(tb.amount, trackRule.divisor, mult);
+    if (playPerUnit <= 0) continue;
+    for (const [catKey, entries] of Object.entries(trackRule.bets)) {
+      const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
+      if (!catInfo || !Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+        const positionId = findPositionId(catInfo.betType, entry.numbers);
+        if (!positionId) continue;
+        addToPos(positionId, playPerUnit * entry.chips);
+      }
+    }
+  }
+
+  // 4. Neighbours → Straight Up on drawnNumber
+  const neighboursMap = rules.neighbours as Record<string, number[]> | undefined;
+  if (neighboursMap) {
+    for (const nb of game.neighboursBets) {
+      const nums = neighboursMap[String(nb.number)];
+      if (!Array.isArray(nums) || !nums.includes(drawnNumber)) continue;
+      addToPos(`su-${drawnNumber}`, nb.baseAmount);
+    }
+  }
+
+  // 5. Number completes – expand using completeBets bets
+  type CompleteBetRuleT = { number: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+  for (const ncb of game.numberCompleteBets) {
+    const completeRule = (rules.completeBets as CompleteBetRuleT[] | undefined)?.find(cb => cb.number === ncb.number);
+    if (!completeRule) continue;
+    const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, completeMultiplicity);
+    for (const [catKey, entries] of Object.entries(completeRule.bets)) {
+      const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
+      if (!catInfo || !Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+        const positionId = findPositionId(catInfo.betType, entry.numbers);
+        if (!positionId) continue;
+        addToPos(positionId, playPerUnit * entry.chips);
+      }
+    }
+  }
+
+  // 6. Dozen complete – expand using dozenComplete.dozens bets
+  type DozenBetRuleT = { dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+  if (game.dozenCompleteBet) {
+    const { amount, dozen } = game.dozenCompleteBet;
+    const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+    const dozenRule = (rules.dozenComplete as { dozens: DozenBetRuleT[] } | undefined)?.dozens.find(d => d.dozen === dozenNum);
+    if (dozenRule) {
+      const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, completeMultiplicity);
+      for (const [catKey, entries] of Object.entries(dozenRule.bets)) {
+        const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
+        if (!catInfo || !Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+          const positionId = findPositionId(catInfo.betType, entry.numbers);
+          if (!positionId) continue;
+          addToPos(positionId, playPerUnit * entry.chips);
+        }
+      }
+    }
+  }
+
+  // Cap each position at its limit and build result entries
+  const TYPE_LIMIT_MULT: Record<string, number> = { straight: 1, split: 2, street: 3, corner: 4, sixline: 5 };
+  const result: WinningFieldEntry[] = [];
+  for (const [positionId, total] of posAmounts.entries()) {
+    const pos = BET_POSITIONS_MAP.get(positionId);
+    if (!pos) continue;
+    const limitMult = TYPE_LIMIT_MULT[pos.type] ?? 1;
+    const capped = Math.min(total, maxBet * limitMult);
+    if (capped <= 0) continue;
+    result.push({
+      positionId,
+      amount: capped,
+      positionType: pos.type as WinningFieldEntry["positionType"],
+      positionNums: [...pos.numbers].sort((a, b) => a - b),
+      payoutMultiplier: payoutMap[pos.type] ?? 0,
+    });
+  }
+  return result;
 }
 
 // ── Main grid default params ──────────────────────────────────────────────────
@@ -398,8 +526,15 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     };
   }, [getPayouts]);
 
-  // Keep getAllRules accessible for any future per-spin rule reads
-  const _getAllRules = getAllRules;
+  const winningFieldChips = useMemo<WinningFieldEntry[] | null>(() => {
+    if (!game || !quizPhase) return null;
+    if (quizPhase.kind !== "field" && quizPhase.kind !== "report") return null;
+    const maxBet = Math.max(1, settings.maxBet);
+    const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const chipValue = settings.chipValue ?? 10;
+    const completeMultiplicity = Math.max(1, settings.completeMultiplicity ?? 10);
+    return computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap);
+  }, [game, quizPhase, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap]);
 
   // Auto-save to localStorage whenever params change.
   // Skip the very first run (initial mount) so that, on first load with no
@@ -794,9 +929,15 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const handleCheckField = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "field") return;
     const userAnswer = parseInt(fieldInput || "0", 10) || 0;
-    setFieldRecord({ userAnswer, correctAnswer: game.correctAnswer, correct: userAnswer === game.correctAnswer });
+    const maxBet = Math.max(1, settings.maxBet);
+    const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const chipValue = settings.chipValue ?? 10;
+    const completeMultiplicity = Math.max(1, settings.completeMultiplicity ?? 10);
+    const entries = computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap);
+    const correctAnswer = entries.reduce((sum, e) => sum + e.amount * e.payoutMultiplier, 0);
+    setFieldRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, entries });
     setQuizPhase({ kind: "report" });
-  }, [game, quizPhase, fieldInput]);
+  }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap]);
 
   const handleCheckCompletes = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "completes") return;
@@ -1317,6 +1458,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     });
   };
 
+  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "report";
+
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
   const anySeriesWon = (() => {
@@ -1454,7 +1597,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })()}
 
           {/* Chips */}
-          {game && game.chips.map(stack => {
+          {game && !showWinningField && game.chips.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const count = stack.count;
@@ -1472,7 +1615,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Cash chips — round, slightly larger than color chips */}
-          {game && game.cashChipStacks && game.cashChipStacks.map(stack => {
+          {game && !showWinningField && game.cashChipStacks && game.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.totalAmount);
@@ -1502,7 +1645,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Dozen complete chip — ~3× larger than normal chips (r=57), gold style */}
-          {game?.dozenCompleteBet && (() => {
+          {game?.dozenCompleteBet && !showWinningField && (() => {
             const { x, y } = game.dozenCompleteBet.position;
             const amt = String(game.dozenCompleteBet.amount);
             const fs = amt.length >= 6 ? "11" : amt.length >= 5 ? "13" : amt.length >= 4 ? "16" : "19";
@@ -1526,7 +1669,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })()}
 
           {/* Number complete chips — large gold chip centered on the straight-up */}
-          {game && game.numberCompleteBets.map(ncb => {
+          {game && !showWinningField && game.numberCompleteBets.map(ncb => {
             const { x, y } = ncb.position;
             const amt = String(ncb.amount);
             const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "12" : amt.length >= 4 ? "14" : "17";
@@ -1556,7 +1699,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
-          {game && game.trackBets.map(tb => {
+          {game && !showWinningField && game.trackBets.map(tb => {
             const { x, y } = tb.position;
             const amt = String(tb.amount);
             const fs = amt.length >= 4 ? "15" : "18";
@@ -1584,7 +1727,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
-          {game && game.neighboursBets.map(nb => {
+          {game && !showWinningField && game.neighboursBets.map(nb => {
             const { x, y } = nb.position;
             const amt = String(nb.amount);
             const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
@@ -1602,6 +1745,31 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                 {/* Amount text */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
                   fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  letterSpacing="0.3">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Winning field chips — green cash chips shown during "field" and "report" phases */}
+          {showWinningField && winningFieldChips && winningFieldChips.map(entry => {
+            const pos = chipPosMap.get(entry.positionId);
+            if (!pos) return null;
+            const amt = String(entry.amount);
+            const len = amt.length;
+            const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
+            const r = 22;
+            return (
+              <g key={`wf-${entry.positionId}`} style={{ pointerEvents: "none" }}>
+                <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#22C55E" strokeWidth="1.8" opacity="0.55" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill="#071210" stroke="#22C55E" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#86EFAC" strokeWidth="0.8" opacity="0.6" />
+                <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#86EFAC" strokeWidth="1"
+                  strokeDasharray="3 3" opacity="0.5" />
+                <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#86EFAC"
                   stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
                   letterSpacing="0.3">
                   {amt}
@@ -1829,7 +1997,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "field" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{fieldQuestionNum}. Выплата по полю</span>
+                  <span className="quiz-series-title">{fieldQuestionNum}. Посчитайте общую сумму выплаты?</span>
                   <span className="quiz-series-sub">Сумма выплаты</span>
                 </div>
                 <input
@@ -2122,7 +2290,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
               {fieldRecord && (
                 <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Выплата по полю</div>
+                  <div className="quiz-report-name">Посчитайте общую сумму выплаты?</div>
                   {fieldRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2134,14 +2302,24 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                       <div className="quiz-report-detail">Ваш ответ: {fieldRecord.userAnswer}</div>
                       <div className="quiz-report-detail">Правильный ответ: {fieldRecord.correctAnswer}</div>
                       <div className="quiz-report-calc">
-                        {game.breakdown.length === 0 ? (
+                        {fieldRecord.entries.length === 0 ? (
                           <span>Нет выигрышных ставок — выплата 0</span>
                         ) : (
                           <>
-                            {game.breakdown.map((line, j) => (
-                              <div key={j}>{line.label}: {line.chips} фишки × {line.chipValue} × {line.payout} = {line.subtotal}</div>
-                            ))}
-                            <div className="quiz-report-total">Итого: {fieldRecord.correctAnswer}</div>
+                            {fieldRecord.entries.map((e, j) => {
+                              const typeLabel = ({ straight: "Straight Up", split: "Split", street: "Street", corner: "Corner", sixline: "Six-Line" } as Record<string, string>)[e.positionType] ?? e.positionType;
+                              return (
+                                <div key={j} style={{ marginBottom: 6 }}>
+                                  <strong>{typeLabel} {e.positionNums.join("-")}</strong><br/>
+                                  Итоговая ставка: {e.amount}<br/>
+                                  Коэффициент: {e.payoutMultiplier}<br/>
+                                  {e.amount} × {e.payoutMultiplier} = {e.amount * e.payoutMultiplier}
+                                </div>
+                              );
+                            })}
+                            <div className="quiz-report-total">
+                              Итого: {fieldRecord.entries.map(e => e.amount * e.payoutMultiplier).join(" + ")} = {fieldRecord.correctAnswer}
+                            </div>
                           </>
                         )}
                       </div>
