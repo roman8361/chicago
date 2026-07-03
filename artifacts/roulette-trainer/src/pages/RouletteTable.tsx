@@ -790,15 +790,20 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const r = 22;
             return (
               <g key={`cash-${stack.positionId}`} style={{ pointerEvents: "none" }}>
-                <circle cx={pos.x + 1} cy={pos.y + 1.5} r={r}
-                  fill="rgba(0,0,0,0.3)" />
-                <circle cx={pos.x} cy={pos.y} r={r}
-                  fill="#1a1a1a" stroke="#fff" strokeWidth="2.5" opacity="0.95" />
-                <circle cx={pos.x} cy={pos.y} r={r - 4}
-                  fill="none" stroke="#fff" strokeWidth="0.8" opacity="0.5" />
+                {/* Outer glow ring */}
+                <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
+                {/* Main body */}
+                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                {/* Inner decorative ring */}
+                <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
+                {/* Dashed rim accent — distinct chip pattern */}
+                <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#D9D9D9" strokeWidth="1"
+                  strokeDasharray="3 3" opacity="0.5" />
+                {/* Amount text */}
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#fff"
-                  stroke="rgba(0,0,0,0.5)" strokeWidth="0.5" paintOrder="stroke">
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  letterSpacing="0.3">
                   {amt}
                 </text>
               </g>
