@@ -398,13 +398,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const setArcRY = useCallback((i: number, v: number) =>
     setTrackParams(p => { const arcRY = [...p.arcRY] as TrackParams["arcRY"]; arcRY[i] = v; return { ...p, arcRY }; }), []);
 
-  // ── Random track bet amount: minAmount–5000, multiples of 50 ────────────────
-  function randomTrackAmount(minAmount: number): number {
-    const minRounded = Math.ceil(minAmount / 50) * 50;
-    const safeMin = Math.max(50, minRounded);
-    const count = Math.floor((5000 - safeMin) / 50) + 1;
-    if (count <= 0) return safeMin;
-    return safeMin + Math.floor(Math.random() * count) * 50;
+  // ── Random series amount: X ∈ [maxBet/2 … maxBet], amount = round(X × divisor, 10) ──
+  function randomSeriesAmount(maxBet: number, divisor: number): number {
+    const safeMax = Math.max(1, maxBet);
+    const lowerBound = safeMax / 2;
+    const x = lowerBound + Math.random() * (safeMax - lowerBound);
+    return Math.round((x * divisor) / 10) * 10;
   }
 
   // ── Number complete bet generation ──────────────────────────────────────────
@@ -527,7 +526,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       .map(s => ({
         type:     s.type,
         label:    s.label,
-        amount:   randomTrackAmount(mult * seriesDivisors[s.type]),
+        amount:   randomSeriesAmount(settings.maxBet, seriesDivisors[s.type]),
         position: { x: s.band.cx, y: s.band.cy },
         source:   "TRACK" as const,
       }));
