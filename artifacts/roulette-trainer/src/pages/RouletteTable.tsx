@@ -74,9 +74,9 @@ function calcOneCompleteChange(
 // ── Main grid default params ──────────────────────────────────────────────────
 const DEFAULT_GRID = {
   headerY: 205,
-  botY: 616,
-  zeroX1: 34,
-  colX: [146, 241, 334, 429, 524, 617, 712, 806, 900, 995, 1089, 1183, 1277],
+  botY: 593,
+  zeroX1: 46,
+  colX: [149, 247, 342, 440, 537, 634, 733, 830, 926, 1023, 1120, 1219, 1316],
 };
 type GridParams = typeof DEFAULT_GRID;
 
