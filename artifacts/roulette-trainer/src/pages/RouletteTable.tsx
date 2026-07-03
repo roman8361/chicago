@@ -45,6 +45,10 @@ interface WinningFieldEntry {
   positionType: "straight" | "split" | "street" | "corner" | "sixline";
   positionNums: number[];
   payoutMultiplier: number;
+  /** How to display this winning position on the field */
+  displayAs: "color" | "cash" | "merged";
+  /** Original chip count — only relevant when displayAs === "color" */
+  colorCount: number;
 }
 
 interface FieldQuizRecord {
@@ -206,24 +210,31 @@ function computeWinningField(
   payoutMap: Record<string, number>,
 ): WinningFieldEntry[] {
   const drawnNumber = game.drawnNumber;
-  const posAmounts = new Map<string, number>();
+  // Track contributions by source type so we can decide display mode per position
+  const colorAmts  = new Map<string, number>(); // color chips: count * chipValue
+  const colorCnts  = new Map<string, number>(); // color chips: raw count (for display)
+  const cashAmts   = new Map<string, number>(); // field cash chips
+  const otherAmts  = new Map<string, number>(); // series + neighbours + completes
 
-  const addToPos = (positionId: string, amount: number) => {
-    posAmounts.set(positionId, (posAmounts.get(positionId) ?? 0) + amount);
+  const addColor = (id: string, count: number, amount: number) => {
+    colorAmts.set(id, (colorAmts.get(id) ?? 0) + amount);
+    colorCnts.set(id, (colorCnts.get(id) ?? 0) + count);
   };
+  const addCash  = (id: string, amount: number) => cashAmts.set(id, (cashAmts.get(id) ?? 0) + amount);
+  const addOther = (id: string, amount: number) => otherAmts.set(id, (otherAmts.get(id) ?? 0) + amount);
 
   // 1. Color chips (winning positions only)
   for (const stack of game.chips) {
     const pos = BET_POSITIONS_MAP.get(stack.positionId);
     if (!pos || !pos.numbers.includes(drawnNumber)) continue;
-    addToPos(stack.positionId, stack.count * chipValue);
+    addColor(stack.positionId, stack.count, stack.count * chipValue);
   }
 
   // 2. Cash chips (winning positions only)
   for (const cc of game.cashChipStacks) {
     const pos = BET_POSITIONS_MAP.get(cc.positionId);
     if (!pos || !pos.numbers.includes(drawnNumber)) continue;
-    addToPos(cc.positionId, cc.totalAmount);
+    addCash(cc.positionId, cc.totalAmount);
   }
 
   // 3. Series – expand using trackBets bets
@@ -240,7 +251,7 @@ function computeWinningField(
         if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
         const positionId = findPositionId(catInfo.betType, entry.numbers);
         if (!positionId) continue;
-        addToPos(positionId, playPerUnit * entry.chips);
+        addOther(positionId, playPerUnit * entry.chips);
       }
     }
   }
@@ -251,7 +262,7 @@ function computeWinningField(
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
       if (!Array.isArray(nums) || !nums.includes(drawnNumber)) continue;
-      addToPos(`su-${drawnNumber}`, nb.baseAmount);
+      addOther(`su-${drawnNumber}`, nb.baseAmount);
     }
   }
 
@@ -268,7 +279,7 @@ function computeWinningField(
         if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
         const positionId = findPositionId(catInfo.betType, entry.numbers);
         if (!positionId) continue;
-        addToPos(positionId, playPerUnit * entry.chips);
+        addOther(positionId, playPerUnit * entry.chips);
       }
     }
   }
@@ -288,27 +299,47 @@ function computeWinningField(
           if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
           const positionId = findPositionId(catInfo.betType, entry.numbers);
           if (!positionId) continue;
-          addToPos(positionId, playPerUnit * entry.chips);
+          addOther(positionId, playPerUnit * entry.chips);
         }
       }
     }
   }
 
-  // Cap each position at its limit and build result entries
+  // Collect all touched positions and build result entries
   const TYPE_LIMIT_MULT: Record<string, number> = { straight: 1, split: 2, street: 3, corner: 4, sixline: 5 };
+  const allIds = new Set([...colorAmts.keys(), ...cashAmts.keys(), ...otherAmts.keys()]);
   const result: WinningFieldEntry[] = [];
-  for (const [positionId, total] of posAmounts.entries()) {
+
+  for (const positionId of allIds) {
     const pos = BET_POSITIONS_MAP.get(positionId);
     if (!pos) continue;
+    const colorAmt = colorAmts.get(positionId) ?? 0;
+    const colorCnt = colorCnts.get(positionId) ?? 0;
+    const cashAmt  = cashAmts.get(positionId) ?? 0;
+    const otherAmt = otherAmts.get(positionId) ?? 0;
+    const total    = colorAmt + cashAmt + otherAmt;
     const limitMult = TYPE_LIMIT_MULT[pos.type] ?? 1;
     const capped = Math.min(total, maxBet * limitMult);
     if (capped <= 0) continue;
+
+    // Determine display mode
+    let displayAs: WinningFieldEntry["displayAs"];
+    if (colorAmt > 0 && cashAmt === 0 && otherAmt === 0) {
+      displayAs = "color";   // solo color chip — keep as blue chip
+    } else if (colorAmt === 0 && cashAmt > 0 && otherAmt === 0) {
+      displayAs = "cash";    // solo cash chip — keep as bronze chip
+    } else {
+      displayAs = "merged";  // any mix → green merged chip
+    }
+
     result.push({
       positionId,
       amount: capped,
       positionType: pos.type as WinningFieldEntry["positionType"],
       positionNums: [...pos.numbers].sort((a, b) => a - b),
       payoutMultiplier: payoutMap[pos.type] ?? 0,
+      displayAs,
+      colorCount: colorCnt,
     });
   }
   return result;
@@ -1753,8 +1784,25 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Winning field chips — green cash chips shown during "field" and "report" phases */}
-          {showWinningField && winningFieldChips && winningFieldChips.map(entry => {
+          {/* Winning field — solo color chips: keep as original blue chip */}
+          {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
+            const pos = chipPosMap.get(entry.positionId);
+            if (!pos) return null;
+            const count = entry.colorCount;
+            return (
+              <g key={`wf-color-${entry.positionId}`} style={{ pointerEvents: "none" }}>
+                <circle cx={pos.x} cy={pos.y} r={19.1}
+                  fill="#1a6fd4" stroke="#fff" strokeWidth="2.5" opacity="0.92" />
+                <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={count >= 10 ? "12.75" : "14.9"} fontWeight="bold" fill="#fff">
+                  {count}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Winning field — solo cash chips: keep as original bronze cash chip */}
+          {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "cash").map(entry => {
             const pos = chipPosMap.get(entry.positionId);
             if (!pos) return null;
             const amt = String(entry.amount);
@@ -1762,7 +1810,32 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
             return (
-              <g key={`wf-${entry.positionId}`} style={{ pointerEvents: "none" }}>
+              <g key={`wf-cash-${entry.positionId}`} style={{ pointerEvents: "none" }}>
+                <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
+                <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#D9D9D9" strokeWidth="1"
+                  strokeDasharray="3 3" opacity="0.5" />
+                <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  letterSpacing="0.3">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Winning field — merged chips (color+cash, color+other, cash+other, only-other): green chip */}
+          {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "merged").map(entry => {
+            const pos = chipPosMap.get(entry.positionId);
+            if (!pos) return null;
+            const amt = String(entry.amount);
+            const len = amt.length;
+            const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
+            const r = 22;
+            return (
+              <g key={`wf-merged-${entry.positionId}`} style={{ pointerEvents: "none" }}>
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#22C55E" strokeWidth="1.8" opacity="0.55" />
                 <circle cx={pos.x} cy={pos.y} r={r} fill="#071210" stroke="#22C55E" strokeWidth="2.8" />
                 <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#86EFAC" strokeWidth="0.8" opacity="0.6" />
