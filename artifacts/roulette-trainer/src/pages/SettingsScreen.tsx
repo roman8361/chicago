@@ -149,7 +149,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
         </div>
 
         <div className="settings-divider" />
-        <div className="settings-section-title">Специальные ставки</div>
+        <div className="settings-section-title">Серии</div>
         <div className="settings-grid-2">
           <NumField
             label='Количество ставок "Соседи номера"'
