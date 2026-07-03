@@ -669,6 +669,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     gridParams,
     seriesDivisors,
     payoutMap,
+    settings.neighborsCount,
+    settings.completeMultiplicity,
+    getAllRules,
+    getNeighboursRule,
     getCompleteBetRule,
   ]);
 

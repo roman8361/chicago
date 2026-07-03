@@ -22,10 +22,33 @@ function validateRules(data: unknown): string | null {
 
   const trackBets = d.trackBets as Record<string, unknown>;
   if (typeof trackBets !== "object" || trackBets === null) return "trackBets должен быть объектом";
+  const REQUIRED_TRACK_KEYS = ["SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL"];
+  for (const key of REQUIRED_TRACK_KEYS) {
+    if (!(key in trackBets)) return `trackBets: отсутствует обязательная серия "${key}"`;
+  }
   for (const [key, bet] of Object.entries(trackBets)) {
     const b = bet as Record<string, unknown>;
     if (typeof b.divisor !== "number" || b.divisor <= 0)
       return `trackBets.${key}.divisor должен быть положительным числом`;
+  }
+
+  const completeBets = d.completeBets;
+  if (!Array.isArray(completeBets)) return "completeBets должен быть массивом";
+  for (let i = 0; i < completeBets.length; i++) {
+    const cb = completeBets[i] as Record<string, unknown>;
+    if (typeof cb !== "object" || cb === null) return `completeBets[${i}] должен быть объектом`;
+    if (typeof cb.number !== "number") return `completeBets[${i}].number должно быть числом`;
+  }
+
+  const dc = d.dozenComplete as Record<string, unknown> | undefined;
+  if (typeof dc !== "object" || dc === null) return "dozenComplete должен быть объектом";
+  if (!Array.isArray(dc.dozens)) return "dozenComplete.dozens должен быть массивом";
+  for (let i = 0; i < (dc.dozens as unknown[]).length; i++) {
+    const dz = (dc.dozens as unknown[])[i] as Record<string, unknown>;
+    if (typeof dz !== "object" || dz === null) return `dozenComplete.dozens[${i}] должен быть объектом`;
+    if (typeof dz.dozen !== "number") return `dozenComplete.dozens[${i}].dozen должно быть числом`;
+    if (typeof dz.chipsRequired !== "number" || dz.chipsRequired <= 0)
+      return `dozenComplete.dozens[${i}].chipsRequired должно быть положительным числом`;
   }
 
   return null;
@@ -166,7 +189,7 @@ function EditMode({
   rules, onSave, onCancel, onReset,
 }: {
   rules: RulesData;
-  onSave: (raw: string) => void;
+  onSave: (validated: RulesData) => void;
   onCancel: () => void;
   onReset: () => void;
 }) {
@@ -184,7 +207,8 @@ function EditMode({
     const err = validateRules(parsed);
     if (err) { setError(err); return; }
     setError(null);
-    onSave(text);
+    // Safe: validateRules has confirmed the shape matches RulesData requirements
+    onSave(parsed as RulesData);
   }
 
   return (
@@ -250,8 +274,8 @@ export default function RulesScreen({ onBack }: Props) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [saved, setSaved] = useState(false);
 
-  function handleSave(raw: string) {
-    updateRules(JSON.parse(raw) as RulesData);
+  function handleSave(validated: RulesData) {
+    updateRules(validated);
     setMode("view");
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
