@@ -18,20 +18,25 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series"; idx: number } | { kind: "field" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "field" } | { kind: "report" };
 
-interface SeriesQuizRecord {
+interface SeriesLineSummary {
   type: TrackBet["type"];
   label: string;
   amount: number;
   divisor: number;
   multiplicity: number;
   rawPerUnit: number;
-  correctPlayPerUnit: number;
-  correctChange: number;
-  userPlayPerUnit: number;
-  userChange: number;
+  playPerUnit: number;
+  acceptedAmount: number;
+  change: number;
+}
+
+interface SeriesQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
   correct: boolean;
+  lines: SeriesLineSummary[];
 }
 
 interface FieldQuizRecord {
@@ -279,10 +284,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   // ── Quiz state ──────────────────────────────────────────────────────────────
   const [quizPhase,         setQuizPhase]         = useState<QuizPhase | null>(null);
   const [activeSeries,      setActiveSeries]      = useState<TrackBet[]>([]);
-  const [seriesRecords,     setSeriesRecords]     = useState<SeriesQuizRecord[]>([]);
+  const [seriesRecord,      setSeriesRecord]      = useState<SeriesQuizRecord | null>(null);
   const [fieldRecord,       setFieldRecord]       = useState<FieldQuizRecord | null>(null);
-  const [seriesPlayInput,   setSeriesPlayInput]   = useState("");
-  const [seriesChangeInput, setSeriesChangeInput] = useState("");
+  const [seriesInput,       setSeriesInput]       = useState("");
   const [fieldInput,        setFieldInput]        = useState("");
   const [completesInput,    setCompletesInput]    = useState("");
   const [completesRecord,   setCompletesRecord]   = useState<CompleteQuizRecord | null>(null);
@@ -630,18 +634,17 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       .filter((tb): tb is TrackBet => tb !== undefined);
     const hasCompletes = settings.completeField === "yes" || settings.completeDozen === "yes";
     setActiveSeries(ordered);
-    setSeriesRecords([]);
+    setSeriesRecord(null);
     setFieldRecord(null);
     setCompletesRecord(null);
     setIntersectionRecord(null);
-    setSeriesPlayInput("");
-    setSeriesChangeInput("");
+    setSeriesInput("");
     setFieldInput("");
     setCompletesInput("");
     setIntersectionInput("");
     setQuizPhase(
       hasCompletes ? { kind: "completes" } :
-      ordered.length > 0 ? { kind: "series", idx: 0 } :
+      ordered.length > 0 ? { kind: "series" } :
       { kind: "field" }
     );
 
@@ -671,26 +674,28 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   const handleCheckSeries = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "series") return;
-    const tb = activeSeries[quizPhase.idx];
-    if (!tb) return;
+    const userAnswer = parseInt(seriesInput || "0", 10) || 0;
     const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
-    const divisor = seriesDivisors[tb.type];
-    const { playPerUnit, change, rawPerUnit } = calcSeriesResult(tb.amount, divisor, mult);
-    const userPlay = parseInt(seriesPlayInput  || "0", 10) || 0;
-    const userChg  = parseInt(seriesChangeInput || "0", 10) || 0;
-    const record: SeriesQuizRecord = {
-      type: tb.type, label: tb.label, amount: tb.amount,
-      divisor, multiplicity: mult, rawPerUnit,
-      correctPlayPerUnit: playPerUnit, correctChange: change,
-      userPlayPerUnit: userPlay, userChange: userChg,
-      correct: userPlay === playPerUnit && userChg === change,
-    };
-    setSeriesRecords(prev => [...prev, record]);
-    setSeriesPlayInput("");
-    setSeriesChangeInput("");
-    const nextIdx = quizPhase.idx + 1;
-    setQuizPhase(nextIdx < activeSeries.length ? { kind: "series", idx: nextIdx } : { kind: "field" });
-  }, [game, quizPhase, activeSeries, seriesPlayInput, seriesChangeInput, settings.multiplicity, seriesDivisors]);
+    const lines: SeriesLineSummary[] = activeSeries.map(tb => {
+      const divisor = seriesDivisors[tb.type];
+      const { playPerUnit, change, rawPerUnit } = calcSeriesResult(tb.amount, divisor, mult);
+      return {
+        type: tb.type,
+        label: tb.label,
+        amount: tb.amount,
+        divisor,
+        multiplicity: mult,
+        rawPerUnit,
+        playPerUnit,
+        acceptedAmount: playPerUnit * divisor,
+        change,
+      };
+    });
+    const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
+    setSeriesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    setSeriesInput("");
+    setQuizPhase({ kind: "field" });
+  }, [game, quizPhase, activeSeries, seriesInput, settings.multiplicity, seriesDivisors]);
 
   const handleCheckField = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "field") return;
@@ -833,7 +838,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setIntersectionInput("");
-    setQuizPhase(activeSeries.length > 0 ? { kind: "series", idx: 0 } : { kind: "field" });
+    setQuizPhase(activeSeries.length > 0 ? { kind: "series" } : { kind: "field" });
   }, [game, quizPhase, intersectionInput, activeSeries, settings.maxBet, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
@@ -869,7 +874,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const seriesBaseNum = hasCompletesQuestion ? 3 : 1;
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + activeSeries.length + 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + 1;
 
   return (
     <div className="roulette-page">
@@ -1244,36 +1249,24 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             )}
 
             {/* Series question */}
-            {quizPhase.kind === "series" && (() => {
-              const tb = activeSeries[quizPhase.idx];
-              if (!tb) return null;
-              return (
-                <div className="game-answer-area">
-                  <div className="quiz-series-header">
-                    <span className="quiz-series-title">{seriesBaseNum + quizPhase.idx}. {tb.label}</span>
-                    <span className="quiz-series-sub">Рассчитайте ставку серии</span>
-                  </div>
-                  <input
-                    type="number"
-                    className="game-answer-input"
-                    placeholder="По сколько играет"
-                    value={seriesPlayInput}
-                    onChange={e => setSeriesPlayInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
-                    autoFocus
-                  />
-                  <input
-                    type="number"
-                    className="game-answer-input"
-                    placeholder="Сдача"
-                    value={seriesChangeInput}
-                    onChange={e => setSeriesChangeInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
-                  />
-                  <button className="game-check-btn" onClick={handleCheckSeries}>Проверить</button>
+            {quizPhase.kind === "series" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">{seriesBaseNum}. Посчитайте общую сдачу с серий, с учетом кратности приема.</span>
+                  <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-              );
-            })()}
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Общая сдача"
+                  value={seriesInput}
+                  onChange={e => setSeriesInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleCheckSeries()}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckSeries}>Проверить</button>
+              </div>
+            )}
 
             {/* Field question */}
             {quizPhase.kind === "field" && (
@@ -1379,30 +1372,40 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   )}
                 </div>
               )}
-              {seriesRecords.map((rec, i) => (
-                <div key={i} className={`quiz-report-item ${rec.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{rec.label}</div>
-                  {rec.correct ? (
+              {seriesRecord && (
+                <div className={`quiz-report-item ${seriesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Посчитайте общую сдачу с серий, с учетом кратности приема.</div>
+                  {seriesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">По сколько играет: {rec.correctPlayPerUnit} · Сдача: {rec.correctChange}</div>
+                      <div className="quiz-report-detail">Ответ: {seriesRecord.correctAnswer}</div>
                     </>
                   ) : (
                     <>
                       <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: по сколько играет {rec.userPlayPerUnit}, сдача {rec.userChange}</div>
-                      <div className="quiz-report-detail">Правильный ответ: по сколько играет {rec.correctPlayPerUnit}, сдача {rec.correctChange}</div>
+                      <div className="quiz-report-detail">Ваш ответ: {seriesRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {seriesRecord.correctAnswer}</div>
                       <div className="quiz-report-calc">
-                        Ставка серии: {rec.amount} / Делитель: {rec.divisor} / Кратность: {rec.multiplicity}<br/>
-                        {rec.amount} / {rec.divisor} = {rec.rawPerUnit.toFixed(2)}<br/>
-                        Округляем вниз до ближайшей кратности {rec.multiplicity} = {rec.correctPlayPerUnit}<br/>
-                        Принятая сумма: {rec.correctPlayPerUnit} × {rec.divisor} = {rec.correctPlayPerUnit * rec.divisor}<br/>
-                        Сдача: {rec.amount} − {rec.correctPlayPerUnit * rec.divisor} = {rec.correctChange}
+                        {seriesRecord.lines.map((line, i) => (
+                          <div key={i} style={{ marginBottom: 6 }}>
+                            <strong>{line.label}:</strong><br/>
+                            Ставка серии: {line.amount}<br/>
+                            Делитель: {line.divisor}<br/>
+                            Кратность: {line.multiplicity}<br/>
+                            {line.amount} / {line.divisor} = {line.rawPerUnit.toFixed(2)}<br/>
+                            Округляем вниз до {line.playPerUnit}<br/>
+                            Принятая сумма: {line.playPerUnit} × {line.divisor} = {line.acceptedAmount}<br/>
+                            Сдача: {line.amount} − {line.acceptedAmount} = {line.change}
+                          </div>
+                        ))}
+                        <div className="quiz-report-total">
+                          Итого сдача с серий: {seriesRecord.lines.map(l => l.change).join(" + ")} = {seriesRecord.correctAnswer}
+                        </div>
                       </div>
                     </>
                   )}
                 </div>
-              ))}
+              )}
 
               {fieldRecord && (
                 <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
