@@ -18,7 +18,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
 
 interface SeriesLineSummary {
   type: TrackBet["type"];
@@ -56,6 +56,16 @@ interface FieldQuizRecord {
   correctAnswer: number;
   correct: boolean;
   entries: WinningFieldEntry[];
+}
+
+interface ColorPayoutQuizRecord {
+  userAnswer: number;
+  correctAnswer: number; // colorChips count
+  correct: boolean;
+  cashPayout: number;
+  totalPayout: number;
+  colorAmount: number;
+  colorNominal: number;
 }
 
 interface CompleteLineSummary {
@@ -197,6 +207,26 @@ function calcOneCompleteChange(
   const playPerUnit = Math.floor(Math.min(rawPlay, maxBet) / multiplicity) * multiplicity;
   const acceptedAmount = playPerUnit * chipsRequired;
   return { rawPlay, playPerUnit, acceptedAmount, change: amount - acceptedAmount };
+}
+
+function generateColorPayout(
+  totalPayout: number,
+  colorNominal: number,
+): { cashPayout: number; colorChips: number; colorAmount: number } | null {
+  if (totalPayout <= 0 || colorNominal <= 0) return null;
+  const maxPossibleColorChips = Math.floor(totalPayout / colorNominal);
+  // colorAmount must be < totalPayout so cashPayout > 0
+  // If totalPayout is exactly divisible by colorNominal, the max valid colorChips is one less
+  const maxValidColorChips = totalPayout % colorNominal === 0
+    ? maxPossibleColorChips - 1
+    : maxPossibleColorChips;
+  const maxColorChips = Math.min(200, maxValidColorChips);
+  if (maxColorChips < 1) return null;
+  const colorChips = Math.floor(Math.random() * maxColorChips) + 1;
+  const colorAmount = colorChips * colorNominal;
+  const cashPayout = totalPayout - colorAmount;
+  if (cashPayout <= 0) return null;
+  return { cashPayout, colorChips, colorAmount };
 }
 
 function computeWinningField(
@@ -531,6 +561,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [seriesFieldPayoutRecord, setSeriesFieldPayoutRecord] = useState<SeriesFieldPayoutQuizRecord | null>(null);
   const [neighboursPayoutInput,  setNeighboursPayoutInput]  = useState("");
   const [neighboursPayoutRecord, setNeighboursPayoutRecord] = useState<NeighboursPayoutQuizRecord | null>(null);
+  const [colorPayoutData,   setColorPayoutData]   = useState<{ cashPayout: number; colorChips: number; colorAmount: number; totalPayout: number; colorNominal: number } | null>(null);
+  const [colorPayoutInput,  setColorPayoutInput]  = useState("");
+  const [colorPayoutRecord, setColorPayoutRecord] = useState<ColorPayoutQuizRecord | null>(null);
 
   const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
@@ -888,6 +921,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setTrackFieldIntersectionRecord(null);
     setSeriesFieldPayoutRecord(null);
     setNeighboursPayoutRecord(null);
+    setColorPayoutData(null);
+    setColorPayoutInput("");
+    setColorPayoutRecord(null);
     setSeriesInput("");
     setFieldInput("");
     setCompletesInput("");
@@ -967,8 +1003,32 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const entries = computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap);
     const correctAnswer = entries.reduce((sum, e) => sum + e.amount * e.payoutMultiplier, 0);
     setFieldRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, entries });
-    setQuizPhase({ kind: "report" });
+    const generated = generateColorPayout(correctAnswer, chipValue);
+    if (generated) {
+      setColorPayoutData({ ...generated, totalPayout: correctAnswer, colorNominal: chipValue });
+      setColorPayoutInput("");
+      setQuizPhase({ kind: "colorPayout" });
+    } else {
+      setColorPayoutData(null);
+      setQuizPhase({ kind: "report" });
+    }
   }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap]);
+
+  const handleCheckColorPayout = useCallback(() => {
+    if (!colorPayoutData || !quizPhase || quizPhase.kind !== "colorPayout") return;
+    const userAnswer = parseInt(colorPayoutInput || "0", 10) || 0;
+    setColorPayoutRecord({
+      userAnswer,
+      correctAnswer: colorPayoutData.colorChips,
+      correct: userAnswer === colorPayoutData.colorChips,
+      cashPayout: colorPayoutData.cashPayout,
+      totalPayout: colorPayoutData.totalPayout,
+      colorAmount: colorPayoutData.colorAmount,
+      colorNominal: colorPayoutData.colorNominal,
+    });
+    setColorPayoutInput("");
+    setQuizPhase({ kind: "report" });
+  }, [colorPayoutData, quizPhase, colorPayoutInput]);
 
   const handleCheckCompletes = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "completes") return;
@@ -1489,7 +1549,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     });
   };
 
-  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "report";
+  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout" || quizPhase?.kind === "report";
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
@@ -1519,6 +1579,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const seriesFieldPayoutQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
   const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
+  const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
     <div className="roulette-page">
@@ -2087,6 +2148,29 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
 
+            {/* Color payout question */}
+            {quizPhase.kind === "colorPayout" && colorPayoutData && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">
+                    {colorPayoutQuestionNum}. Гость просит выплатить через {colorPayoutData.cashPayout}. Посчитайте остаток выплаты в цвете.
+                  </span>
+                  <span className="quiz-series-sub">Количество фишек</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Количество фишек"
+                  value={colorPayoutInput}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckColorPayout(); }}
+                  onChange={e => { const v = e.target.value; setColorPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckColorPayout}>Проверить</button>
+              </div>
+            )}
+
             {quizPhase.kind === "report" && (
               <span className="quiz-series-title" style={{ marginLeft: 8 }}>Отчёт по раунду</span>
             )}
@@ -2395,6 +2479,34 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                             </div>
                           </>
                         )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {colorPayoutRecord && (
+                <div className={`quiz-report-item ${colorPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">
+                    Гость просит выплатить через {colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в цвете.
+                  </div>
+                  {colorPayoutRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {colorPayoutRecord.correctAnswer} фишек</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {colorPayoutRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {colorPayoutRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        <div>Общая выплата: {colorPayoutRecord.totalPayout}</div>
+                        <div>Выплата через кэш: {colorPayoutRecord.cashPayout}</div>
+                        <div>Остаток выплаты: {colorPayoutRecord.totalPayout} − {colorPayoutRecord.cashPayout} = {colorPayoutRecord.colorAmount}</div>
+                        <div>Номинал цвета: {colorPayoutRecord.colorNominal}</div>
+                        <div>Количество цветных фишек: {colorPayoutRecord.colorAmount} / {colorPayoutRecord.colorNominal} = {colorPayoutRecord.correctAnswer}</div>
+                        <div className="quiz-report-total">Правильный ответ: {colorPayoutRecord.correctAnswer} фишек</div>
                       </div>
                     </>
                   )}
