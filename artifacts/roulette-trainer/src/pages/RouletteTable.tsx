@@ -599,7 +599,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   const winningFieldChips = useMemo<WinningFieldEntry[] | null>(() => {
     if (!game || !quizPhase) return null;
-    if (quizPhase.kind !== "field" && quizPhase.kind !== "report") return null;
+    if (quizPhase.kind !== "field" && quizPhase.kind !== "colorPayout" && quizPhase.kind !== "report") return null;
     const maxBet = Math.max(1, settings.maxBet);
     const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const chipValue = settings.chipValue ?? 10;
