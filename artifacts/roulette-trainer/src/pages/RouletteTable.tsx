@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rul_final_1782983519184.png";
+import spinSoundUrl from "@assets/spin_2sec_1783153552469.mp4";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
@@ -564,6 +565,12 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [colorPayoutData,   setColorPayoutData]   = useState<{ cashPayout: number; colorChips: number; colorAmount: number; totalPayout: number; colorNominal: number } | null>(null);
   const [colorPayoutInput,  setColorPayoutInput]  = useState("");
   const [colorPayoutRecord, setColorPayoutRecord] = useState<ColorPayoutQuizRecord | null>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  const isSpinningRef    = useRef(false);
+  const spinTimeoutRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generateRoundRef = useRef<() => void>(() => {});
+  const audioRef         = useRef<HTMLAudioElement | null>(null);
 
   const [gridParams,   setGridParams]   = useState<GridParams>(loadGrid);
   const [trackParams,  setTrackParams]  = useState<TrackParams>(loadTrack);
@@ -762,7 +769,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   }
 
   // ── Spin ────────────────────────────────────────────────────────────────────
-  const handleSpin = useCallback(() => {
+  const generateRound = useCallback(() => {
     const chipCount = settings.chipsInField ?? 100;
     const chipValue = settings.chipValue ?? 10;
 
@@ -966,6 +973,38 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     getNeighboursRule,
     getCompleteBetRule,
   ]);
+
+  // Keep ref always pointing to latest generateRound
+  useEffect(() => { generateRoundRef.current = generateRound; }, [generateRound]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current);
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    };
+  }, []);
+
+  const handleSpin = useCallback(() => {
+    if (isSpinningRef.current) return;
+    isSpinningRef.current = true;
+    setIsSpinning(true);
+
+    // Play the spin sound (ignore errors — animation continues regardless)
+    if (!audioRef.current) {
+      audioRef.current = new Audio(spinSoundUrl);
+      audioRef.current.loop = false;
+    }
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(err => console.warn("Spin audio play failed:", err));
+
+    // After 2 seconds: generate the round and unblock spin
+    spinTimeoutRef.current = setTimeout(() => {
+      isSpinningRef.current = false;
+      setIsSpinning(false);
+      generateRoundRef.current();
+    }, 2000);
+  }, []);
 
   const handleCheckSeries = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "series") return;
@@ -1589,8 +1628,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           onClick={onOpenSettings}>
           ⚙ Настройки
         </button>
-        <button className="grid-toggle-btn spin-btn" onClick={handleSpin}>
-          ▶ Spin
+        <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
+          {isSpinning ? "⏳ Spin…" : "▶ Spin"}
         </button>
         <button className={`grid-toggle-btn ${showGrid ? "active" : ""}`}
           onClick={() => setShowGrid(v => !v)}>
@@ -1614,6 +1653,42 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       <div className="table-row">
       {/* Table image + SVG overlay */}
       <div className="roulette-wrapper">
+        {isSpinning && (
+          <div className="spin-overlay">
+            <svg className="spin-wheel" viewBox="-110 -110 220 220" width="220" height="220" xmlns="http://www.w3.org/2000/svg">
+              {/* Outer gold ring */}
+              <circle r="108" fill="none" stroke="#c8a84b" strokeWidth="4" />
+              <circle r="103" fill="#1a1208" />
+              {/* Alternating sectors (12 red/black + 1 green for 0, total 13) */}
+              {Array.from({ length: 13 }).map((_, i) => {
+                const total = 13;
+                const startAngle = (i / total) * 2 * Math.PI - Math.PI / 2;
+                const endAngle = ((i + 1) / total) * 2 * Math.PI - Math.PI / 2;
+                const r = 98;
+                const x1 = Math.cos(startAngle) * r;
+                const y1 = Math.sin(startAngle) * r;
+                const x2 = Math.cos(endAngle) * r;
+                const y2 = Math.sin(endAngle) * r;
+                const fill = i === 0 ? "#1a5c2a" : i % 2 === 1 ? "#8b1a1a" : "#111418";
+                return (
+                  <path key={i}
+                    d={`M 0 0 L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`}
+                    fill={fill}
+                    stroke="#c8a84b"
+                    strokeWidth="0.8"
+                  />
+                );
+              })}
+              {/* Inner decorative ring */}
+              <circle r="30" fill="#111418" stroke="#c8a84b" strokeWidth="2" />
+              <circle r="24" fill="none" stroke="#c8a84b" strokeWidth="0.8" opacity="0.5" />
+              {/* Center hub */}
+              <circle r="10" fill="#c8a84b" />
+              <circle r="5" fill="#1a1208" />
+            </svg>
+            <div className="spin-no-more-bets">NO MORE BETS</div>
+          </div>
+        )}
         <img src={ruletImage} alt="Roulette table" className="roulette-image" draggable={false} />
         <svg className="roulette-overlay"
           viewBox={`0 0 ${BASE_WIDTH} ${BASE_HEIGHT}`}
