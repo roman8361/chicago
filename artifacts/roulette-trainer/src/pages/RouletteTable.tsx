@@ -178,14 +178,24 @@ interface NeighboursPayoutQuizRecord {
   winningNumber: number;
 }
 
+// Single source of truth: how many numbers each bet type covers.
+// Position limit = maxBet × BET_COVER_COUNT[type].
+const BET_COVER_COUNT: Record<"straight" | "split" | "street" | "corner" | "sixline", number> = {
+  straight: 1,
+  split:    2,
+  street:   3,
+  corner:   4,
+  sixline:  6,
+};
+
 // Maps a bet category from rouletteRules.json's dozenComplete.bets to the
 // betPositions BetType and its position-limit multiplier (× maximum bet).
 const DOZEN_COMPLETE_CATEGORY_MAP: Record<string, { betType: "straight" | "split" | "street" | "corner" | "sixline"; limitMultiplier: number; label: string }> = {
-  straightUp: { betType: "straight", limitMultiplier: 1, label: "Straight Up" },
-  splits:     { betType: "split",    limitMultiplier: 2, label: "Split" },
-  streets:    { betType: "street",   limitMultiplier: 3, label: "Street" },
-  corners:    { betType: "corner",   limitMultiplier: 4, label: "Corner" },
-  sixLines:   { betType: "sixline",  limitMultiplier: 5, label: "Six-Line" },
+  straightUp: { betType: "straight", limitMultiplier: BET_COVER_COUNT.straight, label: "Straight Up" },
+  splits:     { betType: "split",    limitMultiplier: BET_COVER_COUNT.split,    label: "Split" },
+  streets:    { betType: "street",   limitMultiplier: BET_COVER_COUNT.street,   label: "Street" },
+  corners:    { betType: "corner",   limitMultiplier: BET_COVER_COUNT.corner,   label: "Corner" },
+  sixLines:   { betType: "sixline",  limitMultiplier: BET_COVER_COUNT.sixline,  label: "Six-Line" },
 };
 
 // Finds the positionId on the field matching a bet type + set of numbers
@@ -337,7 +347,7 @@ function computeWinningField(
   }
 
   // Collect all touched positions and build result entries
-  const TYPE_LIMIT_MULT: Record<string, number> = { straight: 1, split: 2, street: 3, corner: 4, sixline: 5 };
+  const TYPE_LIMIT_MULT = BET_COVER_COUNT;
   const allIds = new Set([...colorAmts.keys(), ...cashAmts.keys(), ...otherAmts.keys()]);
   const result: WinningFieldEntry[] = [];
 
