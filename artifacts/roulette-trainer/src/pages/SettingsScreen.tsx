@@ -197,7 +197,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
         </div>
 
         <div className="settings-divider" />
-        <div className="settings-section-title">Фишки и касса</div>
+        <div className="settings-section-title">Цвет / Кэш</div>
         <div className="settings-grid-2">
           <NumField label="Номинал цвета на рулетке" value={chipValue} defaultVal={DEFAULT_SETTINGS.chipValue} onChange={setChipValue} />
           <NumField label="Количество фишек цвета в поле" value={chipsInField} defaultVal={DEFAULT_SETTINGS.chipsInField} onChange={setChipsInField} />
