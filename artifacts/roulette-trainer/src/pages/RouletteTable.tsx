@@ -870,8 +870,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const colorPositionIds = new Set(colorChips.map(c => c.positionId));
     const cashOnField = settings.cashOnField ?? 0;
     const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
-    const cashNumbersCount = Math.max(0, Math.floor(settings.cashNumbersCount ?? 1));
-    const cashChipStacks = generateCashChips(drawnNumber, cashNumbersCount, cashOnField, cashChipValues, colorPositionIds);
+    const cashChipStacks = generateCashChips(drawnNumber, cashOnField, cashChipValues, colorPositionIds);
 
     // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
     // Reference only — full 5-number layout (getNeighboursRule) is not laid out
@@ -995,7 +994,6 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     settings.neighborsCount,
     settings.completeMultiplicity,
     settings.colorNumbersCount,
-    settings.cashNumbersCount,
     getAllRules,
     getNeighboursRule,
     getCompleteBetRule,

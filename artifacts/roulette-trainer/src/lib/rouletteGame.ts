@@ -236,135 +236,99 @@ export function generateColorChips(
 
 // ── CASH chip generation ──────────────────────────────────────────────────────
 //
-// Each cash center number gets exactly ONE position. Positions used by color
-// are excluded. The drawn number is always covered first (best-effort).
-
-function pickPos(
-  num: number,
-  usedKeys: Set<string>,
-  excludedIds: Set<string>,
-): BetPosition | null {
-  const candidates = (POSITIONS_BY_NUMBER.get(num) ?? []).filter(
-    p => !excludedIds.has(p.id) && !usedKeys.has(posKey(p)),
-  );
-  if (candidates.length === 0) return null;
-  return candidates[Math.floor(Math.random() * candidates.length)];
-}
-
-/**
- * Select positions (one per center number), guaranteeing drawnNumber is covered
- * first (best-effort — falls back to any available position if all drawnNumber
- * positions are taken by color chips).
- */
-function selectPositions(
-  drawnNumber: number,
-  requestedCount: number,
-  excludedIds: Set<string>,
-): BetPosition[] {
-  if (requestedCount === 0) return [];
-
-  const usedKeys = new Set<string>();
-  const selected: BetPosition[] = [];
-
-  // Try to get a winning position for drawnNumber first
-  const winPos = pickPos(drawnNumber, usedKeys, excludedIds);
-  if (winPos) {
-    selected.push(winPos);
-    usedKeys.add(posKey(winPos));
-  }
-
-  // Fill remaining slots from other numbers (also handles the case where
-  // winPos was null — i.e. all drawnNumber positions are taken by color)
-  if (selected.length < requestedCount) {
-    const pool = shuffle(
-      Array.from({ length: 37 }, (_, i) => i).filter(i => i !== drawnNumber),
-    );
-    for (const num of pool) {
-      if (selected.length >= requestedCount) break;
-      const pos = pickPos(num, usedKeys, excludedIds);
-      if (pos) {
-        selected.push(pos);
-        usedKeys.add(posKey(pos));
-      }
-    }
-  }
-
-  return selected;
-}
+// Cash chips are spread naturally across random field positions, excluding any
+// position already occupied by a color chip. The drawn number is always covered
+// by at least one cash bet (best-effort). Total amount equals cashOnField exactly.
 
 export function generateCashChips(
   drawnNumber: number,
-  cashNumbersCount: number,
   cashOnField: number,
   cashChipValues: string[],
   colorPositionIds: Set<string>,
 ): CashChipStack[] {
-  if (cashNumbersCount === 0 || cashOnField <= 0) return [];
+  if (cashOnField <= 0) return [];
 
-  // Build the full chip set from denominations
   const denomValues = (cashChipValues.length > 0 ? cashChipValues : ["100"])
     .map(Number)
     .filter(n => n > 0)
-    .sort((a, b) => b - a);
+    .sort((a, b) => a - b); // ascending so minDenom is first
+  const minDenom = denomValues[0];
 
-  const chipsToPlace: number[] = [];
-  if (denomValues.length === 1) {
-    const d = denomValues[0];
-    const count = Math.floor(cashOnField / d);
-    for (let i = 0; i < count; i++) chipsToPlace.push(d);
-  } else {
-    const sumDenoms = denomValues.reduce((a, b) => a + b, 0);
-    const k = Math.floor(cashOnField / sumDenoms);
-    let remaining = cashOnField - k * sumDenoms;
-    for (const d of denomValues) {
-      for (let i = 0; i < k; i++) chipsToPlace.push(d);
+  if (cashOnField < minDenom) return [];
+
+  // All available positions on the field (excluding color positions)
+  const allAvailable = ALL_BET_POSITIONS.filter(p => !colorPositionIds.has(p.id));
+  if (allAvailable.length === 0) return [];
+
+  // Separate winning positions (contain drawnNumber) from the rest
+  const winningPool  = shuffle(allAvailable.filter(p => p.numbers.includes(drawnNumber)));
+  const otherPool    = shuffle(allAvailable.filter(p => !p.numbers.includes(drawnNumber)));
+
+  // Pick a random number of cash positions: 1–6 (natural spread)
+  const maxPositions = Math.min(6, allAvailable.length, Math.floor(cashOnField / minDenom));
+  const targetCount  = Math.max(1, 1 + Math.floor(Math.random() * maxPositions));
+
+  const selectedPositions: BetPosition[] = [];
+
+  // Guarantee at least one winning position (best-effort)
+  if (winningPool.length > 0) {
+    selectedPositions.push(winningPool[0]);
+  }
+
+  // Fill remaining from a shuffled mix of winning + other positions
+  const remaining = shuffle([...winningPool.slice(1), ...otherPool]);
+  for (const pos of remaining) {
+    if (selectedPositions.length >= targetCount) break;
+    selectedPositions.push(pos);
+  }
+
+  const n = selectedPositions.length;
+  if (n === 0) return [];
+
+  // Distribute cashOnField across n positions with random weights
+  // Each position gets at least minDenom
+  if (cashOnField < minDenom * n) {
+    // Not enough to give each position one chip — put everything on winning pos
+    return [{ positionId: selectedPositions[0].id, totalAmount: cashOnField }];
+  }
+
+  // Random weights (skewed so distribution is uneven and natural)
+  const weights = Array.from({ length: n }, () => Math.random() * Math.random() + 0.05);
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+
+  // Floor-allocate, rounded to minDenom, each at least minDenom
+  const amounts = weights.map(w =>
+    Math.max(minDenom, Math.floor((w / weightSum * cashOnField) / minDenom) * minDenom),
+  );
+
+  // Adjust total to match cashOnField exactly (add/remove minDenom steps)
+  let total = amounts.reduce((a, b) => a + b, 0);
+  const idxOrder = shuffle(Array.from({ length: n }, (_, i) => i));
+
+  while (total < cashOnField) {
+    amounts[idxOrder[0]]  += minDenom;
+    total += minDenom;
+  }
+  while (total > cashOnField) {
+    // Subtract from largest positions that still have > minDenom
+    for (const i of idxOrder) {
+      if (total <= cashOnField) break;
+      if (amounts[i] > minDenom) {
+        amounts[i] -= minDenom;
+        total -= minDenom;
+      }
     }
-    for (const d of denomValues) {
-      if (remaining >= d) { chipsToPlace.push(d); remaining -= d; }
+    // Safety: if we're stuck (all at minDenom but total still > cashOnField),
+    // dump the difference onto the first position and break
+    if (total > cashOnField && amounts.every(a => a <= minDenom)) {
+      amounts[0] += cashOnField - total;
+      break;
     }
   }
 
-  if (chipsToPlace.length === 0) return [];
-
-  // Select positions (one per center number), excluding color positions
-  const requested = Math.min(cashNumbersCount, chipsToPlace.length);
-  const positions = selectPositions(drawnNumber, requested, colorPositionIds);
-  const finalCount = positions.length;
-  if (finalCount === 0) return [];
-
-  // Single position: everything goes there
-  if (finalCount === 1) {
-    const totalAmount = chipsToPlace.reduce((a, b) => a + b, 0);
-    return [{ positionId: positions[0].id, totalAmount }];
-  }
-
-  // Fat / thin split
-  const fatCount = Math.ceil(finalCount / 2);
-  const thinCount = finalCount - fatCount;
-
-  const rest = shuffle(positions.slice(1));
-  const fatPos  = [positions[0], ...rest.slice(0, fatCount - 1)];
-  const thinPos = rest.slice(fatCount - 1);
-
-  // Shuffle chips, split ~70% by count to fat, ~30% to thin
-  const shuffledChips = shuffle([...chipsToPlace]);
-  const fatChipCount  = thinCount === 0 ? shuffledChips.length : Math.ceil(shuffledChips.length * 0.7);
-  const fatChips  = shuffledChips.slice(0, fatChipCount);
-  const thinChips = shuffledChips.slice(fatChipCount);
-
-  const fatAmounts  = new Array<number>(fatPos.length).fill(0);
-  const thinAmounts = new Array<number>(thinPos.length).fill(0);
-  for (let i = 0; i < fatChips.length;  i++) fatAmounts[i  % fatPos.length]  += fatChips[i];
-  for (let i = 0; i < thinChips.length; i++) thinAmounts[i % thinPos.length] += thinChips[i];
-
-  const result: CashChipStack[] = [];
-  for (let i = 0; i < fatPos.length;  i++) {
-    if (fatAmounts[i]  > 0) result.push({ positionId: fatPos[i].id,  totalAmount: fatAmounts[i] });
-  }
-  for (let i = 0; i < thinPos.length; i++) {
-    if (thinAmounts[i] > 0) result.push({ positionId: thinPos[i].id, totalAmount: thinAmounts[i] });
-  }
-  return result;
+  return selectedPositions
+    .map((pos, i) => ({ positionId: pos.id, totalAmount: amounts[i] }))
+    .filter(s => s.totalAmount > 0);
 }
 
 // ── Core game functions ───────────────────────────────────────────────────────

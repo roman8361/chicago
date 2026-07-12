@@ -16,7 +16,6 @@ export interface GameSettings {
   completeMultiplicity: number;
   neighboursMultiplicity: number;
   colorNumbersCount: number;
-  cashNumbersCount: number;
   cashChipValues: Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">;
 }
 
@@ -38,6 +37,5 @@ export const DEFAULT_SETTINGS: GameSettings = {
   completeMultiplicity: 25,
   neighboursMultiplicity: 10,
   colorNumbersCount: 1,
-  cashNumbersCount: 1,
   cashChipValues: ["100"],
 };
