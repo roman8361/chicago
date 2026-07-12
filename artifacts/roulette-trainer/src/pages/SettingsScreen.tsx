@@ -104,6 +104,8 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
   const [neighboursMultiplicity, setNeighboursMultiplicity] = useState(String(initialSettings.neighboursMultiplicity ?? DEFAULT_SETTINGS.neighboursMultiplicity));
+  const [colorNumbersCount, setColorNumbersCount] = useState(String(initialSettings.colorNumbersCount ?? DEFAULT_SETTINGS.colorNumbersCount));
+  const [cashNumbersCount, setCashNumbersCount] = useState(String(initialSettings.cashNumbersCount ?? DEFAULT_SETTINGS.cashNumbersCount));
   const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(
     initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues
   );
@@ -134,6 +136,8 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       completeCount,
       completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
       neighboursMultiplicity: Math.max(1, parseNum(neighboursMultiplicity, DEFAULT_SETTINGS.neighboursMultiplicity)),
+      colorNumbersCount: Math.max(0, Math.floor(parseNum(colorNumbersCount, DEFAULT_SETTINGS.colorNumbersCount))),
+      cashNumbersCount: Math.max(0, Math.floor(parseNum(cashNumbersCount, DEFAULT_SETTINGS.cashNumbersCount))),
       cashChipValues: cashChipValues.length ? cashChipValues : DEFAULT_SETTINGS.cashChipValues,
     };
     onStart(settings);
@@ -201,7 +205,9 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
         <div className="settings-grid-2">
           <NumField label="Номинал цвета на рулетке" value={chipValue} defaultVal={DEFAULT_SETTINGS.chipValue} onChange={setChipValue} />
           <NumField label="Количество фишек цвета в поле" value={chipsInField} defaultVal={DEFAULT_SETTINGS.chipsInField} onChange={setChipsInField} />
+          <NumField label="Количество номеров с цветом" value={colorNumbersCount} defaultVal={DEFAULT_SETTINGS.colorNumbersCount} onChange={setColorNumbersCount} />
           <NumField label="Сумма кэша на поле" value={cashOnField} defaultVal={DEFAULT_SETTINGS.cashOnField} onChange={setCashOnField} />
+          <NumField label="Количество номеров с кэшем" value={cashNumbersCount} defaultVal={DEFAULT_SETTINGS.cashNumbersCount} onChange={setCashNumbersCount} />
           <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
             <label className="settings-label">Номинал кэша на поле</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
