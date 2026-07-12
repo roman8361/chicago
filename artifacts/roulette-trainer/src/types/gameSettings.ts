@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   betSeria023: "no",
   betZeroSpiel: "no",
   chipValue: 10,
-  chipsInField: 100,
+  chipsInField: 60,
   cashOnField: 1000,
   multiplicity: 10,
   completeDozen: "no",
@@ -36,6 +36,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
   completeCount: 1,
   completeMultiplicity: 25,
   neighboursMultiplicity: 10,
-  colorNumbersCount: 1,
+  colorNumbersCount: 3,
   cashChipValues: ["100"],
 };
