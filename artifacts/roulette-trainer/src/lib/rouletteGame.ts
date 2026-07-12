@@ -1,4 +1,4 @@
-import { ALL_BET_POSITIONS, BET_POSITIONS_MAP, PAYOUT } from "@/data/betPositions";
+import { ALL_BET_POSITIONS, BET_POSITIONS_MAP, PAYOUT, type BetPosition } from "@/data/betPositions";
 
 export interface ChipStack {
   positionId: string;
@@ -82,28 +82,247 @@ const TYPE_LABELS: Record<string, string> = {
   sixline:  "Сикс-лайн",
 };
 
+// ── Position lookup by number (built once at module load) ─────────────────────
+const POSITIONS_BY_NUMBER: ReadonlyMap<number, readonly BetPosition[]> = (() => {
+  const map = new Map<number, BetPosition[]>();
+  for (let n = 0; n <= 36; n++) map.set(n, []);
+  for (const p of ALL_BET_POSITIONS) {
+    for (const n of p.numbers) {
+      map.get(n)!.push(p);
+    }
+  }
+  return map;
+})();
+
+function posKey(p: BetPosition): string {
+  return `${p.type}:${[...p.numbers].sort((a, b) => a - b).join("-")}`;
+}
+
+function pickPos(
+  num: number,
+  usedKeys: Set<string>,
+  excludedIds: Set<string>,
+): BetPosition | null {
+  const candidates = (POSITIONS_BY_NUMBER.get(num) ?? []).filter(
+    p => !excludedIds.has(p.id) && !usedKeys.has(posKey(p)),
+  );
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// Distribute `total` into `count` non-negative integers summing to `total`, diff ≤ 1.
+export function distributeInteger(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(total / count);
+  const rem = total - base * count;
+  return Array.from({ length: count }, (_, i) => base + (i < rem ? 1 : 0));
+}
+
+// Select up to `requestedCount` unique field positions, guaranteeing the first
+// one contains `drawnNumber`. Returns positions with the winning one at index 0.
+function selectPositions(
+  drawnNumber: number,
+  requestedCount: number,
+  excludedIds: Set<string>,
+): BetPosition[] {
+  if (requestedCount === 0) return [];
+
+  const usedKeys = new Set<string>();
+  const selected: BetPosition[] = [];
+
+  // Step 1: mandatory winning position (contains drawnNumber)
+  const winPos = pickPos(drawnNumber, usedKeys, excludedIds);
+  if (winPos) {
+    selected.push(winPos);
+    usedKeys.add(posKey(winPos));
+  }
+
+  // Step 2: fill remaining from other numbers (shuffled)
+  if (requestedCount > 1) {
+    const pool: number[] = [];
+    for (let i = 0; i <= 36; i++) { if (i !== drawnNumber) pool.push(i); }
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    for (const num of pool) {
+      if (selected.length >= requestedCount) break;
+      const pos = pickPos(num, usedKeys, excludedIds);
+      if (pos) {
+        selected.push(pos);
+        usedKeys.add(posKey(pos));
+      }
+    }
+  }
+
+  return selected;
+}
+
+// ── Color chip generation ─────────────────────────────────────────────────────
+export function generateColorChips(
+  drawnNumber: number,
+  colorNumbersCount: number,
+  totalChips: number,
+  excludedIds: Set<string>,
+): ChipStack[] {
+  if (colorNumbersCount === 0 || totalChips === 0) return [];
+
+  // Each position needs ≥ 1 chip
+  const requested = Math.min(colorNumbersCount, totalChips);
+  const positions = selectPositions(drawnNumber, requested, excludedIds);
+  const finalCount = positions.length;
+  if (finalCount === 0) return [];
+
+  // Special case: single position gets all chips
+  if (finalCount === 1) {
+    return [{ positionId: positions[0].id, count: totalChips }];
+  }
+
+  // Fat / thin split (winning position always goes to fat)
+  const fatCount = Math.ceil(finalCount / 2);
+  const thinCount = finalCount - fatCount;
+
+  const rest = positions.slice(1);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  const fatPos  = [positions[0], ...rest.slice(0, fatCount - 1)];
+  const thinPos = rest.slice(fatCount - 1);
+
+  // Distribute ~70% to fat, ~30% to thin
+  const fatTotal  = thinCount === 0 ? totalChips : Math.round(totalChips * 0.7);
+  const thinTotal = totalChips - fatTotal;
+
+  const fatAmounts  = distributeInteger(fatTotal,  fatPos.length);
+  const thinAmounts = distributeInteger(thinTotal, thinPos.length);
+
+  const result: ChipStack[] = [];
+  for (let i = 0; i < fatPos.length;  i++) {
+    if (fatAmounts[i]  > 0) result.push({ positionId: fatPos[i].id,  count: fatAmounts[i] });
+  }
+  for (let i = 0; i < thinPos.length; i++) {
+    if (thinAmounts[i] > 0) result.push({ positionId: thinPos[i].id, count: thinAmounts[i] });
+  }
+  return result;
+}
+
+// ── Cash chip generation ──────────────────────────────────────────────────────
+export function generateCashChips(
+  drawnNumber: number,
+  cashNumbersCount: number,
+  cashOnField: number,
+  cashChipValues: string[],
+  colorPositionIds: Set<string>,
+): CashChipStack[] {
+  if (cashNumbersCount === 0 || cashOnField <= 0) return [];
+
+  // Build the full chip set from denominations (same logic as before)
+  const denomValues = (cashChipValues.length > 0 ? cashChipValues : ["100"])
+    .map(Number)
+    .filter(n => n > 0)
+    .sort((a, b) => b - a);
+
+  const chipsToPlace: number[] = [];
+  if (denomValues.length === 1) {
+    const d = denomValues[0];
+    const count = Math.floor(cashOnField / d);
+    for (let i = 0; i < count; i++) chipsToPlace.push(d);
+  } else {
+    const sumDenoms = denomValues.reduce((a, b) => a + b, 0);
+    const k = Math.floor(cashOnField / sumDenoms);
+    let remaining = cashOnField - k * sumDenoms;
+    for (const d of denomValues) {
+      for (let i = 0; i < k; i++) chipsToPlace.push(d);
+    }
+    for (const d of denomValues) {
+      if (remaining >= d) { chipsToPlace.push(d); remaining -= d; }
+    }
+  }
+
+  if (chipsToPlace.length === 0) return [];
+
+  // Select positions, avoiding color positions
+  const requested = Math.min(cashNumbersCount, chipsToPlace.length);
+  const positions = selectPositions(drawnNumber, requested, colorPositionIds);
+  const finalCount = positions.length;
+  if (finalCount === 0) return [];
+
+  // Special case: single position gets everything
+  if (finalCount === 1) {
+    const totalAmount = chipsToPlace.reduce((a, b) => a + b, 0);
+    return [{ positionId: positions[0].id, totalAmount }];
+  }
+
+  // Fat / thin split (winning position always goes to fat)
+  const fatCount = Math.ceil(finalCount / 2);
+  const thinCount = finalCount - fatCount;
+
+  const rest = positions.slice(1);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  const fatPos  = [positions[0], ...rest.slice(0, fatCount - 1)];
+  const thinPos = rest.slice(fatCount - 1);
+
+  // Shuffle chips, then split ~70% by count to fat, ~30% to thin
+  const shuffled = [...chipsToPlace];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const fatChipCount  = thinCount === 0 ? shuffled.length : Math.ceil(shuffled.length * 0.7);
+  const fatChips      = shuffled.slice(0, fatChipCount);
+  const thinChips     = shuffled.slice(fatChipCount);
+
+  // Round-robin assignment within each group
+  const fatAmounts  = new Array<number>(fatPos.length).fill(0);
+  const thinAmounts = new Array<number>(thinPos.length).fill(0);
+  for (let i = 0; i < fatChips.length;  i++) fatAmounts[i  % fatPos.length]  += fatChips[i];
+  for (let i = 0; i < thinChips.length; i++) thinAmounts[i % thinPos.length] += thinChips[i];
+
+  const result: CashChipStack[] = [];
+  for (let i = 0; i < fatPos.length;  i++) {
+    if (fatAmounts[i]  > 0) result.push({ positionId: fatPos[i].id,  totalAmount: fatAmounts[i] });
+  }
+  for (let i = 0; i < thinPos.length; i++) {
+    if (thinAmounts[i] > 0) result.push({ positionId: thinPos[i].id, totalAmount: thinAmounts[i] });
+  }
+  return result;
+}
+
+// ── Core game functions ───────────────────────────────────────────────────────
+
 export function spinGame(
   chipCount: number,
   chipValue: number,
   payoutMap?: Record<string, number>,
   excludedPositionIds?: Set<string>,
+  preDrawnNumber?: number,
+  preChips?: ChipStack[],
 ): GameState {
-  const drawnNumber = Math.floor(Math.random() * 37); // 0–36
+  const drawnNumber = preDrawnNumber !== undefined
+    ? preDrawnNumber
+    : Math.floor(Math.random() * 37); // 0–36
 
-  // Distribute chips randomly across all positions, excluding reserved straight-ups
-  const available = excludedPositionIds
-    ? ALL_BET_POSITIONS.filter(p => !excludedPositionIds.has(p.id))
-    : ALL_BET_POSITIONS;
-  const total = available.length;
-  const stackMap = new Map<string, number>();
-  for (let i = 0; i < chipCount; i++) {
-    const pos = available[Math.floor(Math.random() * total)];
-    stackMap.set(pos.id, (stackMap.get(pos.id) ?? 0) + 1);
+  let chips: ChipStack[];
+  if (preChips !== undefined) {
+    chips = preChips;
+  } else {
+    // Legacy path: distribute chips randomly across all positions
+    const available = excludedPositionIds
+      ? ALL_BET_POSITIONS.filter(p => !excludedPositionIds.has(p.id))
+      : ALL_BET_POSITIONS;
+    const total = available.length;
+    const stackMap = new Map<string, number>();
+    for (let i = 0; i < chipCount; i++) {
+      const pos = available[Math.floor(Math.random() * total)];
+      stackMap.set(pos.id, (stackMap.get(pos.id) ?? 0) + 1);
+    }
+    chips = Array.from(stackMap.entries()).map(([positionId, count]) => ({ positionId, count }));
   }
-
-  const chips: ChipStack[] = Array.from(stackMap.entries()).map(
-    ([positionId, count]) => ({ positionId, count })
-  );
 
   const { total: correctAnswer, breakdown } = calculatePayout(drawnNumber, chips, chipValue, payoutMap);
 
@@ -119,56 +338,6 @@ export function spinGame(
     cashChipStacks: [],
     neighboursBets: [],
   };
-}
-
-export function generateCashChips(
-  cashOnField: number,
-  cashChipValues: string[],
-  occupiedPositionIds: Set<string>,
-): CashChipStack[] {
-  if (!cashOnField || cashOnField <= 0) return [];
-
-  const denomValues = (cashChipValues.length > 0 ? cashChipValues : ["100"])
-    .map(Number)
-    .filter(n => n > 0)
-    .sort((a, b) => b - a);
-
-  const chipsToPlace: number[] = [];
-
-  if (denomValues.length === 1) {
-    const d = denomValues[0];
-    const count = Math.floor(cashOnField / d);
-    for (let i = 0; i < count; i++) chipsToPlace.push(d);
-  } else {
-    const sumDenoms = denomValues.reduce((a, b) => a + b, 0);
-    const k = Math.floor(cashOnField / sumDenoms);
-    let remaining = cashOnField - k * sumDenoms;
-    for (const d of denomValues) {
-      for (let i = 0; i < k; i++) chipsToPlace.push(d);
-    }
-    for (const d of denomValues) {
-      if (remaining >= d) {
-        chipsToPlace.push(d);
-        remaining -= d;
-      }
-    }
-  }
-
-  if (chipsToPlace.length === 0) return [];
-
-  const available = ALL_BET_POSITIONS.filter(p => !occupiedPositionIds.has(p.id));
-  if (available.length === 0) return [];
-
-  const posAmounts = new Map<string, number>();
-  for (const chip of chipsToPlace) {
-    const pos = available[Math.floor(Math.random() * available.length)];
-    posAmounts.set(pos.id, (posAmounts.get(pos.id) ?? 0) + chip);
-  }
-
-  return Array.from(posAmounts.entries()).map(([positionId, totalAmount]) => ({
-    positionId,
-    totalAmount,
-  }));
 }
 
 export function calculatePayout(

@@ -5,7 +5,7 @@ import ruletImage from "@assets/rul_final_1782983519184.png";
 import spinSoundUrl from "@assets/spin_2sec_1783153552469.mp4";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
-import { spinGame, calculatePayout, getNumberColor, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
+import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
@@ -853,12 +853,25 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const currentChipPosMap = buildDynamicPositions(gridParams);
     const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
 
-    const base = spinGame(chipCount, chipValue, payoutMap, excludedIds.size > 0 ? excludedIds : undefined);
+    // Draw number first so both color and cash generation can guarantee a winning position
+    const drawnNumber = Math.floor(Math.random() * 37);
 
-    const occupiedIds = new Set(base.chips.map(c => c.positionId));
+    // Generate color chips using the new number-center algorithm
+    const colorNumbersCount = Math.max(0, Math.floor(settings.colorNumbersCount ?? 1));
+    const colorChips = generateColorChips(
+      drawnNumber,
+      colorNumbersCount,
+      chipCount,
+      excludedIds.size > 0 ? excludedIds : new Set<string>(),
+    );
+
+    const base = spinGame(chipCount, chipValue, payoutMap, excludedIds.size > 0 ? excludedIds : undefined, drawnNumber, colorChips);
+
+    const colorPositionIds = new Set(colorChips.map(c => c.positionId));
     const cashOnField = settings.cashOnField ?? 0;
     const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
-    const cashChipStacks = generateCashChips(cashOnField, cashChipValues, occupiedIds);
+    const cashNumbersCount = Math.max(0, Math.floor(settings.cashNumbersCount ?? 1));
+    const cashChipStacks = generateCashChips(drawnNumber, cashNumbersCount, cashOnField, cashChipValues, colorPositionIds);
 
     // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
     // Reference only — full 5-number layout (getNeighboursRule) is not laid out
@@ -981,6 +994,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     payoutMap,
     settings.neighborsCount,
     settings.completeMultiplicity,
+    settings.colorNumbersCount,
+    settings.cashNumbersCount,
     getAllRules,
     getNeighboursRule,
     getCompleteBetRule,
