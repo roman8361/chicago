@@ -14,6 +14,7 @@ export interface GameSettings {
   completeField: "yes" | "no";
   completeCount: number;
   completeMultiplicity: number;
+  neighboursMultiplicity: number;
   cashChipValues: Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">;
 }
 
@@ -33,5 +34,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
   completeField: "yes",
   completeCount: 1,
   completeMultiplicity: 25,
+  neighboursMultiplicity: 10,
   cashChipValues: ["100"],
 };

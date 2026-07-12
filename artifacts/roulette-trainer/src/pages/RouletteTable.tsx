@@ -868,8 +868,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       const maxBet = Math.max(minBet, settings.maxBet);
       const lowerBoundRaw = Math.round(maxBet / 3);
       const lowerBound = Math.min(Math.max(1, lowerBoundRaw), maxBet);
+      const neighMult = Math.max(1, settings.neighboursMultiplicity ?? 10);
       neighboursBets = selectedNumbers.map(num => {
-        const baseAmount = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
+        const rawBase = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
+        const baseAmount = Math.max(neighMult, Math.floor(rawBase / neighMult) * neighMult);
         const amount = baseAmount * 5;
         let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
         if (num === 30) {

@@ -103,6 +103,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [completeField, setCompleteField] = useState<"yes" | "no">(initialSettings.completeField);
   const [completeCount, setCompleteCount] = useState(initialSettings.completeCount);
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
+  const [neighboursMultiplicity, setNeighboursMultiplicity] = useState(String(initialSettings.neighboursMultiplicity ?? DEFAULT_SETTINGS.neighboursMultiplicity));
   const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(
     initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues
   );
@@ -132,6 +133,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       completeField,
       completeCount,
       completeMultiplicity: parseNum(completeMultiplicity, DEFAULT_SETTINGS.completeMultiplicity),
+      neighboursMultiplicity: Math.max(1, parseNum(neighboursMultiplicity, DEFAULT_SETTINGS.neighboursMultiplicity)),
       cashChipValues: cashChipValues.length ? cashChipValues : DEFAULT_SETTINGS.cashChipValues,
     };
     onStart(settings);
@@ -161,6 +163,12 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
             value={neighborsCount}
             defaultVal={DEFAULT_SETTINGS.neighborsCount}
             onChange={setNeighborsCount}
+          />
+          <NumField
+            label="Кратность соседей"
+            value={neighboursMultiplicity}
+            defaultVal={DEFAULT_SETTINGS.neighboursMultiplicity}
+            onChange={setNeighboursMultiplicity}
           />
           <SelectField label='Ставка на "5/8"' value={bet58} onChange={setBet58} />
           <SelectField label='Ставка на "Orphelins"' value={betOrphelins} onChange={setBetOrphelins} />
