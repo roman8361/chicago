@@ -1827,6 +1827,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
             const isWinning = game?.drawnNumber === ncb.number;
+            // Compute cell height from polygon bounding box to size the "C" letter
+            const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+            const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
+            const cFontSize = Math.round(cellH * 0.85);
             return (
               <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
                 {/* Cyan stroke border — only when this complete number is also the winning number */}
@@ -1838,14 +1842,14 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                     strokeLinejoin="round"
                     opacity="0.95" />
                 )}
-                {/* "C" label — bright, low blur, visible on both cyan and yellow backgrounds */}
+                {/* "C" watermark — fills the cell, sits behind the number */}
                 <text
                   x={wz.cx} y={wz.cy}
                   textAnchor="middle" dominantBaseline="central"
-                  fontSize="38" fontWeight="900" fill="#E8F8FF"
-                  stroke="rgba(0,212,255,0.75)" strokeWidth="2.5" paintOrder="stroke"
-                  opacity="0.78"
-                  style={{ filter: "blur(0.3px)", pointerEvents: "none" }}>
+                  fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
+                  stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                  opacity="0.72"
+                  style={{ pointerEvents: "none" }}>
                   C
                 </text>
               </g>
