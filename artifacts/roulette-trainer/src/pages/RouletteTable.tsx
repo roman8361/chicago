@@ -1791,16 +1791,17 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </g>
             );
           })}
-          {/* Number complete highlights — pink overlay on the Straight Up zone */}
+          {/* Number complete highlights — cyan fill (pass 1, before winning yellow; skip winning number so yellow shows on top) */}
           {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
+            if (game?.drawnNumber === ncb.number) return null;
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
             return (
               <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
                 <polygon points={wz.pts}
-                  fill="rgba(210, 50, 110, 0.36)"
-                  stroke="#D0406A"
-                  strokeWidth="2"
+                  fill="rgba(0, 212, 255, 0.42)"
+                  stroke="#00D4FF"
+                  strokeWidth="3"
                   strokeLinejoin="round" />
               </g>
             );
@@ -1821,19 +1822,33 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })()}
 
-          {/* Number complete "C" labels — blurred letter behind the number text */}
+          {/* Number complete — pass 2 (after winning yellow): cyan border for winning+complete, then "C" for all */}
           {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
+            const isWinning = game?.drawnNumber === ncb.number;
             return (
-              <text key={`ncb-c-${ncb.number}`}
-                x={wz.cx} y={wz.cy}
-                textAnchor="middle" dominantBaseline="central"
-                fontSize="40" fontWeight="bold" fill="#F070A0"
-                opacity="0.30"
-                style={{ filter: "blur(1.5px)", pointerEvents: "none" }}>
-                C
-              </text>
+              <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                {/* Cyan stroke border — only when this complete number is also the winning number */}
+                {isWinning && (
+                  <polygon points={wz.pts}
+                    fill="none"
+                    stroke="#00D4FF"
+                    strokeWidth="5"
+                    strokeLinejoin="round"
+                    opacity="0.95" />
+                )}
+                {/* "C" label — bright, low blur, visible on both cyan and yellow backgrounds */}
+                <text
+                  x={wz.cx} y={wz.cy}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize="38" fontWeight="900" fill="#E8F8FF"
+                  stroke="rgba(0,212,255,0.75)" strokeWidth="2.5" paintOrder="stroke"
+                  opacity="0.78"
+                  style={{ filter: "blur(0.3px)", pointerEvents: "none" }}>
+                  C
+                </text>
+              </g>
             );
           })}
 
