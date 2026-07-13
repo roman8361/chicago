@@ -108,6 +108,9 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
   const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(
     initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues
   );
+  const [showBetBeforeChange, setShowBetBeforeChange] = useState<boolean>(
+    initialSettings.showBetBeforeChange ?? DEFAULT_SETTINGS.showBetBeforeChange
+  );
 
   function parseNum(val: string, def: number): number {
     const n = Number(val);
@@ -137,6 +140,7 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
       neighboursMultiplicity: Math.max(1, parseNum(neighboursMultiplicity, DEFAULT_SETTINGS.neighboursMultiplicity)),
       colorNumbersCount: Math.max(0, Math.floor(parseNum(colorNumbersCount, DEFAULT_SETTINGS.colorNumbersCount))),
       cashChipValues: cashChipValues.length ? cashChipValues : DEFAULT_SETTINGS.cashChipValues,
+      showBetBeforeChange,
     };
     onStart(settings);
   }
@@ -262,6 +266,24 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
             defaultVal={DEFAULT_SETTINGS.completeMultiplicity}
             onChange={setCompleteMultiplicity}
           />
+        </div>
+
+        <div className="settings-divider" />
+        <div className="settings-section-title">Отображение</div>
+        <div className="settings-grid-2">
+          <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={showBetBeforeChange}
+                onChange={e => setShowBetBeforeChange(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "#C9A227", cursor: "pointer" }}
+              />
+              <span className="settings-label" style={{ marginBottom: 0 }}>
+                Показывать ставку без сдачи (комплиты, серии, соседи)
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="settings-divider" />

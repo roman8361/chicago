@@ -17,6 +17,7 @@ export interface GameSettings {
   neighboursMultiplicity: number;
   colorNumbersCount: number;
   cashChipValues: Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">;
+  showBetBeforeChange: boolean;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -38,4 +39,5 @@ export const DEFAULT_SETTINGS: GameSettings = {
   neighboursMultiplicity: 10,
   colorNumbersCount: 3,
   cashChipValues: ["100"],
+  showBetBeforeChange: false,
 };
