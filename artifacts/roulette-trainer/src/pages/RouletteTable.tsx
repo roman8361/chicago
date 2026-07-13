@@ -552,6 +552,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [editTab,   setEditTab]   = useState<"grid" | "track" | "dozens">("grid");
   const [copied,    setCopied]    = useState(false);
   const [game,      setGame]      = useState<GameState | null>(null);
+  const [initialRoundSnapshot, setInitialRoundSnapshot] = useState<GameState | null>(null);
 
   // ── Quiz state ──────────────────────────────────────────────────────────────
   const [quizPhase,         setQuizPhase]         = useState<QuizPhase | null>(null);
@@ -935,7 +936,19 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       });
     }
 
-    setGame({ ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks, neighboursBets });
+    const newGameState: GameState = { ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks, neighboursBets };
+    setGame(newGameState);
+    setInitialRoundSnapshot({
+      ...newGameState,
+      chips: newGameState.chips.map(c => ({ ...c })),
+      cashChipStacks: newGameState.cashChipStacks ? newGameState.cashChipStacks.map(c => ({ ...c })) : [],
+      trackBets: newGameState.trackBets.map(t => ({ ...t, position: { ...t.position } })),
+      numberCompleteBets: newGameState.numberCompleteBets.map(n => ({ ...n, position: { ...n.position } })),
+      neighboursBets: newGameState.neighboursBets.map(n => ({ ...n, position: { ...n.position } })),
+      dozenCompleteBet: newGameState.dozenCompleteBet
+        ? { ...newGameState.dozenCompleteBet, position: { ...newGameState.dozenCompleteBet.position } }
+        : undefined,
+    });
 
     // Build quiz queue from active series in fixed order
     const ordered = SERIES_QUIZ_ORDER
@@ -1613,7 +1626,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     });
   };
 
-  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout" || quizPhase?.kind === "report";
+  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
+  const showReportField  = quizPhase?.kind === "report";
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
