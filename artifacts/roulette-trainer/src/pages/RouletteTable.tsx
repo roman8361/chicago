@@ -1628,6 +1628,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
   const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
   const showReportField  = quizPhase?.kind === "report";
+  // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
+  const fieldSource = showReportField
+    ? initialRoundSnapshot
+    : (showWinningField ? null : game);
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
@@ -1803,7 +1807,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })()}
 
           {/* Chips */}
-          {game && !showWinningField && game.chips.map(stack => {
+          {fieldSource && fieldSource.chips.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const count = stack.count;
@@ -1821,7 +1825,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Cash chips — round, slightly larger than color chips */}
-          {game && !showWinningField && game.cashChipStacks && game.cashChipStacks.map(stack => {
+          {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.totalAmount);
@@ -1851,9 +1855,9 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Dozen complete chip — ~3× larger than normal chips (r=57), gold style */}
-          {game?.dozenCompleteBet && !showWinningField && (() => {
-            const { x, y } = game.dozenCompleteBet.position;
-            const amt = String(game.dozenCompleteBet.amount);
+          {fieldSource?.dozenCompleteBet && (() => {
+            const { x, y } = fieldSource.dozenCompleteBet!.position;
+            const amt = String(fieldSource.dozenCompleteBet!.amount);
             const fs = amt.length >= 6 ? "11" : amt.length >= 5 ? "13" : amt.length >= 4 ? "16" : "19";
             return (
               <g style={{ pointerEvents: "none" }}>
@@ -1875,7 +1879,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })()}
 
           {/* Number complete chips — large gold chip centered on the straight-up */}
-          {game && !showWinningField && game.numberCompleteBets.map(ncb => {
+          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
             const { x, y } = ncb.position;
             const amt = String(ncb.amount);
             const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "12" : amt.length >= 4 ? "14" : "17";
@@ -1905,7 +1909,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
-          {game && !showWinningField && game.trackBets.map(tb => {
+          {fieldSource && fieldSource.trackBets.map(tb => {
             const { x, y } = tb.position;
             const amt = String(tb.amount);
             const fs = amt.length >= 4 ? "15" : "18";
@@ -1933,7 +1937,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
           })}
 
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
-          {game && !showWinningField && game.neighboursBets.map(nb => {
+          {fieldSource && fieldSource.neighboursBets.map(nb => {
             const { x, y } = nb.position;
             const amt = String(nb.amount);
             const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
