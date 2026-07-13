@@ -1121,7 +1121,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
       const chipsRequired = dozenRule?.chipsRequired ?? 100;
       const { rawPlay, playPerUnit, acceptedAmount, change } = calcOneCompleteChange(amount, chipsRequired, maxBet, multiplicity);
-      lines.push({ label: "Неполный комплит дюжины", amount, chipsRequired, rawPlay, playPerUnit, acceptedAmount, change, maxBet, multiplicity });
+      lines.push({ label: "Комплит дюжины", amount, chipsRequired, rawPlay, playPerUnit, acceptedAmount, change, maxBet, multiplicity });
     }
     for (const ncb of game.numberCompleteBets) {
       const { rawPlay, playPerUnit, acceptedAmount, change } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, multiplicity);
