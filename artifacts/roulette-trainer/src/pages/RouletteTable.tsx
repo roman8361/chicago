@@ -1791,6 +1791,21 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </g>
             );
           })}
+          {/* Number complete highlights — pink overlay on the Straight Up zone */}
+          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
+            const wz = gridZones.find(z => z.number === ncb.number);
+            if (!wz) return null;
+            return (
+              <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                <polygon points={wz.pts}
+                  fill="rgba(210, 50, 110, 0.36)"
+                  stroke="#D0406A"
+                  strokeWidth="2"
+                  strokeLinejoin="round" />
+              </g>
+            );
+          })}
+
           {/* Winning number highlight */}
           {game && (() => {
             const wz = gridZones.find(z => z.number === game.drawnNumber);
@@ -1805,6 +1820,22 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </g>
             );
           })()}
+
+          {/* Number complete "C" labels — blurred letter behind the number text */}
+          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
+            const wz = gridZones.find(z => z.number === ncb.number);
+            if (!wz) return null;
+            return (
+              <text key={`ncb-c-${ncb.number}`}
+                x={wz.cx} y={wz.cy}
+                textAnchor="middle" dominantBaseline="central"
+                fontSize="40" fontWeight="bold" fill="#F070A0"
+                opacity="0.30"
+                style={{ filter: "blur(1.5px)", pointerEvents: "none" }}>
+                C
+              </text>
+            );
+          })}
 
           {/* Chips */}
           {fieldSource && fieldSource.chips.map(stack => {
@@ -1878,35 +1909,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })()}
 
-          {/* Number complete chips — large gold chip centered on the straight-up */}
-          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
-            const { x, y } = ncb.position;
-            const amt = String(ncb.amount);
-            const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "12" : amt.length >= 4 ? "14" : "17";
-            return (
-              <g key={`ncb-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={45} fill="none" stroke="#E0C060" strokeWidth="2.5" opacity="0.45" />
-                {/* Main body */}
-                <circle cx={x} cy={y} r={40} fill="rgba(10,6,2,0.95)" stroke="#E0C060" strokeWidth="4" />
-                {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={33} fill="none" stroke="#E0C060" strokeWidth="1.2" opacity="0.55" />
-                {/* Number label at top */}
-                <text x={x} y={y - 11} textAnchor="middle" dominantBaseline="central"
-                  fontSize="16" fontWeight="800" fill="#E0C060"
-                  stroke="rgba(0,0,0,0.8)" strokeWidth="0.5" paintOrder="stroke">
-                  №{ncb.number}
-                </text>
-                {/* Amount text */}
-                <text x={x} y={y + 12} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="900" fill="#E0C060"
-                  stroke="rgba(0,0,0,0.8)" strokeWidth="0.7" paintOrder="stroke"
-                  letterSpacing="0.3">
-                  {amt}
-                </text>
-              </g>
-            );
-          })}
+          {/* Number complete chips — replaced by pink highlight + "C" label above */}
 
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
           {fieldSource && fieldSource.trackBets.map(tb => {
