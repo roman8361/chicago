@@ -1904,25 +1904,30 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             );
           })}
 
-          {/* Dozen complete chip — ~3× larger than normal chips (r=57), gold style */}
+          {/* Dozen complete badge — cyan rectangle with "C" watermark letter, no amount shown */}
           {fieldSource?.dozenCompleteBet && (() => {
             const { x, y } = fieldSource.dozenCompleteBet!.position;
-            const amt = String(fieldSource.dozenCompleteBet!.amount);
-            const fs = amt.length >= 6 ? "11" : amt.length >= 5 ? "13" : amt.length >= 4 ? "16" : "19";
+            const bw = 88; const bh = 62; // badge width / height in SVG units (≈ same footprint as old r=40 circle)
+            const rx = 7;                 // border-radius
             return (
               <g style={{ pointerEvents: "none" }}>
-                {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={45} fill="none" stroke="#C9A227" strokeWidth="2" opacity="0.4" />
-                {/* Main body */}
-                <circle cx={x} cy={y} r={40} fill="rgba(8,18,10,0.93)" stroke="#C9A227" strokeWidth="3.5" />
-                {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={34} fill="none" stroke="#C9A227" strokeWidth="1.2" opacity="0.6" />
-                {/* Amount text */}
+                {/* Outer glow */}
+                <rect x={x - bw / 2 - 3} y={y - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
+                  fill="none" stroke="rgba(0,212,255,0.45)" strokeWidth="3" />
+                {/* Badge body */}
+                <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={rx}
+                  fill="rgba(0, 212, 255, 0.55)"
+                  stroke="rgba(160, 240, 255, 0.95)"
+                  strokeWidth="2"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.80))" }} />
+                {/* "C" letter watermark */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#C9A227"
-                  stroke="rgba(0,0,0,0.7)" strokeWidth="0.8" paintOrder="stroke"
-                  letterSpacing="0.5">
-                  {amt}
+                  fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                  fill="#E8F8FF"
+                  stroke="rgba(0,180,230,0.70)" strokeWidth="2.5" paintOrder="stroke"
+                  opacity="0.92"
+                  style={{ pointerEvents: "none" }}>
+                  C
                 </text>
               </g>
             );
