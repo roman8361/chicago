@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   completeDozen: "no",
   completeField: "yes",
   completeCount: 1,
-  completeMultiplicity: 25,
+  completeMultiplicity: 100,
   neighboursMultiplicity: 10,
   colorNumbersCount: 3,
   cashChipValues: ["100"],
