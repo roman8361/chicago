@@ -19,7 +19,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "completeTrackIntersection" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "completeTrackIntersection" } | { kind: "completeNumberPayout" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
 
 interface SeriesLineSummary {
   type: TrackBet["type"];
@@ -152,6 +152,33 @@ interface CompleteTrackIntersectionQuizRecord {
   correctAnswer: number;
   correct: boolean;
   lines: CompleteTrackIntersectionLineSummary[];
+}
+
+interface CompleteNumberPayoutWinningPos {
+  positionLabel: string;
+  amount: number; // playPerUnit for this touch
+}
+
+interface CompleteNumberPayoutLine {
+  label: string;        // "Комплит №4" / "Комплит дюжины"
+  playPerUnit: number;
+  uniquePositions: CompleteNumberPayoutWinningPos[]; // non-capped winning positions only
+  uniqueTotal: number;
+}
+
+interface CompleteNumberPayoutCappedLine {
+  positionLabel: string;
+  completeLabels: string[];  // which completes share this position
+  sumPlayPerUnit: number;    // combined (exceeds maxBet)
+  cappedAmount: number;      // = maxBet
+}
+
+interface CompleteNumberPayoutQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+  lines: CompleteNumberPayoutLine[];           // per-complete, unique (non-capped) positions
+  cappedLines: CompleteNumberPayoutCappedLine[]; // positions capped by multi-complete intersection
 }
 
 interface SeriesFieldPayoutLineSummary {
@@ -611,6 +638,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackFieldIntersectionRecord, setTrackFieldIntersectionRecord] = useState<TrackFieldIntersectionQuizRecord | null>(null);
   const [completeTrackIntersectionInput,  setCompleteTrackIntersectionInput]  = useState("");
   const [completeTrackIntersectionRecord, setCompleteTrackIntersectionRecord] = useState<CompleteTrackIntersectionQuizRecord | null>(null);
+  const [completeNumberPayoutInput,  setCompleteNumberPayoutInput]  = useState("");
+  const [completeNumberPayoutRecord, setCompleteNumberPayoutRecord] = useState<CompleteNumberPayoutQuizRecord | null>(null);
   const [seriesFieldPayoutInput,  setSeriesFieldPayoutInput]  = useState("");
   const [seriesFieldPayoutRecord, setSeriesFieldPayoutRecord] = useState<SeriesFieldPayoutQuizRecord | null>(null);
   const [neighboursPayoutInput,  setNeighboursPayoutInput]  = useState("");
@@ -1006,6 +1035,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setTrackIntersectionRecord(null);
     setTrackFieldIntersectionRecord(null);
     setCompleteTrackIntersectionRecord(null);
+    setCompleteNumberPayoutRecord(null);
     setSeriesFieldPayoutRecord(null);
     setNeighboursPayoutRecord(null);
     setColorPayoutData(null);
@@ -1018,6 +1048,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setTrackIntersectionInput("");
     setTrackFieldIntersectionInput("");
     setCompleteTrackIntersectionInput("");
+    setCompleteNumberPayoutInput("");
     setSeriesFieldPayoutInput("");
     setNeighboursPayoutInput("");
     setQuizPhase(
@@ -1581,8 +1612,118 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setCompleteTrackIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setCompleteTrackIntersectionInput("");
-    setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
+    setQuizPhase({ kind: "completeNumberPayout" });
   }, [game, quizPhase, completeTrackIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, getAllRules]);
+
+  // ── Complete Number Payout (касания комплитов → сумма в выпавший номер) ──────
+  const handleCheckCompleteNumberPayout = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "completeNumberPayout") return;
+    const userAnswer = parseInt(completeNumberPayoutInput || "0", 10) || 0;
+    const maxBet = Math.max(1, settings.maxBet);
+    const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
+    const rules = getAllRules();
+
+    // positionId → { positionLabel, contributions: Map<completeLabel, playPerUnit> }
+    type PosEntry = { positionLabel: string; contributions: Map<string, number> };
+    const posMap = new Map<string, PosEntry>();
+
+    // Per-complete info for building display lines
+    type CompleteInfo = { label: string; playPerUnit: number; positions: string[] };
+    const completesInfo: CompleteInfo[] = [];
+
+    const processComplete = (
+      label: string,
+      amount: number,
+      chipsRequired: number,
+      betsRule: Record<string, Array<{ numbers: number[]; chips: number }>>,
+    ) => {
+      const { playPerUnit } = calcOneCompleteChange(amount, chipsRequired, maxBet, completeMultiplicity);
+      const winningPositionIds: string[] = [];
+      for (const [categoryKey, { betType, label: catLabel }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+        const entries = betsRule[categoryKey];
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          if (!Array.isArray(entry.numbers) || !entry.numbers.includes(game.drawnNumber)) continue;
+          const positionId = findPositionId(betType, entry.numbers as number[]);
+          if (!positionId) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          const posLabel = `${catLabel} ${sortedNums}`;
+          let posEntry = posMap.get(positionId);
+          if (!posEntry) {
+            posEntry = { positionLabel: posLabel, contributions: new Map() };
+            posMap.set(positionId, posEntry);
+          }
+          // Each complete contributes playPerUnit once per winning position (not ×chips)
+          posEntry.contributions.set(label, (posEntry.contributions.get(label) ?? 0) + playPerUnit);
+          winningPositionIds.push(positionId);
+        }
+      }
+      completesInfo.push({ label, playPerUnit, positions: winningPositionIds });
+    };
+
+    if (game.dozenCompleteBet) {
+      const { amount, dozen } = game.dozenCompleteBet;
+      const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+      const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
+      if (dozenRule) {
+        processComplete("Комплит дюжины", amount, dozenRule.chipsRequired, dozenRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
+      }
+    }
+    for (const ncb of game.numberCompleteBets) {
+      const completeRule = rules.completeBets.find(cb => cb.number === ncb.number);
+      if (!completeRule) continue;
+      processComplete(`Комплит №${ncb.number}`, ncb.amount, ncb.chipsRequired, completeRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
+    }
+
+    // Classify positions: capped (sum > maxBet) vs non-capped
+    const cappedPositions = new Set<string>();
+    for (const [positionId, posEntry] of posMap.entries()) {
+      const total = Array.from(posEntry.contributions.values()).reduce((s, v) => s + v, 0);
+      if (total > maxBet) cappedPositions.add(positionId);
+    }
+
+    // Build per-complete lines (unique/non-capped positions only)
+    const lines: CompleteNumberPayoutLine[] = [];
+    let correctAnswer = 0;
+
+    for (const ci of completesInfo) {
+      const uniquePositions: CompleteNumberPayoutWinningPos[] = [];
+      for (const positionId of ci.positions) {
+        if (cappedPositions.has(positionId)) continue; // handled separately
+        const posEntry = posMap.get(positionId)!;
+        const contribution = posEntry.contributions.get(ci.label) ?? 0;
+        uniquePositions.push({ positionLabel: posEntry.positionLabel, amount: contribution });
+        correctAnswer += contribution;
+      }
+      lines.push({
+        label: ci.label,
+        playPerUnit: ci.playPerUnit,
+        uniquePositions,
+        uniqueTotal: uniquePositions.reduce((s, p) => s + p.amount, 0),
+      });
+    }
+
+    // Build capped lines (each counted once at maxBet)
+    const cappedLines: CompleteNumberPayoutCappedLine[] = [];
+    const processedCapped = new Set<string>();
+    for (const positionId of cappedPositions) {
+      if (processedCapped.has(positionId)) continue;
+      processedCapped.add(positionId);
+      const posEntry = posMap.get(positionId)!;
+      const sumPlayPerUnit = Array.from(posEntry.contributions.values()).reduce((s, v) => s + v, 0);
+      cappedLines.push({
+        positionLabel: posEntry.positionLabel,
+        completeLabels: Array.from(posEntry.contributions.keys()),
+        sumPlayPerUnit,
+        cappedAmount: maxBet,
+      });
+      correctAnswer += maxBet;
+    }
+
+    setCompleteNumberPayoutRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines, cappedLines });
+    setCompleteNumberPayoutInput("");
+    setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
+  }, [game, quizPhase, completeNumberPayoutInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
 
   // ── Series Field Payout (выигравшие серии → сумма в поле) ───────────────────
   const handleCheckSeriesFieldPayout = useCallback(() => {
@@ -1819,9 +1960,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const trackIntQuestionNum = seriesBaseNum + (activeSeries.length > 0 ? 1 : 0);
   const trackFieldIntQuestionNum = trackIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
   const completeTrackIntQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
-  const seriesFieldPayoutQuestionNum = completeTrackIntQuestionNum + (hasCompleteTrackQuestion ? 1 : 0);
+  const completeNumberPayoutQuestionNum = completeTrackIntQuestionNum + (hasCompleteTrackQuestion ? 1 : 0);
+  const seriesFieldPayoutQuestionNum = completeNumberPayoutQuestionNum + (hasCompleteTrackQuestion ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (hasCompleteTrackQuestion ? 1 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (hasCompleteTrackQuestion ? 2 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
@@ -2416,6 +2558,27 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
 
+            {/* Complete number payout question */}
+            {quizPhase.kind === "completeNumberPayout" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">{completeNumberPayoutQuestionNum}. Какую общую сумму нужно поставить в номер с выигрышных ставок «комплит»?</span>
+                  <span className="quiz-series-sub">Сумма</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Сумма"
+                  value={completeNumberPayoutInput}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckCompleteNumberPayout(); }}
+                  onChange={e => { const v = e.target.value; setCompleteNumberPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckCompleteNumberPayout}>Проверить</button>
+              </div>
+            )}
+
             {/* Series field payout question */}
             {quizPhase.kind === "seriesFieldPayout" && (
               <div className="game-answer-area">
@@ -2725,6 +2888,61 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                           </div>
                         </div>
                       )}
+                    </>
+                  )}
+                </div>
+              )}
+              {completeNumberPayoutRecord && (
+                <div className={`quiz-report-item ${completeNumberPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{completeNumberPayoutQuestionNum}. Какую общую сумму нужно поставить в номер с выигрышных ставок «комплит»?</div>
+                  {completeNumberPayoutRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {completeNumberPayoutRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {completeNumberPayoutRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {completeNumberPayoutRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {completeNumberPayoutRecord.lines.map((line, li) => (
+                          <div key={li} style={{ marginBottom: 8 }}>
+                            <strong>{line.label}</strong> (играет по {line.playPerUnit})<br/>
+                            {line.uniquePositions.length === 0 ? (
+                              <span>Касаний нет (все позиции ограничены максимумом)<br/></span>
+                            ) : (
+                              line.uniquePositions.map((pos, pi) => (
+                                <span key={pi}>{pos.positionLabel} → {pos.amount}<br/></span>
+                              ))
+                            )}
+                            {line.uniquePositions.length > 0 && (
+                              <>Итого: {line.uniqueTotal}<br/></>
+                            )}
+                          </div>
+                        ))}
+                        {completeNumberPayoutRecord.cappedLines.length > 0 && (
+                          <>
+                            <div style={{ marginTop: 8, marginBottom: 4 }}><strong>Позиции, ограниченные максимумом (пересечение комплитов):</strong></div>
+                            {completeNumberPayoutRecord.cappedLines.map((cl, ci) => (
+                              <div key={ci} style={{ marginBottom: 6 }}>
+                                {cl.positionLabel} — {cl.completeLabels.join(" + ")} = {cl.sumPlayPerUnit} &gt; максимум {cl.cappedAmount}<br/>
+                                → используем {cl.cappedAmount}
+                              </div>
+                            ))}
+                          </>
+                        )}
+                        {completeNumberPayoutRecord.lines.every(l => l.uniquePositions.length === 0) && completeNumberPayoutRecord.cappedLines.length === 0 ? (
+                          <div>Выигравших позиций комплитов нет — ответ 0.</div>
+                        ) : (
+                          <div className="quiz-report-total">
+                            Итого: {[
+                              ...completeNumberPayoutRecord.lines.filter(l => l.uniqueTotal > 0).map(l => `${l.uniqueTotal}`),
+                              ...completeNumberPayoutRecord.cappedLines.map(cl => `${cl.cappedAmount}`),
+                            ].join(" + ")} = {completeNumberPayoutRecord.correctAnswer}
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
