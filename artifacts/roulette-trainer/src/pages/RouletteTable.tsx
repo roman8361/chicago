@@ -19,7 +19,7 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
+type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "completeTrackIntersection" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
 
 interface SeriesLineSummary {
   type: TrackBet["type"];
@@ -138,6 +138,22 @@ interface TrackFieldIntersectionQuizRecord {
   lines: TrackFieldIntersectionLineSummary[];
 }
 
+interface CompleteTrackIntersectionLineSummary {
+  label: string;
+  positionLimit: number;
+  completeAmount: number;
+  effectiveTrackAmount: number;
+  totalAmount: number;
+  change: number;
+}
+
+interface CompleteTrackIntersectionQuizRecord {
+  userAnswer: number;
+  correctAnswer: number;
+  correct: boolean;
+  lines: CompleteTrackIntersectionLineSummary[];
+}
+
 interface SeriesFieldPayoutLineSummary {
   seriesLabel: string;
   amount: number;
@@ -218,6 +234,30 @@ function calcOneCompleteChange(
   const playPerUnit = Math.floor(Math.min(rawPlay, maxBet) / multiplicity) * multiplicity;
   const acceptedAmount = playPerUnit * chipsRequired;
   return { rawPlay, playPerUnit, acceptedAmount, change: amount - acceptedAmount };
+}
+
+// Decides which quiz phase follows the track×field intersection question
+// (and, when present, the complete×track intersection question): whichever
+// winning series/neighbours payout question applies, or straight to the
+// field-payout question if neither series nor neighbours won.
+function decidePostTrackFieldPhase(
+  game: GameState,
+  activeSeries: TrackBet[],
+  rules: Record<string, unknown>,
+): QuizPhase {
+  const seriesWonNow = activeSeries.length > 0 && activeSeries.some(tb => {
+    const trackRule = (rules.trackBets as Record<string, { bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
+    if (!trackRule) return false;
+    return Object.values(trackRule.bets).some(entries =>
+      Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))
+    );
+  });
+  const neighboursMap = rules.neighbours as Record<string, number[]>;
+  const neighboursWonNow = game.neighboursBets.length > 0 && game.neighboursBets.some(nb => {
+    const nums = neighboursMap[String(nb.number)];
+    return Array.isArray(nums) && nums.includes(game.drawnNumber);
+  });
+  return seriesWonNow ? { kind: "seriesFieldPayout" } : neighboursWonNow ? { kind: "neighboursPayout" } : { kind: "field" };
 }
 
 function generateColorPayout(
@@ -569,6 +609,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
   const [trackIntersectionRecord, setTrackIntersectionRecord] = useState<TrackIntersectionQuizRecord | null>(null);
   const [trackFieldIntersectionInput,  setTrackFieldIntersectionInput]  = useState("");
   const [trackFieldIntersectionRecord, setTrackFieldIntersectionRecord] = useState<TrackFieldIntersectionQuizRecord | null>(null);
+  const [completeTrackIntersectionInput,  setCompleteTrackIntersectionInput]  = useState("");
+  const [completeTrackIntersectionRecord, setCompleteTrackIntersectionRecord] = useState<CompleteTrackIntersectionQuizRecord | null>(null);
   const [seriesFieldPayoutInput,  setSeriesFieldPayoutInput]  = useState("");
   const [seriesFieldPayoutRecord, setSeriesFieldPayoutRecord] = useState<SeriesFieldPayoutQuizRecord | null>(null);
   const [neighboursPayoutInput,  setNeighboursPayoutInput]  = useState("");
@@ -963,6 +1005,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setIntersectionRecord(null);
     setTrackIntersectionRecord(null);
     setTrackFieldIntersectionRecord(null);
+    setCompleteTrackIntersectionRecord(null);
     setSeriesFieldPayoutRecord(null);
     setNeighboursPayoutRecord(null);
     setColorPayoutData(null);
@@ -974,6 +1017,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     setIntersectionInput("");
     setTrackIntersectionInput("");
     setTrackFieldIntersectionInput("");
+    setCompleteTrackIntersectionInput("");
     setSeriesFieldPayoutInput("");
     setNeighboursPayoutInput("");
     setQuizPhase(
@@ -1407,23 +1451,138 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setTrackFieldIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setTrackFieldIntersectionInput("");
-    // Check if any active series won to determine next phase
-    const mult2 = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
-    const seriesWonNow = activeSeries.length > 0 && activeSeries.some(tb => {
-      const trackRule2 = (rules.trackBets as Record<string, { bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
-      if (!trackRule2) return false;
-      return Object.values(trackRule2.bets).some(entries =>
-        Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))
-      );
-    });
-    void mult2;
-    const neighboursMapNow = rules.neighbours as Record<string, number[]>;
-    const neighboursWonNow = game.neighboursBets.length > 0 && game.neighboursBets.some(nb => {
-      const nums = neighboursMapNow[String(nb.number)];
-      return Array.isArray(nums) && nums.includes(game.drawnNumber);
-    });
-    setQuizPhase(seriesWonNow ? { kind: "seriesFieldPayout" } : neighboursWonNow ? { kind: "neighboursPayout" } : { kind: "field" });
+    // Complete × track intersection question comes next when the round has at
+    // least one complete bet; otherwise skip straight to the payout phase.
+    const hasCompletesNow = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
+    if (hasCompletesNow) {
+      setQuizPhase({ kind: "completeTrackIntersection" });
+    } else {
+      setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
+    }
   }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, getAllRules]);
+
+  // ── Complete × Track Intersection (комплиты × ставки трека) ─────────────────
+  const handleCheckCompleteTrackIntersection = useCallback(() => {
+    if (!game || !quizPhase || quizPhase.kind !== "completeTrackIntersection") return;
+    const userAnswer = parseInt(completeTrackIntersectionInput || "0", 10) || 0;
+    const maxBet = Math.max(1, settings.maxBet);
+    const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
+    const rules = getAllRules();
+
+    // --- Build complete contribution map (dozen complete + number completes) ---
+    type CompletePos = { betLabel: string; limitMultiplier: number; completeAmount: number };
+    const completeMap = new Map<string, CompletePos>();
+    const addComplete = (positionId: string, limitMultiplier: number, betLabel: string, amount: number) => {
+      let entry = completeMap.get(positionId);
+      if (!entry) {
+        entry = { betLabel, limitMultiplier, completeAmount: 0 };
+        completeMap.set(positionId, entry);
+      }
+      entry.completeAmount += amount;
+    };
+
+    if (game.dozenCompleteBet) {
+      const { amount, dozen } = game.dozenCompleteBet;
+      const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+      const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
+      if (dozenRule) {
+        const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, completeMultiplicity);
+        for (const [categoryKey, { betType, limitMultiplier, label }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+          const rawEntries = (dozenRule.bets as Record<string, unknown>)[categoryKey];
+          if (!Array.isArray(rawEntries)) continue;
+          for (const entry of rawEntries) {
+            if (!entry || !Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+            const positionId = findPositionId(betType, entry.numbers as number[]);
+            if (!positionId) continue;
+            const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+            addComplete(positionId, limitMultiplier, `${label} ${sortedNums}`, playPerUnit * entry.chips);
+          }
+        }
+      }
+    }
+
+    for (const ncb of game.numberCompleteBets) {
+      const completeRule = rules.completeBets.find(cb => cb.number === ncb.number);
+      if (!completeRule) continue;
+      const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, completeMultiplicity);
+      for (const [categoryKey, { betType, limitMultiplier, label }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+        const rawEntries = (completeRule.bets as Record<string, unknown>)[categoryKey];
+        if (!Array.isArray(rawEntries)) continue;
+        for (const entry of rawEntries) {
+          if (!entry || !Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+          const positionId = findPositionId(betType, entry.numbers as number[]);
+          if (!positionId) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          addComplete(positionId, limitMultiplier, `${label} ${sortedNums}`, playPerUnit * entry.chips);
+        }
+      }
+    }
+
+    // --- Build track contribution map (series + neighbours) ---
+    type TrackPos = { betLabel: string; limitMultiplier: number; trackTotal: number };
+    const trackMap = new Map<string, TrackPos>();
+    const addTrack = (positionId: string, limitMultiplier: number, betLabel: string, amount: number) => {
+      let entry = trackMap.get(positionId);
+      if (!entry) {
+        entry = { betLabel, limitMultiplier, trackTotal: 0 };
+        trackMap.set(positionId, entry);
+      }
+      entry.trackTotal += amount;
+    };
+
+    const neighboursMap = rules.neighbours as Record<string, number[]>;
+    for (const nb of game.neighboursBets) {
+      const nums = neighboursMap[String(nb.number)];
+      if (!Array.isArray(nums)) continue;
+      for (const n of nums) {
+        addTrack(`su-${n}`, 1, `Straight Up ${n}`, nb.baseAmount);
+      }
+    }
+
+    for (const tb of activeSeries) {
+      const trackRule = (rules.trackBets as Record<string, { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
+      if (!trackRule) continue;
+      const { playPerUnit } = calcSeriesResult(tb.amount, trackRule.divisor, mult);
+      if (playPerUnit <= 0) continue;
+      for (const [catKey, entries] of Object.entries(trackRule.bets)) {
+        const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
+        if (!catInfo || !Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          if (!Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+          const positionId = findPositionId(catInfo.betType, entry.numbers);
+          if (!positionId) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          addTrack(positionId, catInfo.limitMultiplier, `${catInfo.label} ${sortedNums}`, playPerUnit * entry.chips);
+        }
+      }
+    }
+
+    // --- Positions where both a complete bet and a track bet landed ---
+    const lines: CompleteTrackIntersectionLineSummary[] = [];
+    for (const [positionId, completeEntry] of completeMap.entries()) {
+      const trackEntry = trackMap.get(positionId);
+      if (!trackEntry || trackEntry.trackTotal <= 0 || completeEntry.completeAmount <= 0) continue;
+      const positionLimit = maxBet * completeEntry.limitMultiplier;
+      const effectiveTrackAmount = Math.min(trackEntry.trackTotal, positionLimit);
+      const totalAmount = completeEntry.completeAmount + effectiveTrackAmount;
+      if (totalAmount > positionLimit) {
+        lines.push({
+          label: completeEntry.betLabel,
+          positionLimit,
+          completeAmount: completeEntry.completeAmount,
+          effectiveTrackAmount,
+          totalAmount,
+          change: totalAmount - positionLimit,
+        });
+      }
+    }
+
+    const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
+    setCompleteTrackIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    setCompleteTrackIntersectionInput("");
+    setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
+  }, [game, quizPhase, completeTrackIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, getAllRules]);
 
   // ── Series Field Payout (выигравшие серии → сумма в поле) ───────────────────
   const handleCheckSeriesFieldPayout = useCallback(() => {
@@ -1655,12 +1814,14 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
       return Array.isArray(nums) && nums.includes(game.drawnNumber);
     });
   })();
+  const hasCompleteTrackQuestion = hasCompletesQuestion && hasTrackIntersectionQuestion;
   const seriesBaseNum = hasCompletesQuestion ? 3 : 1;
   const trackIntQuestionNum = seriesBaseNum + (activeSeries.length > 0 ? 1 : 0);
   const trackFieldIntQuestionNum = trackIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
-  const seriesFieldPayoutQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
+  const completeTrackIntQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
+  const seriesFieldPayoutQuestionNum = completeTrackIntQuestionNum + (hasCompleteTrackQuestion ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (hasCompleteTrackQuestion ? 1 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
@@ -2234,6 +2395,27 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               </div>
             )}
 
+            {/* Complete × Track intersection question */}
+            {quizPhase.kind === "completeTrackIntersection" && (
+              <div className="game-answer-area">
+                <div className="quiz-series-header">
+                  <span className="quiz-series-title">{completeTrackIntQuestionNum}. Посчитайте сдачу с пересечений ставок «комплит» со ставками на треке.</span>
+                  <span className="quiz-series-sub">Общая сдача</span>
+                </div>
+                <input
+                  type="number"
+                  className="game-answer-input"
+                  placeholder="Общая сдача"
+                  value={completeTrackIntersectionInput}
+                  min="0"
+                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckCompleteTrackIntersection(); }}
+                  onChange={e => { const v = e.target.value; setCompleteTrackIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
+                  autoFocus
+                />
+                <button className="game-check-btn" onClick={handleCheckCompleteTrackIntersection}>Проверить</button>
+              </div>
+            )}
+
             {/* Series field payout question */}
             {quizPhase.kind === "seriesFieldPayout" && (
               <div className="game-answer-area">
@@ -2515,6 +2697,42 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                           ))}
                           <div className="quiz-report-total">
                             Итого сдача: {trackFieldIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackFieldIntersectionRecord.correctAnswer}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {completeTrackIntersectionRecord && (
+                <div className={`quiz-report-item ${completeTrackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">Сдача с пересечений ставок «комплит» со ставками на треке</div>
+                  {completeTrackIntersectionRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {completeTrackIntersectionRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
+                      {completeTrackIntersectionRecord.lines.length === 0 ? (
+                        <div className="quiz-report-calc">Пересечений комплитов со ставками трека не найдено — сдачи нет.</div>
+                      ) : (
+                        <div className="quiz-report-calc">
+                          {completeTrackIntersectionRecord.lines.map((line, li) => (
+                            <div key={li} style={{ marginBottom: 8 }}>
+                              <strong>{line.label}</strong><br/>
+                              Лимит: {line.positionLimit}<br/>
+                              Комплиты: {line.completeAmount}<br/>
+                              Ставки трека: {line.effectiveTrackAmount}<br/>
+                              Итого: {line.completeAmount} + {line.effectiveTrackAmount} = {line.totalAmount}<br/>
+                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                            </div>
+                          ))}
+                          <div className="quiz-report-total">
+                            Итого сдача: {completeTrackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {completeTrackIntersectionRecord.correctAnswer}
                           </div>
                         </div>
                       )}
