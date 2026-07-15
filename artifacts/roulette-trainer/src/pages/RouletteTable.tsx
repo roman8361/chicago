@@ -2512,7 +2512,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             <div className="quiz-report">
               {completesRecord && (
                 <div className={`quiz-report-item ${completesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с кратности приема ставок «комплит»</div>
+                  <div className="quiz-report-name">1. Сдача с кратности приема ставок «комплит»</div>
                   {completesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2542,7 +2542,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {intersectionRecord && (
                 <div className={`quiz-report-item ${intersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечений ставок «комплит» со ставками на поле без учета трека</div>
+                  <div className="quiz-report-name">2. Сдача с пересечений ставок «комплит» со ставками на поле без учета трека</div>
                   {intersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2586,9 +2586,185 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   )}
                 </div>
               )}
+              {seriesRecord && (
+                <div className={`quiz-report-item ${seriesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{seriesBaseNum}. Общая сдача с кратности приема серий</div>
+                  {seriesRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {seriesRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {seriesRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {seriesRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {seriesRecord.lines.map((line, i) => (
+                          <div key={i} style={{ marginBottom: 6 }}>
+                            <strong>{line.label}:</strong><br/>
+                            Ставка серии: {line.amount}<br/>
+                            Делитель: {line.divisor}<br/>
+                            Кратность: {line.multiplicity}<br/>
+                            {line.amount} / {line.divisor} = {line.rawPerUnit.toFixed(2)}<br/>
+                            Округляем вниз до {line.playPerUnit}<br/>
+                            Принятая сумма: {line.playPerUnit} × {line.divisor} = {line.acceptedAmount}<br/>
+                            Сдача: {line.amount} − {line.acceptedAmount} = {line.change}
+                          </div>
+                        ))}
+                        <div className="quiz-report-total">
+                          Итого сдача с серий: {seriesRecord.lines.map(l => l.change).join(" + ")} = {seriesRecord.correctAnswer}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {trackIntersectionRecord && (
+                <div className={`quiz-report-item ${trackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{trackIntQuestionNum}. Сдача с пересечений на треке серий и ставок «соседи номера»</div>
+                  {trackIntersectionRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {trackIntersectionRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {trackIntersectionRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {trackIntersectionRecord.correctAnswer}</div>
+                      {trackIntersectionRecord.lines.length === 0 ? (
+                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                      ) : (
+                        <div className="quiz-report-calc">
+                          {trackIntersectionRecord.lines.map((line, li) => (
+                            <div key={li} style={{ marginBottom: 8 }}>
+                              <strong>{line.label}</strong><br/>
+                              Лимит: {line.positionLimit}<br/>
+                              {line.contributions.map(c => (
+                                <span key={c.source}>{c.source}: {c.amount}<br/></span>
+                              ))}
+                              Итого: {line.totalAmount}<br/>
+                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                            </div>
+                          ))}
+                          <div className="quiz-report-total">
+                            Итого сдача: {trackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackIntersectionRecord.correctAnswer}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {trackFieldIntersectionRecord && (
+                <div className={`quiz-report-item ${trackFieldIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{trackFieldIntQuestionNum}. Сдача с пересечений трека со ставками на поле</div>
+                  {trackFieldIntersectionRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {trackFieldIntersectionRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {trackFieldIntersectionRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {trackFieldIntersectionRecord.correctAnswer}</div>
+                      {trackFieldIntersectionRecord.lines.length === 0 ? (
+                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                      ) : (
+                        <div className="quiz-report-calc">
+                          {trackFieldIntersectionRecord.lines.map((line, li) => (
+                            <div key={li} style={{ marginBottom: 8 }}>
+                              <strong>{line.label}</strong><br/>
+                              Лимит: {line.positionLimit}<br/>
+                              Ставки трека после уже отданной сдачи: {line.effectiveTrackAmount}<br/>
+                              Ставки поля: {line.colorAmount > 0 ? `цвет ${line.colorAmount}` : ""}{line.colorAmount > 0 && line.cashAmount > 0 ? " + " : ""}{line.cashAmount > 0 ? `кэш ${line.cashAmount}` : ""} = {line.colorAmount + line.cashAmount}<br/>
+                              Итого: {line.effectiveTrackAmount} + {line.colorAmount + line.cashAmount} = {line.totalAmount}<br/>
+                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                            </div>
+                          ))}
+                          <div className="quiz-report-total">
+                            Итого сдача: {trackFieldIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackFieldIntersectionRecord.correctAnswer}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {completeTrackIntersectionRecord && (
+                <div className={`quiz-report-item ${completeTrackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{completeTrackIntQuestionNum}. Сдача с пересечений ставок «комплит» со ставками на треке</div>
+                  {completeTrackIntersectionRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {completeTrackIntersectionRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
+                      {completeTrackIntersectionRecord.lines.length === 0 ? (
+                        <div className="quiz-report-calc">Пересечений комплитов со ставками трека не найдено — сдачи нет.</div>
+                      ) : (
+                        <div className="quiz-report-calc">
+                          {completeTrackIntersectionRecord.lines.map((line, li) => (
+                            <div key={li} style={{ marginBottom: 8 }}>
+                              <strong>{line.label}</strong><br/>
+                              Лимит: {line.positionLimit}<br/>
+                              Комплиты: {line.completeAmount}<br/>
+                              Ставки трека: {line.effectiveTrackAmount}<br/>
+                              Итого: {line.completeAmount} + {line.effectiveTrackAmount} = {line.totalAmount}<br/>
+                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                            </div>
+                          ))}
+                          <div className="quiz-report-total">
+                            Итого сдача: {completeTrackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {completeTrackIntersectionRecord.correctAnswer}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {seriesFieldPayoutRecord && (
+                <div className={`quiz-report-item ${seriesFieldPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
+                  <div className="quiz-report-name">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно выставить в поле с выигрышных серий?</div>
+                  {seriesFieldPayoutRecord.correct ? (
+                    <>
+                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
+                      <div className="quiz-report-detail">Ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
+                      <div className="quiz-report-detail">Ваш ответ: {seriesFieldPayoutRecord.userAnswer}</div>
+                      <div className="quiz-report-detail">Правильный ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
+                      <div className="quiz-report-calc">
+                        {seriesFieldPayoutRecord.lines.map((line, li) => (
+                          <div key={li} style={{ marginBottom: 8 }}>
+                            <strong>{line.seriesLabel}</strong><br/>
+                            Ставка: {line.amount} / {line.divisor} = {(line.amount / line.divisor).toFixed(2)}<br/>
+                            Играет по: {line.playPerUnit}<br/>
+                            {line.winningPositions.map(p => (
+                              <span key={p.label}>{p.label} (фишек: {p.chips}) → {line.playPerUnit} × {p.chips} = {p.positionAmount}<br/></span>
+                            ))}
+                            Итого по серии: {line.seriesTotal}
+                          </div>
+                        ))}
+                        <div className="quiz-report-total">
+                          Итого: {seriesFieldPayoutRecord.lines.map(l => l.seriesTotal).join(" + ")} = {seriesFieldPayoutRecord.correctAnswer}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               {neighboursPayoutRecord && (
                 <div className={`quiz-report-item ${neighboursPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</div>
+                  <div className="quiz-report-name">{neighboursPayoutQuestionNum}. Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</div>
                   {neighboursPayoutRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2635,186 +2811,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
                   )}
                 </div>
               )}
-              {seriesFieldPayoutRecord && (
-                <div className={`quiz-report-item ${seriesFieldPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Какую общую сумму нужно выставить в поле с выигрышных серий?</div>
-                  {seriesFieldPayoutRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {seriesFieldPayoutRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {seriesFieldPayoutRecord.correctAnswer}</div>
-                      <div className="quiz-report-calc">
-                        {seriesFieldPayoutRecord.lines.map((line, li) => (
-                          <div key={li} style={{ marginBottom: 8 }}>
-                            <strong>{line.seriesLabel}</strong><br/>
-                            Ставка: {line.amount} / {line.divisor} = {(line.amount / line.divisor).toFixed(2)}<br/>
-                            Играет по: {line.playPerUnit}<br/>
-                            {line.winningPositions.map(p => (
-                              <span key={p.label}>{p.label} (фишек: {p.chips}) → {line.playPerUnit} × {p.chips} = {p.positionAmount}<br/></span>
-                            ))}
-                            Итого по серии: {line.seriesTotal}
-                          </div>
-                        ))}
-                        <div className="quiz-report-total">
-                          Итого: {seriesFieldPayoutRecord.lines.map(l => l.seriesTotal).join(" + ")} = {seriesFieldPayoutRecord.correctAnswer}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-              {trackFieldIntersectionRecord && (
-                <div className={`quiz-report-item ${trackFieldIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечений трека со ставками на поле</div>
-                  {trackFieldIntersectionRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {trackFieldIntersectionRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {trackFieldIntersectionRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {trackFieldIntersectionRecord.correctAnswer}</div>
-                      {trackFieldIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
-                      ) : (
-                        <div className="quiz-report-calc">
-                          {trackFieldIntersectionRecord.lines.map((line, li) => (
-                            <div key={li} style={{ marginBottom: 8 }}>
-                              <strong>{line.label}</strong><br/>
-                              Лимит: {line.positionLimit}<br/>
-                              Ставки трека после уже отданной сдачи: {line.effectiveTrackAmount}<br/>
-                              Ставки поля: {line.colorAmount > 0 ? `цвет ${line.colorAmount}` : ""}{line.colorAmount > 0 && line.cashAmount > 0 ? " + " : ""}{line.cashAmount > 0 ? `кэш ${line.cashAmount}` : ""} = {line.colorAmount + line.cashAmount}<br/>
-                              Итого: {line.effectiveTrackAmount} + {line.colorAmount + line.cashAmount} = {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
-                            </div>
-                          ))}
-                          <div className="quiz-report-total">
-                            Итого сдача: {trackFieldIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackFieldIntersectionRecord.correctAnswer}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              {completeTrackIntersectionRecord && (
-                <div className={`quiz-report-item ${completeTrackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечений ставок «комплит» со ставками на треке</div>
-                  {completeTrackIntersectionRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {completeTrackIntersectionRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
-                      {completeTrackIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений комплитов со ставками трека не найдено — сдачи нет.</div>
-                      ) : (
-                        <div className="quiz-report-calc">
-                          {completeTrackIntersectionRecord.lines.map((line, li) => (
-                            <div key={li} style={{ marginBottom: 8 }}>
-                              <strong>{line.label}</strong><br/>
-                              Лимит: {line.positionLimit}<br/>
-                              Комплиты: {line.completeAmount}<br/>
-                              Ставки трека: {line.effectiveTrackAmount}<br/>
-                              Итого: {line.completeAmount} + {line.effectiveTrackAmount} = {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
-                            </div>
-                          ))}
-                          <div className="quiz-report-total">
-                            Итого сдача: {completeTrackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {completeTrackIntersectionRecord.correctAnswer}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              {trackIntersectionRecord && (
-                <div className={`quiz-report-item ${trackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечений на треке серий и ставок «соседи номера»</div>
-                  {trackIntersectionRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {trackIntersectionRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {trackIntersectionRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {trackIntersectionRecord.correctAnswer}</div>
-                      {trackIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
-                      ) : (
-                        <div className="quiz-report-calc">
-                          {trackIntersectionRecord.lines.map((line, li) => (
-                            <div key={li} style={{ marginBottom: 8 }}>
-                              <strong>{line.label}</strong><br/>
-                              Лимит: {line.positionLimit}<br/>
-                              {line.contributions.map(c => (
-                                <span key={c.source}>{c.source}: {c.amount}<br/></span>
-                              ))}
-                              Итого: {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
-                            </div>
-                          ))}
-                          <div className="quiz-report-total">
-                            Итого сдача: {trackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackIntersectionRecord.correctAnswer}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              {seriesRecord && (
-                <div className={`quiz-report-item ${seriesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Общая сдача с кратности приема серий</div>
-                  {seriesRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {seriesRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {seriesRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {seriesRecord.correctAnswer}</div>
-                      <div className="quiz-report-calc">
-                        {seriesRecord.lines.map((line, i) => (
-                          <div key={i} style={{ marginBottom: 6 }}>
-                            <strong>{line.label}:</strong><br/>
-                            Ставка серии: {line.amount}<br/>
-                            Делитель: {line.divisor}<br/>
-                            Кратность: {line.multiplicity}<br/>
-                            {line.amount} / {line.divisor} = {line.rawPerUnit.toFixed(2)}<br/>
-                            Округляем вниз до {line.playPerUnit}<br/>
-                            Принятая сумма: {line.playPerUnit} × {line.divisor} = {line.acceptedAmount}<br/>
-                            Сдача: {line.amount} − {line.acceptedAmount} = {line.change}
-                          </div>
-                        ))}
-                        <div className="quiz-report-total">
-                          Итого сдача с серий: {seriesRecord.lines.map(l => l.change).join(" + ")} = {seriesRecord.correctAnswer}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
 
               {fieldRecord && (
                 <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Общая сумма выплаты</div>
+                  <div className="quiz-report-name">{fieldQuestionNum}. Общая сумма выплаты</div>
                   {fieldRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2855,7 +2855,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               {colorPayoutRecord && (
                 <div className={`quiz-report-item ${colorPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
                   <div className="quiz-report-name">
-                    Выплата через {colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в «цвете».
+                    {colorPayoutQuestionNum}. Выплата через {colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в «цвете».
                   </div>
                   {colorPayoutRecord.correct ? (
                     <>
