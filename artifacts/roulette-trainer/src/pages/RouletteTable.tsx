@@ -2133,7 +2133,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "completes" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">1. Сдача кратности комплитов</span>
+                  <span className="quiz-series-title">1. Посчитайте сдачу с кратности приема ставок «комплит».</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2154,7 +2154,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "completesIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">2. Сдача с пересечения на поле комплитов</span>
+                  <span className="quiz-series-title">2. Посчитайте сдачу с пересечений ставок «комплит» со ставками на поле без учета трека.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2175,7 +2175,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "series" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{seriesBaseNum}. Посчитайте общую сдачу с серий, с учетом кратности приема.</span>
+                  <span className="quiz-series-title">{seriesBaseNum}. Посчитайте общую сдачу с кратности приема серий.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2196,7 +2196,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "trackIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте сдачу с пересечений на треке серий и соседей без учета ставок на поле</span>
+                  <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2217,7 +2217,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "trackFieldIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле, без учета ставки «комплит»</span>
+                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле без учета ставок «комплит».</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2238,7 +2238,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "seriesFieldPayout" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно поставить в поле с выигрышных серий?</span>
+                  <span className="quiz-series-title">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно выставить в поле с выигрышных серий?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
                 <input
@@ -2259,7 +2259,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "neighboursPayout" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{neighboursPayoutQuestionNum}. Какую сумму нужно поставить в номер с выигрышных "Соседей"?</span>
+                  <span className="quiz-series-title">{neighboursPayoutQuestionNum}. Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
                 <input
@@ -2280,7 +2280,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             {quizPhase.kind === "field" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{fieldQuestionNum}. Посчитайте общую сумму выплаты?</span>
+                  <span className="quiz-series-title">{fieldQuestionNum}. Посчитайте общую сумму выплаты.</span>
                   <span className="quiz-series-sub">Сумма выплаты</span>
                 </div>
                 <input
@@ -2302,7 +2302,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               <div className="game-answer-area">
                 <div className="quiz-series-header">
                   <span className="quiz-series-title">
-                    {colorPayoutQuestionNum}. Гость просит выплатить через {colorPayoutData.cashPayout}. Посчитайте остаток выплаты в цвете.
+                    {colorPayoutQuestionNum}. Выплата через {colorPayoutData.cashPayout}. Посчитайте остаток выплаты в «цвете».
                   </span>
                   <span className="quiz-series-sub">Количество фишек</span>
                 </div>
@@ -2330,7 +2330,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             <div className="quiz-report">
               {completesRecord && (
                 <div className={`quiz-report-item ${completesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача кратности комплитов</div>
+                  <div className="quiz-report-name">Сдача с кратности приема ставок «комплит»</div>
                   {completesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2360,7 +2360,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {intersectionRecord && (
                 <div className={`quiz-report-item ${intersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечения на поле комплитов</div>
+                  <div className="quiz-report-name">Сдача с пересечений ставок «комплит» со ставками на поле без учета трека</div>
                   {intersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2406,7 +2406,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {neighboursPayoutRecord && (
                 <div className={`quiz-report-item ${neighboursPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Какую сумму нужно поставить в номер с выигрышных "Соседей"?</div>
+                  <div className="quiz-report-name">Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</div>
                   {neighboursPayoutRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2455,7 +2455,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {seriesFieldPayoutRecord && (
                 <div className={`quiz-report-item ${seriesFieldPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Какую общую сумму нужно поставить в поле с выигрышных серий?</div>
+                  <div className="quiz-report-name">Какую общую сумму нужно выставить в поле с выигрышных серий?</div>
                   {seriesFieldPayoutRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2524,7 +2524,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {trackIntersectionRecord && (
                 <div className={`quiz-report-item ${trackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Сдача с пересечений на треке серий и соседей</div>
+                  <div className="quiz-report-name">Сдача с пересечений на треке серий и ставок «соседи номера»</div>
                   {trackIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2561,7 +2561,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               )}
               {seriesRecord && (
                 <div className={`quiz-report-item ${seriesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Посчитайте общую сдачу с серий, с учетом кратности приема.</div>
+                  <div className="quiz-report-name">Общая сдача с кратности приема серий</div>
                   {seriesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2596,7 +2596,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
 
               {fieldRecord && (
                 <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">Посчитайте общую сумму выплаты?</div>
+                  <div className="quiz-report-name">Общая сумма выплаты</div>
                   {fieldRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -2637,7 +2637,7 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
               {colorPayoutRecord && (
                 <div className={`quiz-report-item ${colorPayoutRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
                   <div className="quiz-report-name">
-                    Гость просит выплатить через {colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в цвете.
+                    Выплата через {colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в «цвете».
                   </div>
                   {colorPayoutRecord.correct ? (
                     <>
