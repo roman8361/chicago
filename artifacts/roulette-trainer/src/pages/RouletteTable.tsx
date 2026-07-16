@@ -2674,7 +2674,7 @@ export default function RouletteTable({
             )}
 
             {quizPhase.kind === "report" && (
-              <span className="quiz-series-title" style={{ marginLeft: 8 }}>Отчёт по раунду</span>
+              <span className="quiz-series-title" style={{ marginLeft: 8 }}>Отчёт по спину</span>
             )}
           </div>
 
