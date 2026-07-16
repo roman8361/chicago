@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { BASE_WIDTH, BASE_HEIGHT } from "@/data/zones";
 import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, type TrackParams } from "@/data/trackZones";
 import ruletImage from "@assets/rul_final_1782983519184.png";
-import spinSoundUrl from "@assets/spin_2sec_1783153552469.mp4";
+import spinSoundUrl from "@assets/spin_2sec_1784187842896.mp4";
 import { GameSettings } from "@/types/gameSettings";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
@@ -1101,11 +1101,22 @@ export default function RouletteTable({
   // Keep ref always pointing to latest generateRound
   useEffect(() => { generateRoundRef.current = generateRound; }, [generateRound]);
 
-  // Cleanup on unmount
+  // Preload spin audio on mount so it's ready on first click
+  useEffect(() => {
+    const audio = new Audio(spinSoundUrl);
+    audio.preload = "auto";
+    audio.loop = false;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current);
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
     };
   }, []);
 
@@ -1114,13 +1125,13 @@ export default function RouletteTable({
     isSpinningRef.current = true;
     setIsSpinning(true);
 
-    // Play the spin sound (ignore errors — animation continues regardless)
-    if (!audioRef.current) {
-      audioRef.current = new Audio(spinSoundUrl);
-      audioRef.current.loop = false;
+    // Play spin sound — pause first to reset any in-progress playback, then rewind and play
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      void audio.play().catch(err => console.warn("Spin audio play failed:", err));
     }
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(err => console.warn("Spin audio play failed:", err));
 
     // After 2 seconds: generate the round and unblock spin
     spinTimeoutRef.current = setTimeout(() => {
