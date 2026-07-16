@@ -609,13 +609,24 @@ function loadDozens(): DozensParams {
 interface RouletteTableProps {
   settings: GameSettings;
   onOpenSettings: () => void;
+  onOpenDebug: () => void;
+  showGrid: boolean;
+  setShowGrid: React.Dispatch<React.SetStateAction<boolean>>;
+  showTrack: boolean;
+  setShowTrack: React.Dispatch<React.SetStateAction<boolean>>;
+  showDozens: boolean;
+  setShowDozens: React.Dispatch<React.SetStateAction<boolean>>;
+  editMode: boolean;
+  setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function RouletteTable({ settings, onOpenSettings }: RouletteTableProps) {
-  const [showGrid,   setShowGrid]   = useState(false);
-  const [showTrack,  setShowTrack]  = useState(false);
-  const [showDozens, setShowDozens] = useState(false);
-  const [editMode,  setEditMode]  = useState(false);
+export default function RouletteTable({
+  settings, onOpenSettings, onOpenDebug,
+  showGrid, setShowGrid,
+  showTrack, setShowTrack,
+  showDozens, setShowDozens,
+  editMode, setEditMode,
+}: RouletteTableProps) {
   const [editTab,   setEditTab]   = useState<"grid" | "track" | "dozens">("grid");
   const [copied,    setCopied]    = useState(false);
   const [game,      setGame]      = useState<GameState | null>(null);
@@ -1977,21 +1988,8 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
         <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
           {isSpinning ? "⏳ Spin…" : "▶ Spin"}
         </button>
-        <button className={`grid-toggle-btn ${showGrid ? "active" : ""}`}
-          onClick={() => setShowGrid(v => !v)}>
-          {showGrid ? "Скрыть сетку" : "Показать сетку"}
-        </button>
-        <button className={`grid-toggle-btn ${showTrack ? "active" : ""}`}
-          onClick={() => setShowTrack(v => !v)}>
-          {showTrack ? "Скрыть трек" : "Показать трек"}
-        </button>
-        <button className={`grid-toggle-btn ${showDozens ? "active" : ""}`}
-          onClick={() => setShowDozens(v => !v)}>
-          {showDozens ? "Скрыть дюжины" : "Показать дюжины"}
-        </button>
-        <button className={`grid-toggle-btn ${editMode ? "active" : ""}`}
-          onClick={() => { setEditMode(v => !v); if (!editMode) { setShowTrack(true); setShowDozens(true); } }}>
-          {editMode ? "Закрыть редактор" : "Настроить трек"}
+        <button className="grid-toggle-btn" onClick={onOpenDebug} disabled={isSpinning}>
+          🔧 Отладка
         </button>
       </div>
 
@@ -3128,6 +3126,10 @@ export default function RouletteTable({ settings, onOpenSettings }: RouletteTabl
             </div>
             <div className="editor-actions">
               <span className="autosave-badge">✓ Автосохранение</span>
+              <button className="reset-btn" onClick={() => setEditMode(false)}
+                style={{ background: "rgba(180,60,40,0.15)", borderColor: "#7b241c", color: "#c0392b" }}>
+                ✕ Закрыть
+              </button>
               {editTab === "grid"
                 ? <button className="reset-btn" onClick={() => setGridParams(DEFAULT_GRID)}>Сбросить</button>
                 : editTab === "track"

@@ -2,38 +2,92 @@ import { useState } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { RulesProvider } from "@/lib/rulesContext"; // rouletteRulesService entry point
+import { RulesProvider } from "@/lib/rulesContext";
 import RouletteTable from "@/pages/RouletteTable";
 import SettingsScreen from "@/pages/SettingsScreen";
 import RulesScreen from "@/pages/RulesScreen";
+import DebugScreen from "@/pages/DebugScreen";
 import NotFound from "@/pages/not-found";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 const queryClient = new QueryClient();
 
-type Screen = "roulette" | "settings" | "rules";
+type Screen = "roulette" | "settings" | "rules" | "debug";
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>("roulette");
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
+  const [rulesFrom, setRulesFrom] = useState<"settings" | "debug">("settings");
+
+  // Debug state — lifted so it persists across screen changes
+  const [showGrid,   setShowGrid]   = useState(false);
+  const [showTrack,  setShowTrack]  = useState(false);
+  const [showDozens, setShowDozens] = useState(false);
+  const [editMode,   setEditMode]   = useState(false);
+
+  function openRulesFrom(from: "settings" | "debug") {
+    setRulesFrom(from);
+    setScreen("rules");
+  }
+
+  function handleOpenEditor() {
+    // Activate edit mode with required overlays, then show game screen
+    setEditMode(true);
+    setShowTrack(true);
+    setShowDozens(true);
+    setScreen("roulette");
+  }
 
   return (
     <Switch>
       <Route path="/">
-        {screen === "settings" ? (
-          <SettingsScreen
-            initialSettings={settings}
-            onStart={(s) => { setSettings(s); setScreen("roulette"); }}
-            onOpenRules={() => setScreen("rules")}
-          />
-        ) : screen === "rules" ? (
-          <RulesScreen onBack={() => setScreen("settings")} />
-        ) : (
-          <RouletteTable
-            settings={settings}
-            onOpenSettings={() => setScreen("settings")}
-          />
-        )}
+        <>
+          {/*
+           * RouletteTable is ALWAYS mounted so its internal game/round state
+           * is never lost when navigating to Debug, Settings, or Rules.
+           * CSS display:none hides it visually while other screens are active.
+           */}
+          <div style={{ display: screen === "roulette" ? undefined : "none" }}>
+            <RouletteTable
+              settings={settings}
+              onOpenSettings={() => setScreen("settings")}
+              onOpenDebug={() => setScreen("debug")}
+              showGrid={showGrid}
+              setShowGrid={setShowGrid}
+              showTrack={showTrack}
+              setShowTrack={setShowTrack}
+              showDozens={showDozens}
+              setShowDozens={setShowDozens}
+              editMode={editMode}
+              setEditMode={setEditMode}
+            />
+          </div>
+
+          {screen === "settings" && (
+            <SettingsScreen
+              initialSettings={settings}
+              onStart={(s) => { setSettings(s); setScreen("roulette"); }}
+            />
+          )}
+
+          {screen === "rules" && (
+            <RulesScreen onBack={() => setScreen(rulesFrom)} />
+          )}
+
+          {screen === "debug" && (
+            <DebugScreen
+              showGrid={showGrid}
+              setShowGrid={setShowGrid}
+              showTrack={showTrack}
+              setShowTrack={setShowTrack}
+              showDozens={showDozens}
+              setShowDozens={setShowDozens}
+              onOpenEditor={handleOpenEditor}
+              onOpenRules={() => openRulesFrom("debug")}
+              onBack={() => setScreen("roulette")}
+            />
+          )}
+        </>
       </Route>
       <Route component={NotFound} />
     </Switch>

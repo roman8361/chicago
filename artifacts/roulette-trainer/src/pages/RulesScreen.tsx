@@ -322,7 +322,7 @@ export default function RulesScreen({ onBack }: Props) {
         <div style={{ textAlign: "center" }}>
           <button className="settings-start-btn" onClick={onBack}
             style={{ background: "transparent", border: "1px solid #3a2e10", color: "#6a5a3a", fontSize: 13 }}>
-            ← Назад к настройкам
+            ← Назад
           </button>
         </div>
 

@@ -4,7 +4,6 @@ import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 interface Props {
   initialSettings: GameSettings;
   onStart: (settings: GameSettings) => void;
-  onOpenRules: () => void;
 }
 
 function NumField({
@@ -86,7 +85,7 @@ function CountSelectField({
   );
 }
 
-export default function SettingsScreen({ initialSettings, onStart, onOpenRules }: Props) {
+export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [minBet, setMinBet] = useState(String(initialSettings.minBet));
   const [maxBet, setMaxBet] = useState(String(initialSettings.maxBet));
   const [neighborsCount, setNeighborsCount] = useState(String(initialSettings.neighborsCount));
@@ -288,10 +287,6 @@ export default function SettingsScreen({ initialSettings, onStart, onOpenRules }
 
         <div className="settings-divider" />
         <div className="settings-footer" style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <button className="settings-start-btn" onClick={onOpenRules}
-            style={{ background: "transparent", border: "1px solid #5a4a2a", color: "#8a7a5a" }}>
-            📖 Правила игры
-          </button>
           <button className="settings-start-btn" onClick={handleStart}>
             Применить
           </button>
