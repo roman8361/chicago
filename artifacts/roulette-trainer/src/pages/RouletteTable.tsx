@@ -1105,7 +1105,7 @@ export default function RouletteTable({
   useEffect(() => {
     return () => {
       if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current);
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
     };
   }, []);
 
