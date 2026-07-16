@@ -48,7 +48,7 @@ export interface NeighboursBet {
 
 export interface CashChipStack {
   positionId: string;
-  totalAmount: number;
+  denomination: number; // one physical chip per entry; maps 1-to-1 to a unique field position
 }
 
 export interface GameState {
@@ -236,74 +236,104 @@ export function generateColorChips(
 
 // ── CASH chip generation ──────────────────────────────────────────────────────
 //
-// Step 1: Build a physical chip set from selected denominations.
-// Step 2: Spread chips naturally across random field positions (no color overlap).
-// Guarantees: drawn number covered, total ≤ cashOnField, only selected denoms used.
+// Rules:
+//  - One physical chip = one unique field position (never stacked).
+//  - Only user-selected denominations are used.
+//  - Single denom: chipCount = round(cashOnField / denom), capped by available positions.
+//  - Multi-denom: balanced chip counts (floor/ceil per denom), minimise |sum - target|.
+//  - At least one chip covers the drawn number.
+//  - Cash never shares a position with a color chip.
 
 /**
- * Build a set of physical cash chips from `denoms` (sorted ascending) whose
- * total is as close to `cashOnField` as possible without exceeding it.
- *
- * Rules (in priority order):
- *  1. Only `denoms` are used — never invent new denominations.
- *  2. Total never exceeds `cashOnField`.
- *  3. Each denomination participates with ≥1 chip if the sum allows.
- *  4. Remaining amount split with approximately equal money shares per denom.
- *  5. Randomness: weights vary ±20% so the split differs each spin.
+ * Among all size-`count` subsets of `arr`, return every subset whose sum is
+ * closest to `target`. Returns [[]] when count === 0.
  */
-function buildChipSet(cashOnField: number, denoms: number[]): number[] {
+function findBestSubsets(arr: number[], count: number, target: number): number[][] {
+  if (count === 0) return [[]];
+  if (count >= arr.length) return [[...arr]];
+
+  const best: number[][] = [];
+  let bestDev = Infinity;
+
+  function enumerate(start: number, chosen: number[]) {
+    if (chosen.length === count) {
+      const sum = chosen.reduce((a, b) => a + b, 0);
+      const dev = Math.abs(sum - target);
+      if (dev < bestDev) { bestDev = dev; best.length = 0; best.push([...chosen]); }
+      else if (dev === bestDev) { best.push([...chosen]); }
+      return;
+    }
+    const need = count - chosen.length;
+    for (let i = start; i <= arr.length - need; i++) {
+      enumerate(i + 1, [...chosen, arr[i]]);
+    }
+  }
+
+  enumerate(0, []);
+  return best;
+}
+
+/**
+ * Build the optimal set of physical cash chips from `denoms` (sorted ascending),
+ * subject to a maximum of `maxChips` chips (= number of free field positions).
+ *
+ * Single denom  → chipCount = round(cashOnField / denom), capped at maxChips.
+ * Multi-denom   → iterate total chip counts n..maxChips; for each count, use
+ *                 floor/ceil distribution (max difference 1 between denoms) and
+ *                 pick the subset that minimises |actualSum - cashOnField|.
+ *                 Ties are broken randomly.
+ */
+function buildChipSet(cashOnField: number, denoms: number[], maxChips: number): number[] {
+  if (maxChips <= 0 || denoms.length === 0) return [];
   const minDenom = denoms[0];
+  if (cashOnField < minDenom) return [];
 
-  if (cashOnField < minDenom) {
-    console.warn("Невозможно сформировать кэш из выбранных номиналов без превышения суммы");
-    return [];
+  const n = denoms.length;
+
+  // ── Single denomination ────────────────────────────────────────────────────
+  if (n === 1) {
+    const d = denoms[0];
+    const count = Math.max(1, Math.round(cashOnField / d));
+    return Array(Math.min(count, maxChips)).fill(d);
   }
 
-  const chips: number[] = [];
-  let remaining = cashOnField;
-
-  // ── Phase 1: guarantee one chip per denomination ──────────────────────────
-  const activeDenoms: number[] = [];
-  for (const d of denoms) {
-    if (remaining >= d) {
-      chips.push(d);
-      remaining -= d;
-      activeDenoms.push(d);
-    }
-  }
-  if (activeDenoms.length === 0) return [];
-  if (remaining < minDenom) return chips;
-
-  // ── Phase 2: distribute remaining with ~equal money shares (random ±20%) ──
-  const weights = activeDenoms.map(() => 1 + (Math.random() - 0.5) * 0.4);
-  const weightSum = weights.reduce((a, b) => a + b, 0);
-
-  for (let i = 0; i < activeDenoms.length; i++) {
-    const d = activeDenoms[i];
-    const share = (weights[i] / weightSum) * remaining;
-    const count = Math.floor(share / d);
-    const toAdd = count * d;
-    if (toAdd > 0 && remaining >= toAdd) {
-      for (let j = 0; j < count; j++) chips.push(d);
-      remaining -= toAdd;
-    }
+  // ── Multiple denominations ─────────────────────────────────────────────────
+  // Need at least one chip per denomination (n chips minimum).
+  if (maxChips < n) {
+    // Not enough positions for all denoms — drop smallest until we fit.
+    return buildChipSet(cashOnField, denoms.slice(denoms.length - maxChips), maxChips);
   }
 
-  // ── Phase 3: absorb leftover with the largest denomination that still fits ─
-  while (remaining >= minDenom) {
-    let placed = false;
-    for (let i = activeDenoms.length - 1; i >= 0; i--) {
-      if (remaining >= activeDenoms[i]) {
-        chips.push(activeDenoms[i]);
-        remaining -= activeDenoms[i];
-        placed = true;
-        break;
+  const denomSum = denoms.reduce((a, b) => a + b, 0);
+  const bestSets: number[][] = [];
+  let bestDev = Infinity;
+
+  for (let total = n; total <= maxChips; total++) {
+    const base = Math.floor(total / n);
+    const extraCount = total % n;          // how many denoms get base+1 chips
+    const baseSum = base * denomSum;
+    const targetExtra = cashOnField - baseSum;
+
+    for (const subset of findBestSubsets(denoms, extraCount, targetExtra)) {
+      const extraSum = subset.reduce((a, b) => a + b, 0);
+      const dev = Math.abs(baseSum + extraSum - cashOnField);
+
+      const chips: number[] = [];
+      const extraMap = new Map<number, number>();
+      for (const d of subset) extraMap.set(d, (extraMap.get(d) ?? 0) + 1);
+      for (const d of denoms) {
+        const cnt = base + (extraMap.get(d) ?? 0);
+        for (let i = 0; i < cnt; i++) chips.push(d);
       }
+
+      if (dev < bestDev) { bestDev = dev; bestSets.length = 0; bestSets.push(chips); }
+      else if (dev === bestDev) { bestSets.push(chips); }
     }
-    if (!placed) break;
   }
 
-  return chips;
+  if (bestSets.length === 0) return [];
+  // Random tie-break among equally good combinations
+  return bestSets[Math.floor(Math.random() * bestSets.length)];
 }
 
 export function generateCashChips(
@@ -316,59 +346,41 @@ export function generateCashChips(
 
   // Deduplicate, filter invalid, sort ascending
   const denoms = [...new Set(
-    (cashChipValues.length > 0 ? cashChipValues : ["100"]).map(Number).filter(n => n > 0),
+    (cashChipValues.length > 0 ? cashChipValues : ["100"]).map(Number).filter(n => n > 0 && Number.isFinite(n)),
   )].sort((a, b) => a - b);
 
-  // Build physical chip set
-  const physicalChips = buildChipSet(cashOnField, denoms);
+  if (denoms.length === 0) return [];
+  if (cashOnField < denoms[0]) return [];
+
+  // ── Available positions: not occupied by color chips ───────────────────────
+  const available = ALL_BET_POSITIONS.filter(p => !colorPositionIds.has(p.id));
+  if (available.length === 0) return [];
+
+  // Build physical chips — one chip per position, capped by available count
+  const physicalChips = buildChipSet(cashOnField, denoms, available.length);
   if (physicalChips.length === 0) return [];
 
-  const actualTotal = physicalChips.reduce((a, b) => a + b, 0);
+  // ── Select positions: guarantee at least one covers the drawn number ───────
+  const winningPool = shuffle(available.filter(p =>  p.numbers.includes(drawnNumber)));
+  const otherPool   = shuffle(available.filter(p => !p.numbers.includes(drawnNumber)));
 
-  // ── Select field positions ─────────────────────────────────────────────────
-  const allAvailable = ALL_BET_POSITIONS.filter(p => !colorPositionIds.has(p.id));
-  if (allAvailable.length === 0) return [];
-
-  const winningPool = shuffle(allAvailable.filter(p =>  p.numbers.includes(drawnNumber)));
-  const otherPool   = shuffle(allAvailable.filter(p => !p.numbers.includes(drawnNumber)));
-
-  // 1–6 positions, capped by available positions and chip count
-  const maxPositions = Math.min(6, allAvailable.length, physicalChips.length);
-  const targetCount  = Math.max(1, 1 + Math.floor(Math.random() * maxPositions));
-
-  const selectedPositions: BetPosition[] = [];
-  if (winningPool.length > 0) selectedPositions.push(winningPool[0]);
-
-  const pool = shuffle([...winningPool.slice(1), ...otherPool]);
-  for (const pos of pool) {
-    if (selectedPositions.length >= targetCount) break;
-    selectedPositions.push(pos);
+  const ordered: BetPosition[] = [];
+  if (winningPool.length > 0) ordered.push(winningPool[0]);  // guaranteed winning slot
+  const rest = shuffle([...winningPool.slice(1), ...otherPool]);
+  for (const pos of rest) {
+    if (ordered.length >= physicalChips.length) break;
+    ordered.push(pos);
   }
+  if (ordered.length === 0) return [];
 
-  const n = selectedPositions.length;
-  if (n === 0) return [];
+  // Shuffle chips so denomination types are distributed randomly across positions
+  const shuffled = shuffle([...physicalChips]);
+  const count = Math.min(ordered.length, shuffled.length);
 
-  if (n === 1) {
-    return [{ positionId: selectedPositions[0].id, totalAmount: actualTotal }];
-  }
-
-  // ── Distribute physical chips across positions ─────────────────────────────
-  // Shuffle chips, guarantee each position gets ≥1 chip, rest assigned randomly
-  const shuffledChips = shuffle([...physicalChips]);
-  const posAmounts = new Array<number>(n).fill(0);
-
-  // First n chips: one per position
-  for (let i = 0; i < Math.min(n, shuffledChips.length); i++) {
-    posAmounts[i] += shuffledChips[i];
-  }
-  // Remaining chips: random position
-  for (let i = n; i < shuffledChips.length; i++) {
-    posAmounts[Math.floor(Math.random() * n)] += shuffledChips[i];
-  }
-
-  return selectedPositions
-    .map((pos, i) => ({ positionId: pos.id, totalAmount: posAmounts[i] }))
-    .filter(s => s.totalAmount > 0);
+  return Array.from({ length: count }, (_, i) => ({
+    positionId: ordered[i].id,
+    denomination: shuffled[i],
+  }));
 }
 
 // ── Core game functions ───────────────────────────────────────────────────────

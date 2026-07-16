@@ -342,7 +342,7 @@ function computeWinningField(
   for (const cc of game.cashChipStacks) {
     const pos = BET_POSITIONS_MAP.get(cc.positionId);
     if (!pos || !pos.numbers.includes(drawnNumber)) continue;
-    addCash(cc.positionId, cc.totalAmount);
+    addCash(cc.positionId, cc.denomination);
   }
 
   // 3. Series – expand using trackBets bets
@@ -1249,7 +1249,7 @@ export default function RouletteTable({
     const chipCountByPos = new Map<string, number>();
     for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
     const cashByPos = new Map<string, number>();
-    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
+    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
 
     // Per-position accumulator
     type PosAccum = {
@@ -1482,7 +1482,7 @@ export default function RouletteTable({
     const chipCountByPos = new Map<string, number>();
     for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
     const cashByPos = new Map<string, number>();
-    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
+    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
 
     // --- Check each track position for overflow with field bets ---
     const lines: TrackFieldIntersectionLineSummary[] = [];
@@ -1876,7 +1876,7 @@ export default function RouletteTable({
 
     // Cash on Straight Up
     const cashByPos = new Map<string, number>();
-    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.totalAmount);
+    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
     const cashContrib = cashByPos.get(suPositionId) ?? 0;
 
     // Number complete contributions (only straightUp positions)
@@ -2243,7 +2243,7 @@ export default function RouletteTable({
           {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
-            const amt = String(stack.totalAmount);
+            const amt = String(stack.denomination);
             const len = amt.length;
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
