@@ -271,14 +271,29 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
         <div className="settings-section-title">Отображение</div>
         <div className="settings-grid-2">
           <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={showBetBeforeChange}
-                onChange={e => setShowBetBeforeChange(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: "#C9A227", cursor: "pointer" }}
-              />
-              <span className="settings-label" style={{ marginBottom: 0 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div
+                onClick={() => setShowBetBeforeChange(v => !v)}
+                style={{
+                  width: 44, height: 24, borderRadius: 12, position: "relative", cursor: "pointer",
+                  background: showBetBeforeChange ? "#C9A227" : "#2a2010",
+                  border: showBetBeforeChange ? "1px solid #C9A227" : "1px solid #5a4a2a",
+                  transition: "background 0.2s, border-color 0.2s",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  position: "absolute", top: 2, left: showBetBeforeChange ? 22 : 2,
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: showBetBeforeChange ? "#fff" : "#8a7a5a",
+                  transition: "left 0.2s",
+                }} />
+              </div>
+              <span
+                className="settings-label"
+                style={{ marginBottom: 0, cursor: "pointer" }}
+                onClick={() => setShowBetBeforeChange(v => !v)}
+              >
                 Показывать ставку без сдачи (комплиты, серии, соседи)
               </span>
             </label>
