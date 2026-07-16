@@ -1979,22 +1979,20 @@ export default function RouletteTable({
 
   return (
     <div className="roulette-page">
-      {/* Controls */}
-      <div className="controls-bar">
-        <button className="grid-toggle-btn settings-open-btn"
-          onClick={onOpenSettings}>
-          ⚙ Настройки
-        </button>
+      {/* Table + controls column + info sidebar */}
+      <div className="table-row">
+      {/* Left controls column */}
+      <div className="controls-column">
         <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
           {isSpinning ? "⏳ Spin…" : "▶ Spin"}
+        </button>
+        <button className="grid-toggle-btn settings-open-btn" onClick={onOpenSettings}>
+          ⚙ Настройки
         </button>
         <button className="grid-toggle-btn" onClick={onOpenDebug} disabled={isSpinning}>
           🔧 Отладка
         </button>
       </div>
-
-      {/* Table + info sidebar */}
-      <div className="table-row">
       {/* Table image + SVG overlay */}
       <div className="roulette-wrapper">
         {isSpinning && (
