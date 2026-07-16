@@ -1153,6 +1153,10 @@ export default function RouletteTable({
   const handleSpin = useCallback(() => {
     if (isSpinningRef.current) return;
     isSpinningRef.current = true;
+
+    // Immediately exit report/quiz layout so the full-size field shows at once
+    setQuizPhase(null);
+    setGame(null);
     setIsSpinning(true);
 
     // Play spin sound — pause first to reset any in-progress playback, then rewind and play
