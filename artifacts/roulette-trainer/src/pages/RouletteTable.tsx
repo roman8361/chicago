@@ -658,6 +658,8 @@ export default function RouletteTable({
   const [colorPayoutData,   setColorPayoutData]   = useState<{ cashPayout: number; colorChips: number; colorAmount: number; totalPayout: number; colorNominal: number } | null>(null);
   const [colorPayoutInput,  setColorPayoutInput]  = useState("");
   const [colorPayoutRecord, setColorPayoutRecord] = useState<ColorPayoutQuizRecord | null>(null);
+  // acceptedNeighboursAmounts: set after trackIntersection question; maps nb.number → accepted display amount
+  const [acceptedNeighboursAmounts, setAcceptedNeighboursAmounts] = useState<Map<number, number> | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
 
   const isSpinningRef    = useRef(false);
@@ -689,6 +691,27 @@ export default function RouletteTable({
       sixline:  p.sixLine,
     };
   }, [getPayouts]);
+
+  // ── Display amounts after "без сдачи" reveal (showBetBeforeChange) ─────────
+  // Completes: show acceptedAmount once completesIntersection question is answered
+  const completesDisplayAmounts = useMemo(() => {
+    if (!settings.showBetBeforeChange || !intersectionRecord || !completesRecord) return null;
+    const map = new Map<string, number>();
+    for (const l of completesRecord.lines) {
+      if (l.change > 0) map.set(l.label, l.acceptedAmount);
+    }
+    return map;
+  }, [settings.showBetBeforeChange, intersectionRecord, completesRecord]);
+
+  // Series: show acceptedAmount once series question is answered
+  const seriesDisplayAmounts = useMemo(() => {
+    if (!settings.showBetBeforeChange || !seriesRecord) return null;
+    const map = new Map<TrackBet["type"], number>();
+    for (const l of seriesRecord.lines) {
+      if (l.change > 0) map.set(l.type, l.acceptedAmount);
+    }
+    return map;
+  }, [settings.showBetBeforeChange, seriesRecord]);
 
   const winningFieldChips = useMemo<WinningFieldEntry[] | null>(() => {
     if (!game || !quizPhase) return null;
@@ -1055,6 +1078,7 @@ export default function RouletteTable({
     setCompleteNumberPayoutRecord(null);
     setSeriesFieldPayoutRecord(null);
     setNeighboursPayoutRecord(null);
+    setAcceptedNeighboursAmounts(null);
     setColorPayoutData(null);
     setColorPayoutInput("");
     setColorPayoutRecord(null);
@@ -1424,6 +1448,29 @@ export default function RouletteTable({
 
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setTrackIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+
+    // --- Compute per-neighbour accepted amounts for showBetBeforeChange display ---
+    const nbAcceptedMap = new Map<number, number>();
+    for (const nb of game.neighboursBets) {
+      const nums = neighboursMap[String(nb.number)];
+      if (!Array.isArray(nums)) { nbAcceptedMap.set(nb.number, nb.amount); continue; }
+      let acceptedTotal = 0;
+      for (const n of nums) {
+        const posEntry = posMap.get(`su-${n}`);
+        if (!posEntry) { acceptedTotal += nb.baseAmount; continue; }
+        const posTotal = Array.from(posEntry.contributions.values()).reduce((s, v) => s + v, 0);
+        const posLimit = maxBet * posEntry.limitMultiplier;
+        const nbContrib = posEntry.contributions.get(`Соседи ${nb.number}`) ?? 0;
+        if (posTotal > posLimit && nbContrib > 0) {
+          acceptedTotal += nbContrib * (posLimit / posTotal);
+        } else {
+          acceptedTotal += nb.baseAmount;
+        }
+      }
+      nbAcceptedMap.set(nb.number, Math.round(acceptedTotal));
+    }
+    setAcceptedNeighboursAmounts(nbAcceptedMap);
+
     setTrackIntersectionInput("");
     setQuizPhase({ kind: "trackFieldIntersection" });
   }, [game, quizPhase, trackIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, getAllRules]);
@@ -2303,7 +2350,7 @@ export default function RouletteTable({
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
           {fieldSource && fieldSource.trackBets.map(tb => {
             const { x, y } = tb.position;
-            const amt = String(tb.amount);
+            const amt = String(seriesDisplayAmounts?.get(tb.type) ?? tb.amount);
             const fs = amt.length >= 4 ? "15" : "18";
             const r = 40;
             return (
@@ -2331,7 +2378,10 @@ export default function RouletteTable({
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
           {fieldSource && fieldSource.neighboursBets.map(nb => {
             const { x, y } = nb.position;
-            const amt = String(nb.amount);
+            const displayNbAmt = (settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
+              ? (acceptedNeighboursAmounts.get(nb.number) ?? nb.amount)
+              : nb.amount;
+            const amt = String(displayNbAmt);
             const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
             return (
               <g key={`nb-${nb.number}`} style={{ pointerEvents: "none" }}>
@@ -2456,7 +2506,9 @@ export default function RouletteTable({
             <div className="info-sidebar-row">
               <span className="info-sidebar-label">Комплит дюжины</span>
               <span className="info-sidebar-value" style={{ color: "#C9A227", fontWeight: 800 }}>
-                {game.dozenCompleteBet.amount}
+                {completesDisplayAmounts?.has("Комплит дюжины")
+                  ? completesDisplayAmounts.get("Комплит дюжины")
+                  : game.dozenCompleteBet.amount}
               </span>
             </div>
           </>
@@ -2471,7 +2523,9 @@ export default function RouletteTable({
               <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
                 <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 700, fontSize: "1em" }}>№{ncb.number}</span>
                 <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
-                  {ncb.amount}
+                  {completesDisplayAmounts?.has(`Комплит №${ncb.number}`)
+                    ? completesDisplayAmounts.get(`Комплит №${ncb.number}`)
+                    : ncb.amount}
                 </span>
               </div>
             ))}
