@@ -137,38 +137,15 @@
   pointer-events: none;
 }
 
-/* ── Controls column (left of table) ────────────────────────────── */
-.controls-column {
-  flex-shrink: 0;
-  width: 130px;
+/* ── Controls bar ───────────────────────────────────────────────── */
+.controls-bar {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: stretch;
-}
-
-.controls-column .grid-toggle-btn {
-  padding: 10px 10px;
-  text-align: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-}
-
-/* Narrow screens: switch to horizontal row above the table */
-@media (max-width: 700px) {
-  .table-row {
-    flex-direction: column;
-  }
-  .controls-column {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-  }
-  .controls-column .grid-toggle-btn {
-    width: auto;
-    flex: 1 1 auto;
-  }
+  flex-shrink: 0;
 }
 
 /* ── Editor panel ───────────────────────────────────────────────── */
