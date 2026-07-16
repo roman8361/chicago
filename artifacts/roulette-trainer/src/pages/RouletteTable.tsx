@@ -854,6 +854,9 @@ export default function RouletteTable({
       if (amount > maxAmount) {
         amount = maxAmount; // rare edge: no 5-ending value fits the range
       }
+      // Round to nearest completeMultiplicity
+      amount = Math.round(amount / multiplicity) * multiplicity;
+      if (amount <= 0) amount = multiplicity;
       bets.push({ number: num, chipsRequired: rule.chipsRequired, amount, position: pos });
       excludedIds.add(`su-${num}`);
     }
@@ -921,6 +924,9 @@ export default function RouletteTable({
       if (dozenAmount > maxAmount) {
         dozenAmount = maxAmount; // rare edge: no 5-ending value fits the range
       }
+      // Round to nearest completeMultiplicity
+      dozenAmount = Math.round(dozenAmount / multiplicity) * multiplicity;
+      if (dozenAmount <= 0) dozenAmount = multiplicity;
       dozenCompleteBet = {
         type:      "DOZEN_COMPLETE",
         label:     "Комплит дюжины",
