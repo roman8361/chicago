@@ -2465,7 +2465,7 @@ export default function RouletteTable({
             {quizPhase.kind === "completesIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">2. Посчитайте сдачу с пересечений ставок «комплит» со ставками на поле без учета трека.</span>
+                  <span className="quiz-series-title">2. Посчитайте сдачу с пересечений ставок «комплит» со ставками на поле, без учета трека.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -2528,7 +2528,7 @@ export default function RouletteTable({
             {quizPhase.kind === "trackFieldIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле без учета ставок «комплит».</span>
+                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле, без учета ставок «комплит».</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
