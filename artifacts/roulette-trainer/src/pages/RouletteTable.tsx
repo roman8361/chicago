@@ -2350,7 +2350,7 @@ export default function RouletteTable({
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
           {fieldSource && fieldSource.trackBets.map(tb => {
             const { x, y } = tb.position;
-            const amt = String(seriesDisplayAmounts?.get(tb.type) ?? tb.amount);
+            const amt = String(showReportField ? tb.amount : (seriesDisplayAmounts?.get(tb.type) ?? tb.amount));
             const fs = amt.length >= 4 ? "15" : "18";
             const r = 40;
             return (
@@ -2378,7 +2378,7 @@ export default function RouletteTable({
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
           {fieldSource && fieldSource.neighboursBets.map(nb => {
             const { x, y } = nb.position;
-            const displayNbAmt = (settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
+            const displayNbAmt = (!showReportField && settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
               ? (acceptedNeighboursAmounts.get(nb.number) ?? nb.amount)
               : nb.amount;
             const amt = String(displayNbAmt);
@@ -2506,9 +2506,11 @@ export default function RouletteTable({
             <div className="info-sidebar-row">
               <span className="info-sidebar-label">Комплит дюжины</span>
               <span className="info-sidebar-value" style={{ color: "#C9A227", fontWeight: 800 }}>
-                {completesDisplayAmounts?.has("Комплит дюжины")
-                  ? completesDisplayAmounts.get("Комплит дюжины")
-                  : game.dozenCompleteBet.amount}
+                {showReportField
+                  ? (initialRoundSnapshot?.dozenCompleteBet?.amount ?? game.dozenCompleteBet.amount)
+                  : (completesDisplayAmounts?.has("Комплит дюжины")
+                    ? completesDisplayAmounts.get("Комплит дюжины")
+                    : game.dozenCompleteBet.amount)}
               </span>
             </div>
           </>
@@ -2523,9 +2525,11 @@ export default function RouletteTable({
               <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
                 <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 700, fontSize: "1em" }}>№{ncb.number}</span>
                 <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
-                  {completesDisplayAmounts?.has(`Комплит №${ncb.number}`)
-                    ? completesDisplayAmounts.get(`Комплит №${ncb.number}`)
-                    : ncb.amount}
+                  {showReportField
+                    ? (initialRoundSnapshot?.numberCompleteBets.find(n => n.number === ncb.number)?.amount ?? ncb.amount)
+                    : (completesDisplayAmounts?.has(`Комплит №${ncb.number}`)
+                      ? completesDisplayAmounts.get(`Комплит №${ncb.number}`)
+                      : ncb.amount)}
                 </span>
               </div>
             ))}
