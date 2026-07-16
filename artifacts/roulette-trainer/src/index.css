@@ -639,6 +639,65 @@
   color: #a08840;
 }
 
+/* ── Spin report two-column layout ─────────────────────────────── */
+
+/* Roulette page overrides for report mode */
+.roulette-page--report {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* Outer two-column grid */
+.spin-report-outer {
+  display: grid;
+  grid-template-columns: minmax(0, 65fr) minmax(360px, 35fr);
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+  max-width: 1400px;
+}
+
+/* Left column: sticky so table stays visible while report scrolls */
+.spin-report-table {
+  position: sticky;
+  top: 12px;
+}
+
+/* Left column: drawn number row */
+.spin-report-drawn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+/* Right column: scrollable report panel */
+.spin-report-results {
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  background: rgba(8, 22, 10, 0.96);
+  border: 1px solid #c8a84b;
+  border-radius: 8px;
+  padding: 16px 24px;
+}
+
+/* Mobile: single column */
+@media (max-width: 900px) {
+  .spin-report-outer {
+    grid-template-columns: 1fr;
+  }
+
+  .spin-report-table {
+    position: static;
+  }
+
+  .spin-report-results {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
 /* ── Quiz report ───────────────────────────────────────────────── */
 
 .quiz-report {
@@ -648,6 +707,13 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Quiz report inside the right panel — remove top separator */
+.quiz-report--panel {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .quiz-report-item {

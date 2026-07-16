@@ -2039,7 +2039,7 @@ export default function RouletteTable({
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
-    <div className="roulette-page">
+    <div className={showReportField ? "roulette-page roulette-page--report" : "roulette-page"}>
       {/* Controls */}
       <div className="controls-bar">
         <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
@@ -2053,6 +2053,10 @@ export default function RouletteTable({
         </button>
       </div>
 
+      {/* Two-column container in report mode, transparent otherwise */}
+      <div className={showReportField ? "spin-report-outer" : ""}>
+      {/* Left column: table + sidebar, sticky in report mode */}
+      <div className={showReportField ? "spin-report-table" : ""}>
       {/* Table + info sidebar */}
       <div className="table-row">
       {/* Table image + SVG overlay */}
@@ -2481,9 +2485,21 @@ export default function RouletteTable({
       </div>
       </div>{/* /table-row */}
 
-      {/* Quiz panel */}
+        {/* Drawn number + title shown in left column during report */}
+        {showReportField && game && (
+          <div className="spin-report-drawn">
+            <div className={`number-badge number-badge--${getNumberColor(game.drawnNumber)}`}>
+              {game.drawnNumber}
+            </div>
+            <span className="quiz-series-title">Отчёт по спину</span>
+          </div>
+        )}
+      </div>{/* /spin-report-table */}
+
+      {/* Quiz panel / right column in report mode */}
       {game && quizPhase && (
-        <div className="game-panel">
+        <div className={showReportField ? "spin-report-results" : "game-panel"}>
+          {!showReportField && (
           <div className="game-result-row">
             {/* Drawn number */}
             <div className={`number-badge number-badge--${getNumberColor(game.drawnNumber)}`}>
@@ -2723,14 +2739,12 @@ export default function RouletteTable({
               </div>
             )}
 
-            {quizPhase.kind === "report" && (
-              <span className="quiz-series-title" style={{ marginLeft: 8 }}>Отчёт по спину</span>
-            )}
           </div>
+          )} {/* /!showReportField */}
 
           {/* Full report */}
           {quizPhase.kind === "report" && (
-            <div className="quiz-report">
+            <div className={showReportField ? "quiz-report quiz-report--panel" : "quiz-report"}>
               {completesRecord && (
                 <div className={`quiz-report-item ${completesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
                   <div className="quiz-report-name">1. Сдача с кратности приема ставок «комплит».</div>
@@ -3159,6 +3173,7 @@ export default function RouletteTable({
           )}
         </div>
       )}
+      </div>{/* /spin-report-outer */}
 
       {/* Editor panel */}
       {editMode && (
