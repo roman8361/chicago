@@ -992,12 +992,31 @@ export default function RouletteTable({
     const neighboursCount = Math.max(0, Math.min(37, Math.floor(neighboursCountRaw)));
     let neighboursBets: NeighboursBet[] = [];
     if (neighboursCount > 0) {
-      const pool = Array.from({ length: 37 }, (_, i) => i);
-      for (let i = 0; i < neighboursCount; i++) {
-        const j = i + Math.floor(Math.random() * (pool.length - i));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
+      const allNums = Array.from({ length: 37 }, (_, i) => i);
+      let selectedNumbers: number[];
+      if (neighboursCount === 1) {
+        // Single bet — no intersection required
+        selectedNumbers = [allNums[Math.floor(Math.random() * allNums.length)]];
+      } else {
+        // Pick first center randomly
+        const center1 = allNums[Math.floor(Math.random() * allNums.length)];
+        // Get the 5-number set for center1, exclude center1 itself → 4 candidates
+        const center1Set = (neighboursRule as Record<string, number[]>)[String(center1)] ?? [];
+        const candidates = center1Set.filter(n => n !== center1);
+        // Pick center2 from candidates — guaranteed intersection with center1
+        const center2 = candidates[Math.floor(Math.random() * candidates.length)];
+        selectedNumbers = [center1, center2];
+        // Remaining bets (if any): random from unused numbers
+        if (neighboursCount > 2) {
+          const used = new Set([center1, center2]);
+          const remaining = allNums.filter(n => !used.has(n));
+          for (let i = 0; i < remaining.length - 1; i++) {
+            const j = i + Math.floor(Math.random() * (remaining.length - i));
+            [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+          }
+          selectedNumbers.push(...remaining.slice(0, neighboursCount - 2));
+        }
       }
-      const selectedNumbers = pool.slice(0, neighboursCount);
       const minBet = Math.max(1, settings.minBet);
       const maxBet = Math.max(minBet, settings.maxBet);
       const lowerBoundRaw = Math.round(maxBet / 3);
