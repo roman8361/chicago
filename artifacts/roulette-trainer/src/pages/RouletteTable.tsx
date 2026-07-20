@@ -791,6 +791,20 @@ export default function RouletteTable({
     return Math.round((x * divisor) / 10) * 10;
   }
 
+  // ── Serie 5/8 amount: per-bet random in [maxBet/2 … maxBet×0.9] × 12, rounded to seriesMultiplicity ──
+  const SERIE_FIVE_EIGHT_CHIPS_COUNT = 12;
+  function generateSerie58Amount(maxBet: number, seriesMultiplicity: number): number {
+    if (!Number.isFinite(seriesMultiplicity) || seriesMultiplicity <= 0) return 0;
+    const safeMax = Math.max(1, maxBet);
+    const minAmountPerBet = Math.ceil(safeMax / 2);
+    const maxAmountPerBet = Math.floor(safeMax * 0.9);
+    const clampedMax = Math.max(minAmountPerBet, maxAmountPerBet);
+    const randomAmountPerBet = Math.floor(Math.random() * (clampedMax - minAmountPerBet + 1)) + minAmountPerBet;
+    const rawSeriesAmount = randomAmountPerBet * SERIE_FIVE_EIGHT_CHIPS_COUNT;
+    const rounded = Math.floor(rawSeriesAmount / seriesMultiplicity) * seriesMultiplicity;
+    return Math.max(seriesMultiplicity, rounded);
+  }
+
   // ── Number complete bet generation ──────────────────────────────────────────
   function generateNumberCompletes(
     dozenCompleteBet: DozenCompleteBet | undefined,
@@ -914,7 +928,9 @@ export default function RouletteTable({
       .map(s => ({
         type:     s.type,
         label:    s.label,
-        amount:   randomSeriesAmount(settings.maxBet, seriesDivisors[s.type]),
+        amount:   s.type === "SERIE_5_8"
+          ? generateSerie58Amount(settings.maxBet, mult)
+          : randomSeriesAmount(settings.maxBet, seriesDivisors[s.type]),
         position: { x: s.band.cx, y: s.band.cy },
         source:   "TRACK" as const,
       }));
