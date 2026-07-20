@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 interface Props {
@@ -104,9 +105,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [completeMultiplicity, setCompleteMultiplicity] = useState(String(initialSettings.completeMultiplicity));
   const [neighboursMultiplicity, setNeighboursMultiplicity] = useState(String(initialSettings.neighboursMultiplicity ?? DEFAULT_SETTINGS.neighboursMultiplicity));
   const [colorNumbersCount, setColorNumbersCount] = useState(String(initialSettings.colorNumbersCount ?? DEFAULT_SETTINGS.colorNumbersCount));
-  const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(
-    initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues
-  );
+  const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(() => {
+    const vals = initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues;
+    return vals.slice(0, 2); // normalise: max 2 denominations
+  });
   const [showBetBeforeChange, setShowBetBeforeChange] = useState<boolean>(
     initialSettings.showBetBeforeChange ?? DEFAULT_SETTINGS.showBetBeforeChange
   );
@@ -213,6 +215,8 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
               {(["5", "10", "25", "50", "100", "500", "1000", "5000", "10000", "50000"] as const).map((val) => {
                 const checked = cashChipValues.includes(val);
+                const maxReached = cashChipValues.length >= 2;
+                const isDisabled = !checked && maxReached;
                 return (
                   <label
                     key={val}
@@ -220,25 +224,31 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      cursor: "pointer",
+                      cursor: isDisabled ? "not-allowed" : "pointer",
                       padding: "4px 12px",
                       borderRadius: 4,
-                      border: checked ? "1px solid #C9A227" : "1px solid #5a4a2a",
+                      border: checked ? "1px solid #C9A227" : isDisabled ? "1px solid #3a2a10" : "1px solid #5a4a2a",
                       background: checked ? "rgba(201,162,39,0.12)" : "transparent",
-                      color: checked ? "#C9A227" : "#8a7a5a",
+                      color: checked ? "#C9A227" : isDisabled ? "#4a3a1a" : "#8a7a5a",
                       fontSize: 13,
                       fontFamily: "inherit",
                       transition: "all 0.15s",
+                      opacity: isDisabled ? 0.45 : 1,
+                      userSelect: "none",
                     }}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
+                      disabled={isDisabled}
                       onChange={() => {
+                        if (isDisabled) return;
                         if (checked) {
-                          if (cashChipValues.length > 1) {
-                            setCashChipValues(cashChipValues.filter((v) => v !== val));
+                          if (cashChipValues.length === 1) {
+                            toast("Необходимо выбрать хотя бы один номинал");
+                            return;
                           }
+                          setCashChipValues(cashChipValues.filter((v) => v !== val));
                         } else {
                           setCashChipValues([...cashChipValues, val]);
                         }
