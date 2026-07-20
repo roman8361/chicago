@@ -1092,12 +1092,13 @@ export default function RouletteTable({
         const amount = baseAmount * 5;
         let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
         if (num === 30) {
-          // Place in the top-right corner of the zone, shifted left 20% and down 20% of the cell's dimensions
+          // Place in the top-right corner of the zone, shifted left 20% and down 16% of the cell's dimensions
+          // (was 20% down; raised outward by 20% of that offset → 0.2 * 0.8 = 0.16)
           const cellW = Math.abs(trackParams.arcLX2 - trackParams.arcLX1);
           const cellH = Math.abs(trackParams.arcLY[3] - trackParams.arcLY[2]);
           pos = {
             x: trackParams.arcLX2 - 0.2 * cellW,
-            y: trackParams.arcLY[2] + 0.2 * cellH,
+            y: trackParams.arcLY[2] + 0.16 * cellH,
           };
         }
         if (num === 3) {
