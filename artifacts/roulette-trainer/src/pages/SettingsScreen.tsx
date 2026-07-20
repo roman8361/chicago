@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
@@ -115,10 +115,27 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
     initialSettings.showBetBeforeChange ?? DEFAULT_SETTINGS.showBetBeforeChange
   );
 
+  const ALL_CASH_DENOMINATIONS = ["5", "10", "25", "50", "100", "500", "1000", "5000", "10000", "50000"] as const;
+
   function parseNum(val: string, def: number): number {
     const n = Number(val);
     return val.trim() === "" || isNaN(n) ? def : n;
   }
+
+  // Авто-фильтрация выбранных номиналов при изменении диапазона рулетки
+  useEffect(() => {
+    const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
+    const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
+    setCashChipValues((current) => {
+      const valid = current.filter((v) => Number(v) >= min && Number(v) <= max);
+      if (valid.length === current.length) return current; // ничего не изменилось
+      if (valid.length > 0) return valid;
+      // Нет ни одного допустимого — выбрать первый из полного списка, попадающий в диапазон
+      const first = ALL_CASH_DENOMINATIONS.find((v) => Number(v) >= min && Number(v) <= max);
+      return first ? [first] : current;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minBet, maxBet]);
 
   function handleStart() {
     const raw = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
@@ -240,6 +257,17 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       type="checkbox"
                       checked={checked}
                       onChange={() => {
+                        const numVal = Number(val);
+                        const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
+                        const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
+                        if (numVal < min) {
+                          toast(`Номинал кэша не может быть меньше минимальной ставки рулетки (${min})`, { duration: 2500 });
+                          return;
+                        }
+                        if (numVal > max) {
+                          toast(`Номинал кэша не может превышать максимальную ставку рулетки (${max})`, { duration: 2500 });
+                          return;
+                        }
                         setCashChipValues((current) => {
                           if (current.includes(val)) {
                             // Снять выбор — нельзя снять последний
