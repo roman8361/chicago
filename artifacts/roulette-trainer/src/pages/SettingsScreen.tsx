@@ -256,10 +256,12 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                 const numVal = Number(val);
                 const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
                 const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
-                const isOutOfRange = numVal < min || numVal > max;
+                // Уже выбранный номинал никогда не выглядит недоступным
+                const isOutOfRange = !checked && (numVal < min || numVal > max);
                 return (
                   <label
                     key={val}
+                    aria-pressed={checked}
                     aria-disabled={isOutOfRange}
                     style={{
                       display: "flex",
@@ -278,26 +280,28 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       opacity: isOutOfRange ? 0.45 : 1,
                     }}
                     onClick={() => {
-                      if (isOutOfRange) {
-                        if (numVal < min) {
-                          showCashDenominationMessage(`Номинал ${val} меньше минимальной ставки рулетки — ${min}.`);
-                        } else {
-                          showCashDenominationMessage(`Номинал ${val} превышает максимальную ставку рулетки — ${max}.`);
+                      // 1. Уже выбран — снять выбор (без проверки диапазона)
+                      if (checked) {
+                        if (cashChipValues.length === 1) {
+                          toast("Необходимо выбрать хотя бы один номинал");
+                          return;
                         }
+                        setCashChipValues((current) => current.filter((v) => v !== val));
                         return;
                       }
+                      // 2. Не выбран — проверить диапазон
+                      if (numVal < min) {
+                        showCashDenominationMessage(`Номинал ${val} меньше минимальной ставки рулетки — ${min}.`);
+                        return;
+                      }
+                      if (numVal > max) {
+                        showCashDenominationMessage(`Номинал ${val} превышает максимальную ставку рулетки — ${max}.`);
+                        return;
+                      }
+                      // 3. Допустимый номинал — FIFO, очистить сообщение
+                      setCashDenominationMessage(null);
                       setCashChipValues((current) => {
-                        if (current.includes(val)) {
-                          if (current.length === 1) {
-                            toast("Необходимо выбрать хотя бы один номинал");
-                            return current;
-                          }
-                          return current.filter((v) => v !== val);
-                        }
-                        setCashDenominationMessage(null);
-                        if (current.length >= 2) {
-                          return [...current.slice(1), val];
-                        }
+                        if (current.length >= 2) return [...current.slice(1), val];
                         return [...current, val];
                       });
                     }}
@@ -305,7 +309,7 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => {/* управляется через onClick на label */}}
+                      readOnly
                       style={{ display: "none" }}
                     />
                     {val}
