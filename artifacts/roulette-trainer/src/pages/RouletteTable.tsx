@@ -1092,13 +1092,36 @@ export default function RouletteTable({
         const amount = baseAmount * 5;
         let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
         if (num === 30) {
-          // Place in the top-right corner of the zone, shifted left 20% and down 16% of the cell's dimensions
-          // (was 0.128; raised outward by another 40% → 0.128 * 0.6 = 0.0768)
+          // arcL cell 2 (index 2): raise another 10% of cellH from 0.0768 → 0.0768 - 0.10 = -0.0232
           const cellW = Math.abs(trackParams.arcLX2 - trackParams.arcLX1);
           const cellH = Math.abs(trackParams.arcLY[3] - trackParams.arcLY[2]);
           pos = {
             x: trackParams.arcLX2 - 0.2 * cellW,
-            y: trackParams.arcLY[2] + 0.0768 * cellH,
+            y: trackParams.arcLY[2] + (-0.0232) * cellH,
+          };
+        }
+        if (num === 8) {
+          // arcL cell 1 (index 1): raise 30% of cellH from zone center (0.5 → 0.20)
+          const cellH = Math.abs(trackParams.arcLY[2] - trackParams.arcLY[1]);
+          pos = {
+            x: pos.x,
+            y: trackParams.arcLY[1] + 0.20 * cellH,
+          };
+        }
+        if (num === 23) {
+          // arcL cell 0 (index 0): lower 40% of cellH from zone center (0.5 → 0.90)
+          const cellH = Math.abs(trackParams.arcLY[1] - trackParams.arcLY[0]);
+          pos = {
+            x: pos.x,
+            y: trackParams.arcLY[0] + 0.90 * cellH,
+          };
+        }
+        if (num === 10) {
+          // top row cell 0: lower 10% of cell height from zone center
+          const cellH = Math.abs(trackParams.topY2 - trackParams.topY1);
+          pos = {
+            x: pos.x,
+            y: pos.y + 0.10 * cellH,
           };
         }
         if (num === 3) {
