@@ -279,7 +279,8 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       userSelect: "none",
                       opacity: isOutOfRange ? 0.45 : 1,
                     }}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       // 1. Уже выбран — снять выбор (без проверки диапазона)
                       if (checked) {
                         if (cashChipValues.length === 1) {
