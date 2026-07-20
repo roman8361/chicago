@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
@@ -114,6 +114,8 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [showBetBeforeChange, setShowBetBeforeChange] = useState<boolean>(
     initialSettings.showBetBeforeChange ?? DEFAULT_SETTINGS.showBetBeforeChange
   );
+  const [cashDenominationMessage, setCashDenominationMessage] = useState<string | null>(null);
+  const cashMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ALL_CASH_DENOMINATIONS = ["5", "10", "25", "50", "100", "500", "1000", "5000", "10000", "50000"] as const;
 
@@ -122,10 +124,27 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
     return val.trim() === "" || isNaN(n) ? def : n;
   }
 
+  function showCashDenominationMessage(message: string) {
+    setCashDenominationMessage(message);
+    if (cashMessageTimerRef.current) clearTimeout(cashMessageTimerRef.current);
+    cashMessageTimerRef.current = setTimeout(() => {
+      setCashDenominationMessage(null);
+      cashMessageTimerRef.current = null;
+    }, 3000);
+  }
+
+  // Очистить таймер при размонтировании
+  useEffect(() => {
+    return () => {
+      if (cashMessageTimerRef.current) clearTimeout(cashMessageTimerRef.current);
+    };
+  }, []);
+
   // Авто-фильтрация выбранных номиналов при изменении диапазона рулетки
   useEffect(() => {
     const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
     const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
+    setCashDenominationMessage(null);
     setCashChipValues((current) => {
       const valid = current.filter((v) => Number(v) >= min && Number(v) <= max);
       if (valid.length === current.length) return current; // ничего не изменилось
@@ -234,14 +253,19 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
               {(["5", "10", "25", "50", "100", "500", "1000", "5000", "10000", "50000"] as const).map((val) => {
                 const checked = cashChipValues.includes(val);
+                const numVal = Number(val);
+                const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
+                const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
+                const isOutOfRange = numVal < min || numVal > max;
                 return (
                   <label
                     key={val}
+                    aria-disabled={isOutOfRange}
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      cursor: "pointer",
+                      cursor: isOutOfRange ? "not-allowed" : "pointer",
                       padding: "4px 12px",
                       borderRadius: 4,
                       border: checked ? "1px solid #C9A227" : "1px solid #5a4a2a",
@@ -251,39 +275,37 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       fontFamily: "inherit",
                       transition: "all 0.15s",
                       userSelect: "none",
+                      opacity: isOutOfRange ? 0.45 : 1,
+                    }}
+                    onClick={() => {
+                      if (isOutOfRange) {
+                        if (numVal < min) {
+                          showCashDenominationMessage(`Номинал ${val} меньше минимальной ставки рулетки — ${min}.`);
+                        } else {
+                          showCashDenominationMessage(`Номинал ${val} превышает максимальную ставку рулетки — ${max}.`);
+                        }
+                        return;
+                      }
+                      setCashChipValues((current) => {
+                        if (current.includes(val)) {
+                          if (current.length === 1) {
+                            toast("Необходимо выбрать хотя бы один номинал");
+                            return current;
+                          }
+                          return current.filter((v) => v !== val);
+                        }
+                        setCashDenominationMessage(null);
+                        if (current.length >= 2) {
+                          return [...current.slice(1), val];
+                        }
+                        return [...current, val];
+                      });
                     }}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => {
-                        const numVal = Number(val);
-                        const min = parseNum(minBet, DEFAULT_SETTINGS.minBet);
-                        const max = parseNum(maxBet, DEFAULT_SETTINGS.maxBet);
-                        if (numVal < min) {
-                          toast(`Номинал кэша не может быть меньше минимальной ставки рулетки (${min})`, { duration: 2500 });
-                          return;
-                        }
-                        if (numVal > max) {
-                          toast(`Номинал кэша не может превышать максимальную ставку рулетки (${max})`, { duration: 2500 });
-                          return;
-                        }
-                        setCashChipValues((current) => {
-                          if (current.includes(val)) {
-                            // Снять выбор — нельзя снять последний
-                            if (current.length === 1) {
-                              toast("Необходимо выбрать хотя бы один номинал");
-                              return current;
-                            }
-                            return current.filter((v) => v !== val);
-                          }
-                          // Добавить: если уже 2 — убрать самый старый (FIFO)
-                          if (current.length >= 2) {
-                            return [...current.slice(1), val];
-                          }
-                          return [...current, val];
-                        });
-                      }}
+                      onChange={() => {/* управляется через onClick на label */}}
                       style={{ display: "none" }}
                     />
                     {val}
@@ -291,6 +313,25 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                 );
               })}
             </div>
+            {cashDenominationMessage && (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  marginTop: 8,
+                  padding: "7px 12px",
+                  border: "1px solid rgba(201,162,39,0.45)",
+                  borderRadius: 6,
+                  background: "rgba(20,12,4,0.97)",
+                  fontSize: 13,
+                  lineHeight: 1.35,
+                  color: "#c8a84b",
+                  fontFamily: "inherit",
+                }}
+              >
+                {cashDenominationMessage}
+              </div>
+            )}
           </div>
         </div>
 
