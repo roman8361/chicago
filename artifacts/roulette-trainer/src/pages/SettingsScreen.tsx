@@ -106,8 +106,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
   const [neighboursMultiplicity, setNeighboursMultiplicity] = useState(String(initialSettings.neighboursMultiplicity ?? DEFAULT_SETTINGS.neighboursMultiplicity));
   const [colorNumbersCount, setColorNumbersCount] = useState(String(initialSettings.colorNumbersCount ?? DEFAULT_SETTINGS.colorNumbersCount));
   const [cashChipValues, setCashChipValues] = useState<Array<"5" | "10" | "25" | "50" | "100" | "500" | "1000" | "5000" | "10000" | "50000">>(() => {
-    const vals = initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues;
-    return vals.slice(0, 2); // normalise: max 2 denominations
+    const raw = initialSettings.cashChipValues?.length ? initialSettings.cashChipValues : DEFAULT_SETTINGS.cashChipValues;
+    // Normalise: deduplicate preserving order, then keep the last 2 (most recently chosen)
+    const unique = raw.filter((v, i, a) => a.lastIndexOf(v) === i);
+    return unique.length > 2 ? unique.slice(-2) : unique;
   });
   const [showBetBeforeChange, setShowBetBeforeChange] = useState<boolean>(
     initialSettings.showBetBeforeChange ?? DEFAULT_SETTINGS.showBetBeforeChange
@@ -215,8 +217,6 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
               {(["5", "10", "25", "50", "100", "500", "1000", "5000", "10000", "50000"] as const).map((val) => {
                 const checked = cashChipValues.includes(val);
-                const maxReached = cashChipValues.length >= 2;
-                const isDisabled = !checked && maxReached;
                 return (
                   <label
                     key={val}
@@ -224,34 +224,37 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      cursor: isDisabled ? "not-allowed" : "pointer",
+                      cursor: "pointer",
                       padding: "4px 12px",
                       borderRadius: 4,
-                      border: checked ? "1px solid #C9A227" : isDisabled ? "1px solid #3a2a10" : "1px solid #5a4a2a",
+                      border: checked ? "1px solid #C9A227" : "1px solid #5a4a2a",
                       background: checked ? "rgba(201,162,39,0.12)" : "transparent",
-                      color: checked ? "#C9A227" : isDisabled ? "#4a3a1a" : "#8a7a5a",
+                      color: checked ? "#C9A227" : "#8a7a5a",
                       fontSize: 13,
                       fontFamily: "inherit",
                       transition: "all 0.15s",
-                      opacity: isDisabled ? 0.45 : 1,
                       userSelect: "none",
                     }}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={isDisabled}
                       onChange={() => {
-                        if (isDisabled) return;
-                        if (checked) {
-                          if (cashChipValues.length === 1) {
-                            toast("Необходимо выбрать хотя бы один номинал");
-                            return;
+                        setCashChipValues((current) => {
+                          if (current.includes(val)) {
+                            // Снять выбор — нельзя снять последний
+                            if (current.length === 1) {
+                              toast("Необходимо выбрать хотя бы один номинал");
+                              return current;
+                            }
+                            return current.filter((v) => v !== val);
                           }
-                          setCashChipValues(cashChipValues.filter((v) => v !== val));
-                        } else {
-                          setCashChipValues([...cashChipValues, val]);
-                        }
+                          // Добавить: если уже 2 — убрать самый старый (FIFO)
+                          if (current.length >= 2) {
+                            return [...current.slice(1), val];
+                          }
+                          return [...current, val];
+                        });
                       }}
                       style={{ display: "none" }}
                     />
