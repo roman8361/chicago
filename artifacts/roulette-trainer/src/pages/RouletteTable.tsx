@@ -791,6 +791,20 @@ export default function RouletteTable({
     return Math.round((x * divisor) / 10) * 10;
   }
 
+  // ── Serie 0/2/3 amount: per-bet random in [maxBet/2 … maxBet] × 18, rounded to seriesMultiplicity ──
+  const SERIE_ZERO_TWO_THREE_CHIPS_COUNT = 18;
+  function generateSerieZeroTwoThreeAmount(maxBet: number, seriesMultiplicity: number): number {
+    if (!Number.isFinite(seriesMultiplicity) || seriesMultiplicity <= 0) return 0;
+    const safeMax = Math.max(1, maxBet);
+    const minAmountPerBet = Math.ceil(safeMax / 2);
+    const maxAmountPerBet = Math.floor(safeMax);
+    const clampedMax = Math.max(minAmountPerBet, maxAmountPerBet);
+    const randomAmountPerBet = Math.floor(Math.random() * (clampedMax - minAmountPerBet + 1)) + minAmountPerBet;
+    const rawAmount = randomAmountPerBet * SERIE_ZERO_TWO_THREE_CHIPS_COUNT;
+    const rounded = Math.floor(rawAmount / seriesMultiplicity) * seriesMultiplicity;
+    return Math.max(seriesMultiplicity, rounded);
+  }
+
   // ── Orphelins amount: per-bet random in [maxBet/1.5 … maxBet] × 5, rounded to seriesMultiplicity ──
   const ORPHELINS_CHIPS_COUNT = 5;
   function generateOrphelinsAmount(maxBet: number, seriesMultiplicity: number): number {
@@ -946,6 +960,8 @@ export default function RouletteTable({
           ? generateSerie58Amount(settings.maxBet, mult)
           : s.type === "ORPHELINS"
           ? generateOrphelinsAmount(settings.maxBet, mult)
+          : s.type === "SERIE_0_2_3"
+          ? generateSerieZeroTwoThreeAmount(settings.maxBet, mult)
           : randomSeriesAmount(settings.maxBet, seriesDivisors[s.type]),
         position: { x: s.band.cx, y: s.band.cy },
         source:   "TRACK" as const,
