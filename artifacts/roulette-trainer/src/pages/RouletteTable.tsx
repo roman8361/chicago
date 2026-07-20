@@ -1101,19 +1101,19 @@ export default function RouletteTable({
           };
         }
         if (num === 8) {
-          // arcL cell 1 (index 1): lower 30% of cellH from zone center (0.5 → 0.80)
+          // arcL cell 1 (index 1): raise 15% from previous (0.80 → 0.65)
           const cellH = Math.abs(trackParams.arcLY[2] - trackParams.arcLY[1]);
           pos = {
             x: pos.x,
-            y: trackParams.arcLY[1] + 0.80 * cellH,
+            y: trackParams.arcLY[1] + 0.65 * cellH,
           };
         }
         if (num === 23) {
-          // arcL cell 0 (index 0): lower 40% of cellH from zone center (0.5 → 0.90)
+          // arcL cell 0 (index 0): raise 15% from previous (0.90 → 0.75)
           const cellH = Math.abs(trackParams.arcLY[1] - trackParams.arcLY[0]);
           pos = {
             x: pos.x,
-            y: trackParams.arcLY[0] + 0.90 * cellH,
+            y: trackParams.arcLY[0] + 0.75 * cellH,
           };
         }
         if (num === 10) {
