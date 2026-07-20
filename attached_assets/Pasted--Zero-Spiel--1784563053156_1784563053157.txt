@@ -1,0 +1,323 @@
+ЗАДАЧА
+
+Добавить отдельное правило генерации суммы ставки для серии:
+
+«Zero Spiel»
+
+Сумма должна рассчитываться на основании:
+
+- максимальной ставки рулетки;
+- количества единиц ставки в Zero Spiel;
+- кратности приёма серий.
+
+---
+
+ИСХОДНЫЕ ДАННЫЕ
+
+Для расчёта использовать:
+
+- `maxBet` — максимальная ставка рулетки;
+- `seriesMultiplicity` — кратность приёма серий;
+- коэффициент Zero Spiel = 4.
+
+Состав серии не менять:
+
+- split 0/3;
+- split 12/15;
+- straight 26;
+- split 32/35.
+
+Для генерации суммы использовать коэффициент:
+
+```text
+4
+```
+
+---
+
+НОВЫЙ АЛГОРИТМ
+
+### Шаг 1. Рассчитать нижнюю границу
+
+Взять максимальную ставку рулетки и разделить на 1,5.
+
+Формула:
+
+```text
+minAmountPerBet = maxBet / 1.5
+```
+
+Пример:
+
+```text
+maxBet = 1000
+
+1000 / 1.5 = 666.66...
+
+округляем вверх:
+
+667
+```
+
+---
+
+### Шаг 2. Верхняя граница
+
+Верхняя граница равна максимальной ставке рулетки.
+
+```text
+maxAmountPerBet = maxBet
+```
+
+Пример:
+
+```text
+1000
+```
+
+---
+
+### Шаг 3. Случайное значение
+
+Выбрать случайное целое число из диапазона:
+
+```text
+667–1000
+```
+
+Допустим случайно выбрано:
+
+```text
+845
+```
+
+---
+
+### Шаг 4. Рассчитать исходную сумму серии
+
+Умножить выбранное значение на коэффициент Zero Spiel:
+
+```text
+rawSeriesAmount = randomAmountPerBet × 4
+```
+
+Пример:
+
+```text
+845 × 4 = 3380
+```
+
+---
+
+### Шаг 5. Округлить по кратности серии
+
+Если сумма не делится на кратность серии без остатка, округлить её вниз.
+
+Формула:
+
+```text
+finalSeriesAmount =
+Math.floor(rawSeriesAmount / seriesMultiplicity)
+* seriesMultiplicity
+```
+
+Пример:
+
+```text
+3380
+
+кратность = 100
+
+3380 → 3300
+```
+
+Итоговая ставка Zero Spiel:
+
+```text
+3300
+```
+
+---
+
+ПОЛНЫЙ ПРИМЕР
+
+Настройки:
+
+```text
+Минимальная ставка рулетки: 100
+Максимальная ставка рулетки: 1000
+Кратность серии: 100
+```
+
+Расчёт:
+
+```text
+1. Нижняя граница:
+
+1000 / 1.5 = 666.66...
+Math.ceil(...) = 667
+
+2. Верхняя граница:
+
+1000
+
+3. Случайное значение:
+
+845
+
+4. Умножение:
+
+845 × 4 = 3380
+
+5. Округление вниз до кратности 100:
+
+3380 → 3300
+```
+
+Результат:
+
+```text
+Ставка Zero Spiel = 3300
+```
+
+---
+
+ОКРУГЛЕНИЕ ГРАНИЦ
+
+Использовать:
+
+```ts
+const minAmountPerBet = Math.ceil(maxBet / 1.5);
+const maxAmountPerBet = Math.floor(maxBet);
+```
+
+---
+
+СЛУЧАЙНОЕ ЧИСЛО
+
+Использовать случайное целое число:
+
+```ts
+const randomIntInclusive = (
+  min: number,
+  max: number
+): number => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+```
+
+---
+
+РЕКОМЕНДУЕМАЯ РЕАЛИЗАЦИЯ
+
+```ts
+const ZERO_SPIEL_MULTIPLIER = 4;
+
+const generateZeroSpielAmount = (
+  maxBet: number,
+  seriesMultiplicity: number
+): number => {
+  if (!Number.isFinite(maxBet) || maxBet <= 0) {
+    return 0;
+  }
+
+  if (
+    !Number.isFinite(seriesMultiplicity) ||
+    seriesMultiplicity <= 0
+  ) {
+    return 0;
+  }
+
+  const minAmountPerBet = Math.ceil(maxBet / 1.5);
+  const maxAmountPerBet = Math.floor(maxBet);
+
+  const randomAmountPerBet = randomIntInclusive(
+    minAmountPerBet,
+    maxAmountPerBet
+  );
+
+  const rawSeriesAmount =
+    randomAmountPerBet * ZERO_SPIEL_MULTIPLIER;
+
+  const roundedAmount =
+    Math.floor(
+      rawSeriesAmount / seriesMultiplicity
+    ) * seriesMultiplicity;
+
+  return Math.max(seriesMultiplicity, roundedAmount);
+};
+```
+
+---
+
+ПРАВИЛА ДЛЯ ВСЕХ СЕРИЙ
+
+### Serie 5/8
+
+```text
+от maxBet / 2
+до maxBet − 10%
+
+×12
+
+округление вниз
+```
+
+### Orphelins
+
+```text
+от maxBet / 1.5
+до maxBet
+
+×5
+
+округление вниз
+```
+
+### Serie 0/2/3
+
+```text
+от maxBet / 2
+до maxBet
+
+×18
+
+округление вниз
+```
+
+### Zero Spiel
+
+```text
+от maxBet / 1.5
+до maxBet
+
+×4
+
+округление вниз
+```
+
+---
+
+НЕ МЕНЯТЬ
+
+- состав Zero Spiel;
+- расположение ставок;
+- дилерские вопросы;
+- расчёт сдачи;
+- отчёт по спину;
+- правила остальных серий.
+
+---
+
+КРИТЕРИИ ГОТОВНОСТИ
+
+1. Нижняя граница равна `maxBet / 1.5`.
+2. Верхняя граница равна `maxBet`.
+3. Случайное значение выбирается включительно между границами.
+4. Случайное значение умножается на 4.
+5. Итог округляется только вниз.
+6. Итог всегда делится на кратность серии без остатка.
+7. При `maxBet = 1000` диапазон генерации равен 667–1000.
+8. При случайном значении 845 исходная сумма равна 3380.
+9. При кратности 100 итоговая ставка равна 3300.
+10. Новое правило применяется только к Zero Spiel.
