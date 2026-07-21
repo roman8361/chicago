@@ -2323,9 +2323,15 @@ export default function RouletteTable({
             if (game?.drawnNumber === ncb.number) return null;
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
-            // Zero: compact fixed-size rect (the polygon would fill the entire large zero cell)
+            // Zero: compact rect sized like a standard number cell (1/3 height of the zero polygon)
             if (ncb.number === 0) {
-              const bw = 48; const bh = 48; const rx = 7;
+              const refZ = gridZones.find(z => z.number === 1);
+              const refPts = refZ?.pts.split(/\s+/) ?? [];
+              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
+              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
+              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
+              const rx = 7;
               return (
                 <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
                   <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
@@ -2369,9 +2375,15 @@ export default function RouletteTable({
             if (!wz) return null;
             const isWinning = game?.drawnNumber === ncb.number;
 
-            // ── Zero complete: compact fixed-size badge (same dimensions as numbers 1–36) ──
+            // ── Zero complete: badge sized like a standard number cell (same as pass 1) ──
             if (ncb.number === 0) {
-              const bw = 48; const bh = 48; const rx = 7;
+              const refZ = gridZones.find(z => z.number === 1);
+              const refPts = refZ?.pts.split(/\s+/) ?? [];
+              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
+              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
+              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
+              const rx = 7;
               return (
                 <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
                   {isWinning ? (
