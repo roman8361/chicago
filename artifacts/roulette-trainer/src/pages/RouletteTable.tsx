@@ -2201,10 +2201,6 @@ export default function RouletteTable({
   // field elements except the complete bets themselves.
   type FocusMode = "none" | "complete-multiplicity";
   const focusMode: FocusMode = quizPhase?.kind === "completes" ? "complete-multiplicity" : "none";
-  const dimStyle: React.CSSProperties =
-    focusMode === "complete-multiplicity"
-      ? { opacity: 0.35, transition: "opacity 180ms ease" }
-      : { opacity: 1,    transition: "opacity 180ms ease" };
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
   const fieldSource = showReportField
     ? initialRoundSnapshot
@@ -2385,42 +2381,7 @@ export default function RouletteTable({
               </g>
             );
           })}
-          {/* Number complete highlights — cyan fill (pass 1, before winning yellow; skip winning number so yellow shows on top) */}
-          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
-            if (game?.drawnNumber === ncb.number) return null;
-            const wz = gridZones.find(z => z.number === ncb.number);
-            if (!wz) return null;
-            // Zero: compact rect sized like a standard number cell (1/3 height of the zero polygon)
-            if (ncb.number === 0) {
-              const refZ = gridZones.find(z => z.number === 1);
-              const refPts = refZ?.pts.split(/\s+/) ?? [];
-              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
-              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
-              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
-              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
-              const rx = 7;
-              return (
-                <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                  <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                    fill="rgba(0, 212, 255, 0.42)"
-                    stroke="#00D4FF"
-                    strokeWidth="3" />
-                </g>
-              );
-            }
-            return (
-              <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                <polygon points={wz.pts}
-                  fill="rgba(0, 212, 255, 0.42)"
-                  stroke="#00D4FF"
-                  strokeWidth="3"
-                  strokeLinejoin="round" />
-              </g>
-            );
-          })}
-
           {/* Winning number highlight */}
-          <g style={dimStyle}>
           {game && (() => {
             const wz = gridZones.find(z => z.number === game.drawnNumber);
             if (!wz) return null;
@@ -2436,85 +2397,8 @@ export default function RouletteTable({
               </g>
             );
           })()}
-          </g>
-
-          {/* Number complete — pass 2 (after winning yellow): cyan border for winning+complete, then "C" for all */}
-          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
-            const wz = gridZones.find(z => z.number === ncb.number);
-            if (!wz) return null;
-            const isWinning = game?.drawnNumber === ncb.number;
-
-            // ── Zero complete: badge sized like a standard number cell (same as pass 1) ──
-            if (ncb.number === 0) {
-              const refZ = gridZones.find(z => z.number === 1);
-              const refPts = refZ?.pts.split(/\s+/) ?? [];
-              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
-              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
-              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
-              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
-              const rx = 7;
-              return (
-                <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                  {isWinning ? (
-                    // Winning zero: full compact badge — yellow fill + cyan border + C
-                    <>
-                      <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
-                        fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
-                      <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                        fill="rgba(255,255,60,0.82)" stroke="#00D4FF" strokeWidth="5" opacity="0.95"
-                        style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.60))" }} />
-                    </>
-                  ) : (
-                    // Non-winning zero: cyan rect already drawn in pass 1; add compact cyan border
-                    <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                      fill="none" stroke="#00D4FF" strokeWidth="3" />
-                  )}
-                  {/* "C" symbol — compact fixed size for both states */}
-                  <text x={wz.cx} y={wz.cy}
-                    textAnchor="middle" dominantBaseline="central"
-                    fontSize={Math.round(bh * 0.80)} fontWeight="900"
-                    fill="#D8F4FF"
-                    stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
-                    opacity={isWinning ? 0.92 : 0.72}
-                    style={{ pointerEvents: "none" }}>
-                    C
-                  </text>
-                </g>
-              );
-            }
-
-            // ── Numbers 1–36: existing polygon-based rendering ──
-            // Compute cell height from polygon bounding box to size the "C" letter
-            const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
-            const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
-            const cFontSize = Math.round(cellH * 0.85);
-            return (
-              <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                {/* Cyan stroke border — only when this complete number is also the winning number */}
-                {isWinning && (
-                  <polygon points={wz.pts}
-                    fill="none"
-                    stroke="#00D4FF"
-                    strokeWidth="5"
-                    strokeLinejoin="round"
-                    opacity="0.95" />
-                )}
-                {/* "C" watermark — fills the cell, sits behind the number */}
-                <text
-                  x={wz.cx} y={wz.cy}
-                  textAnchor="middle" dominantBaseline="central"
-                  fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
-                  stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
-                  opacity="0.72"
-                  style={{ pointerEvents: "none" }}>
-                  C
-                </text>
-              </g>
-            );
-          })}
 
           {/* Chips */}
-          <g style={dimStyle}>
           {fieldSource && fieldSource.chips.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
@@ -2531,10 +2415,8 @@ export default function RouletteTable({
               </g>
             );
           })}
-          </g>
 
           {/* Cash chips — round, slightly larger than color chips */}
-          <g style={dimStyle}>
           {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
@@ -2563,41 +2445,8 @@ export default function RouletteTable({
               </g>
             );
           })}
-          </g>
-
-          {/* Dozen complete badge — cyan rectangle with "C" watermark letter, no amount shown */}
-          {fieldSource?.dozenCompleteBet && (() => {
-            const { x, y } = fieldSource.dozenCompleteBet!.position;
-            const bw = 88; const bh = 62; // badge width / height in SVG units (≈ same footprint as old r=40 circle)
-            const rx = 7;                 // border-radius
-            return (
-              <g style={{ pointerEvents: "none" }}>
-                {/* Outer glow */}
-                <rect x={x - bw / 2 - 3} y={y - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
-                  fill="none" stroke="rgba(0,212,255,0.45)" strokeWidth="3" />
-                {/* Badge body */}
-                <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={rx}
-                  fill="rgba(0, 212, 255, 0.55)"
-                  stroke="rgba(160, 240, 255, 0.95)"
-                  strokeWidth="2"
-                  style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.80))" }} />
-                {/* "C" letter watermark */}
-                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={Math.round(bh * 0.80)} fontWeight="900"
-                  fill="#E8F8FF"
-                  stroke="rgba(0,180,230,0.70)" strokeWidth="2.5" paintOrder="stroke"
-                  opacity="0.92"
-                  style={{ pointerEvents: "none" }}>
-                  C
-                </text>
-              </g>
-            );
-          })()}
-
-          {/* Number complete chips — replaced by pink highlight + "C" label above */}
 
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
-          <g style={dimStyle}>
           {fieldSource && fieldSource.trackBets.map(tb => {
             const { x, y } = tb.position;
             const amt = String(showReportField ? tb.amount : (seriesDisplayAmounts?.get(tb.type) ?? tb.amount));
@@ -2624,10 +2473,8 @@ export default function RouletteTable({
               </g>
             );
           })}
-          </g>
 
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
-          <g style={dimStyle}>
           {fieldSource && fieldSource.neighboursBets.map(nb => {
             const { x, y } = nb.position;
             const displayNbAmt = (!showReportField && settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
@@ -2656,7 +2503,6 @@ export default function RouletteTable({
               </g>
             );
           })}
-          </g>
 
           {/* Winning field — solo color chips: keep as original blue chip */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
@@ -2724,6 +2570,156 @@ export default function RouletteTable({
               </g>
             );
           })}
+
+          {/* ── Focus overlay — darkens field + track; sits above all regular bets ── */}
+          {focusMode === "complete-multiplicity" && (
+            <rect
+              x={0} y={0} width={BASE_WIDTH} height={BASE_HEIGHT}
+              fill="rgba(0,0,0,0.62)"
+              style={{ pointerEvents: "none", transition: "opacity 200ms ease" }}
+            />
+          )}
+
+          {/* ── Complete bets — rendered above the focus overlay ── */}
+          <g className={focusMode === "complete-multiplicity" ? "complete-bets-focus" : undefined}>
+
+          {/* Number complete highlights — cyan fill (pass 1, skip winning number so yellow shows on top) */}
+          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
+            if (game?.drawnNumber === ncb.number) return null;
+            const wz = gridZones.find(z => z.number === ncb.number);
+            if (!wz) return null;
+            if (ncb.number === 0) {
+              const refZ = gridZones.find(z => z.number === 1);
+              const refPts = refZ?.pts.split(/\s+/) ?? [];
+              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
+              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
+              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
+              const rx = 7;
+              return (
+                <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                  <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
+                    fill="rgba(0, 212, 255, 0.42)"
+                    stroke="#00D4FF"
+                    strokeWidth="3" />
+                </g>
+              );
+            }
+            return (
+              <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                <polygon points={wz.pts}
+                  fill="rgba(0, 212, 255, 0.42)"
+                  stroke="#00D4FF"
+                  strokeWidth="3"
+                  strokeLinejoin="round" />
+              </g>
+            );
+          })}
+
+          {/* Number complete — pass 2: cyan border for winning+complete, then "C" for all */}
+          {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
+            const wz = gridZones.find(z => z.number === ncb.number);
+            if (!wz) return null;
+            const isWinning = game?.drawnNumber === ncb.number;
+
+            // ── Zero complete: badge sized like a standard number cell ──
+            if (ncb.number === 0) {
+              const refZ = gridZones.find(z => z.number === 1);
+              const refPts = refZ?.pts.split(/\s+/) ?? [];
+              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
+              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+              const bw = rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60;
+              const bh = rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60;
+              const rx = 7;
+              return (
+                <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                  {isWinning ? (
+                    // Winning zero: full compact badge — yellow fill + cyan border + C
+                    <>
+                      <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
+                        fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
+                      <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
+                        fill="rgba(255,255,60,0.82)" stroke="#00D4FF" strokeWidth="5" opacity="0.95"
+                        style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.60))" }} />
+                    </>
+                  ) : (
+                    // Non-winning zero: cyan border
+                    <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
+                      fill="none" stroke="#00D4FF" strokeWidth="3" />
+                  )}
+                  {/* "C" symbol */}
+                  <text x={wz.cx} y={wz.cy}
+                    textAnchor="middle" dominantBaseline="central"
+                    fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                    fill="#D8F4FF"
+                    stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                    opacity={isWinning ? 0.92 : 0.72}
+                    style={{ pointerEvents: "none" }}>
+                    C
+                  </text>
+                </g>
+              );
+            }
+
+            // ── Numbers 1–36 ──
+            const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+            const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
+            const cFontSize = Math.round(cellH * 0.85);
+            return (
+              <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                {/* Cyan stroke border — only when this complete number is also the winning number */}
+                {isWinning && (
+                  <polygon points={wz.pts}
+                    fill="none"
+                    stroke="#00D4FF"
+                    strokeWidth="5"
+                    strokeLinejoin="round"
+                    opacity="0.95" />
+                )}
+                {/* "C" watermark */}
+                <text
+                  x={wz.cx} y={wz.cy}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
+                  stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                  opacity="0.72"
+                  style={{ pointerEvents: "none" }}>
+                  C
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Dozen complete badge — cyan rectangle with "C" watermark letter */}
+          {fieldSource?.dozenCompleteBet && (() => {
+            const { x, y } = fieldSource.dozenCompleteBet!.position;
+            const bw = 88; const bh = 62;
+            const rx = 7;
+            return (
+              <g style={{ pointerEvents: "none" }}>
+                {/* Outer glow */}
+                <rect x={x - bw / 2 - 3} y={y - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
+                  fill="none" stroke="rgba(0,212,255,0.45)" strokeWidth="3" />
+                {/* Badge body */}
+                <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={rx}
+                  fill="rgba(0, 212, 255, 0.55)"
+                  stroke="rgba(160, 240, 255, 0.95)"
+                  strokeWidth="2"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.80))" }} />
+                {/* "C" letter */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                  fill="#E8F8FF"
+                  stroke="rgba(0,180,230,0.70)" strokeWidth="2.5" paintOrder="stroke"
+                  opacity="0.92"
+                  style={{ pointerEvents: "none" }}>
+                  C
+                </text>
+              </g>
+            );
+          })()}
+
+          </g>{/* /complete-bets */}
 
         </svg>
       </div>

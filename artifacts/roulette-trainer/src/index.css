@@ -1289,3 +1289,22 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ── Focus mode — complete bets pulsing glow ────────────────────────────── */
+.complete-bets-focus {
+  animation: complete-focus-glow 2s ease-in-out infinite;
+}
+
+@keyframes complete-focus-glow {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 4px rgba(74, 220, 255, 0.85))
+      drop-shadow(0 0 10px rgba(74, 220, 255, 0.60));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 6px rgba(74, 220, 255, 0.95))
+      drop-shadow(0 0 14px rgba(74, 220, 255, 0.75))
+      drop-shadow(0 0 22px rgba(74, 220, 255, 0.45));
+  }
+}
