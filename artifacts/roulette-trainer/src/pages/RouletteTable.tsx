@@ -2205,6 +2205,7 @@ export default function RouletteTable({
   const focusMode: FocusMode =
     quizPhase?.kind === "completes"             ? "complete-multiplicity" :
     quizPhase?.kind === "completesIntersection" ? "complete-field-intersections" :
+    quizPhase?.kind === "series"                ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "trackIntersection"     ? "track-series-neighbours-intersections" :
     "none";
 
