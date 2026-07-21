@@ -2210,6 +2210,7 @@ export default function RouletteTable({
     quizPhase?.kind === "completes"                    ? "complete-multiplicity" :
     quizPhase?.kind === "completesIntersection"        ? "complete-field-intersections" :
     quizPhase?.kind === "series"                       ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "seriesFieldPayout"            ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "trackIntersection"            ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "trackFieldIntersection"       ? "dim-complete-bets-only" :
     quizPhase?.kind === "completeTrackIntersection"    ? "complete-track-intersections" :
