@@ -1144,8 +1144,12 @@ export default function RouletteTable({
         if (num === 0) {
           // Right-arc cell for 0 is the third one (index 2 of ARC_R_NUMBERS)
           const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+          // Horizontal adjustment: move left 20% of cellW from current position (-0.2 → -0.4 total)
+          const neighbourChipHorizontalAdjustments: Record<number, number> = { 0: -0.20 };
+          const horizontalAdjustment = neighbourChipHorizontalAdjustments[num] ?? 0;
+          const baseChipX = pos.x - 0.2 * cellW;
           pos = {
-            x: pos.x - 0.2 * cellW,
+            x: baseChipX + cellW * horizontalAdjustment,
             y: pos.y,
           };
         }
