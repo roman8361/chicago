@@ -2201,12 +2201,13 @@ export default function RouletteTable({
   //                                 float above with a pulsing cyan glow.
   // "complete-field-intersections": dims only the track; field + completes stay
   //                                 at full brightness, no glow/animation.
-  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections";
+  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections" | "dim-complete-bets-only";
   const focusMode: FocusMode =
-    quizPhase?.kind === "completes"             ? "complete-multiplicity" :
-    quizPhase?.kind === "completesIntersection" ? "complete-field-intersections" :
-    quizPhase?.kind === "series"                ? "track-series-neighbours-intersections" :
-    quizPhase?.kind === "trackIntersection"     ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "completes"                 ? "complete-multiplicity" :
+    quizPhase?.kind === "completesIntersection"     ? "complete-field-intersections" :
+    quizPhase?.kind === "series"                    ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "trackIntersection"         ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "trackFieldIntersection"    ? "dim-complete-bets-only" :
     "none";
 
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
@@ -2614,7 +2615,13 @@ export default function RouletteTable({
           )}
 
           {/* ── Complete bets — rendered above the focus overlay ── */}
-          <g className={focusMode === "complete-multiplicity" ? "complete-bets-focus" : undefined}>
+          <g
+            className={focusMode === "complete-multiplicity" ? "complete-bets-focus" : undefined}
+            style={{
+              opacity: focusMode === "dim-complete-bets-only" ? 0.35 : 1,
+              transition: "opacity 200ms ease",
+            }}
+          >
 
           {/* Number complete highlights — cyan fill (pass 1, skip winning number so yellow shows on top) */}
           {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
