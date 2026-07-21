@@ -2335,14 +2335,6 @@ export default function RouletteTable({
           xmlns="http://www.w3.org/2000/svg">
 
           <defs>
-            {/* SVG filter used to darken the track group in complete-field-intersections focus mode */}
-            <filter id="track-dark-filter" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
-              <feComponentTransfer>
-                <feFuncR type="linear" slope="0.28" />
-                <feFuncG type="linear" slope="0.28" />
-                <feFuncB type="linear" slope="0.28" />
-              </feComponentTransfer>
-            </filter>
           </defs>
 
           {/* Main grid */}
@@ -2369,11 +2361,9 @@ export default function RouletteTable({
             </g>
           ))}
 
-          {/* ── Track group — all track elements wrapped so the dim filter applies uniformly ── */}
+          {/* ── Track group — all track elements wrapped together ── */}
           <g
             id="roulette-track"
-            filter={focusMode === "complete-field-intersections" ? "url(#track-dark-filter)" : undefined}
-            style={{ transition: "filter 180ms ease" }}
           >
 
           {/* Track — sector bands (middle label area) */}
@@ -2464,6 +2454,19 @@ export default function RouletteTable({
           })}
 
           </g>{/* /roulette-track */}
+
+          {/* ── Track focus overlay — darkens entire track area uniformly; same mechanism as complete-multiplicity ── */}
+          {focusMode === "complete-field-intersections" && (() => {
+            const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
+            return (
+              <rect
+                x={0} y={trackTop}
+                width={BASE_WIDTH} height={BASE_HEIGHT - trackTop}
+                fill="rgba(0,0,0,0.62)"
+                style={{ pointerEvents: "none", transition: "opacity 200ms ease" }}
+              />
+            );
+          })()}
 
           {/* Winning number highlight */}
           {game && (() => {
