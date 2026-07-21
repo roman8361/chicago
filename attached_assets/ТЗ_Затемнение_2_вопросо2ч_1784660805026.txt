@@ -1,0 +1,193 @@
+ИСПРАВЛЕНИЕ
+
+Для вопроса:
+
+«Посчитайте сдачу с пересечений ставок "комплит" со ставками на поле, без учета трека.»
+
+не добавлять отдельный HTML-overlay поверх трека.
+
+Вместо этого затемнять непосредственно SVG-группу, внутри которой отрисован трек.
+
+---
+
+1. Найти группу трека
+
+Трек должен быть обёрнут в отдельную группу:
+
+```tsx
+<g
+    id="roulette-track"
+    className={
+        focusMode === "complete-field-intersections"
+            ? "roulette-track roulette-track--dimmed"
+            : "roulette-track"
+    }
+>
+    <TrackBackground />
+    <TrackGeometry />
+    <TrackNumbers />
+    <TrackLabels />
+    <TrackBets />
+</g>
+
+Важно: в эту группу должны входить все элементы трека:
+
+овальная геометрия;
+цифры;
+подписи серий;
+фишки серий;
+фишки соседей.
+Добавить настоящее затемнение
+.roulette-track {
+    transition: filter 180ms ease;
+}
+
+.roulette-track--dimmed {
+    filter:
+        brightness(0.28)
+        saturate(0.65);
+}
+
+Начать со значения:
+
+brightness(0.28)
+
+Это сделает трек именно тёмным, а не прозрачным.
+
+Не использовать:
+
+opacity: 0.3;
+
+Потому что opacity делает элементы бледными.
+
+Если CSS filter на SVG-группе не срабатывает
+
+Использовать SVG-фильтр:
+
+<svg>
+    <defs>
+        <filter id="track-dark-filter">
+            <feComponentTransfer>
+                <feFuncR type="linear" slope="0.28" />
+                <feFuncG type="linear" slope="0.28" />
+                <feFuncB type="linear" slope="0.28" />
+            </feComponentTransfer>
+        </filter>
+    </defs>
+
+    <g
+        id="roulette-track"
+        filter={
+            focusMode === "complete-field-intersections"
+                ? "url(#track-dark-filter)"
+                : undefined
+        }
+    >
+        <TrackBackground />
+        <TrackGeometry />
+        <TrackNumbers />
+        <TrackLabels />
+        <TrackBets />
+    </g>
+</svg>
+
+Этот вариант должен работать независимо от поведения CSS filter.
+
+Проверить расположение группы
+
+Нельзя применять затемнение только к фону трека:
+
+<TrackBackground className="dimmed" />
+
+Потому что тогда цифры и ставки останутся яркими.
+
+Затемнение должно применяться к общей родительской группе:
+
+<g id="roulette-track">
+Не затемнять основное поле
+
+Структура должна быть примерно такой:
+
+<svg>
+    <g id="main-field">
+        <MainField />
+        <FieldBets />
+        <CompleteBets />
+    </g>
+
+    <g
+        id="roulette-track"
+        filter={
+            focusMode === "complete-field-intersections"
+                ? "url(#track-dark-filter)"
+                : undefined
+        }
+    >
+        <Track />
+        <TrackBets />
+    </g>
+</svg>
+
+Группа main-field не должна получать фильтр.
+
+Проверить правильность текущего вопроса
+
+Не привязываться к полному тексту вопроса:
+
+question.text === "Посчитайте сдачу..."
+
+Лучше использовать стабильный идентификатор:
+
+question.id === "complete-field-intersections"
+
+Либо:
+
+const focusModeByQuestionId = {
+    "complete-multiplicity": "complete-multiplicity",
+    "complete-field-intersections": "complete-field-intersections",
+};
+
+Иначе затемнение может не включаться из-за:
+
+кавычек другого типа;
+номера вопроса;
+точки в конце;
+лишнего пробела;
+изменения формулировки.
+Добавить временную диагностику
+
+Временно вывести:
+
+console.log({
+    questionId: currentQuestion?.id,
+    focusMode,
+    isTrackDimmed:
+        focusMode === "complete-field-intersections",
+});
+
+Ожидаемый результат на втором вопросе:
+
+{
+    questionId: "complete-field-intersections",
+    focusMode: "complete-field-intersections",
+    isTrackDimmed: true
+}
+
+Если isTrackDimmed равно false, проблема не в SVG, а в определении активного вопроса.
+
+КРИТЕРИЙ РЕЗУЛЬТАТА
+
+На втором вопросе вся область трека должна стать заметно тёмной:
+
+овальное сукно;
+линии;
+цифры;
+названия серий;
+все фишки на треке.
+
+Основное поле, комплиты и ставки на основном поле остаются без изменений.
+
+Свечения и мерцания нет.
+
+
+Ключевая правка: **не рисовать overlay рядом с треком, а применять затемнение к родительской SVG-группе самого трека**.

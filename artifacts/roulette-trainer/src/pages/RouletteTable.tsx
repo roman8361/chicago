@@ -2207,14 +2207,6 @@ export default function RouletteTable({
     quizPhase?.kind === "completesIntersection" ? "complete-field-intersections" :
     "none";
 
-  // Bounding box of the track — used for the track-only focus overlay.
-  // Computed from live trackParams so it follows any user edits to the track geometry.
-  const trackOverlayX = Math.min(trackParams.arcLX1, trackParams.topX[0]);
-  const trackOverlayY = Math.min(trackParams.arcRY[0], trackParams.topY1);
-  const trackOverlayW =
-    Math.max(trackParams.arcRX1, trackParams.topX[trackParams.topX.length - 1]) - trackOverlayX;
-  const trackOverlayH =
-    Math.max(trackParams.arcLY[trackParams.arcLY.length - 1], trackParams.botY2) - trackOverlayY;
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
   const fieldSource = showReportField
     ? initialRoundSnapshot
@@ -2342,6 +2334,17 @@ export default function RouletteTable({
           preserveAspectRatio="none"
           xmlns="http://www.w3.org/2000/svg">
 
+          <defs>
+            {/* SVG filter used to darken the track group in complete-field-intersections focus mode */}
+            <filter id="track-dark-filter" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
+              <feComponentTransfer>
+                <feFuncR type="linear" slope="0.28" />
+                <feFuncG type="linear" slope="0.28" />
+                <feFuncB type="linear" slope="0.28" />
+              </feComponentTransfer>
+            </filter>
+          </defs>
+
           {/* Main grid */}
           {showGrid && gridZones.map(z => (
             <g key={`g-${z.number}`}>
@@ -2365,6 +2368,13 @@ export default function RouletteTable({
               </text>
             </g>
           ))}
+
+          {/* ── Track group — all track elements wrapped so the dim filter applies uniformly ── */}
+          <g
+            id="roulette-track"
+            filter={focusMode === "complete-field-intersections" ? "url(#track-dark-filter)" : undefined}
+            style={{ transition: "filter 180ms ease" }}
+          >
 
           {/* Track — sector bands (middle label area) */}
           {showTrack && sectorBands.map(b => (
@@ -2395,6 +2405,66 @@ export default function RouletteTable({
               </g>
             );
           })}
+          {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
+          {fieldSource && fieldSource.trackBets.map(tb => {
+            const { x, y } = tb.position;
+            const amt = String(showReportField ? tb.amount : (seriesDisplayAmounts?.get(tb.type) ?? tb.amount));
+            const fs = amt.length >= 4 ? "15" : "18";
+            const r = 40;
+            return (
+              <g key={tb.type} style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#B87333" strokeWidth="2.2" opacity="0.45" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={r} fill="#111418" stroke="#B87333" strokeWidth="4" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={r - 7} fill="none" stroke="#D9D9D9" strokeWidth="1.1" opacity="0.6" />
+                {/* Dashed rim accent — distinct chip pattern */}
+                <circle cx={x} cy={y} r={r - 3} fill="none" stroke="#D9D9D9" strokeWidth="1.4"
+                  strokeDasharray="4 4" opacity="0.5" />
+                {/* Amount text */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.8" paintOrder="stroke"
+                  letterSpacing="0.3">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
+          {fieldSource && fieldSource.neighboursBets.map(nb => {
+            const { x, y } = nb.position;
+            const displayNbAmt = (!showReportField && settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
+              ? (acceptedNeighboursAmounts.get(nb.number) ?? nb.amount)
+              : nb.amount;
+            const amt = String(displayNbAmt);
+            const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
+            return (
+              <g key={`nb-${nb.number}`} style={{ pointerEvents: "none" }}>
+                {/* Outer glow ring */}
+                <circle cx={x} cy={y} r={32} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
+                {/* Main body */}
+                <circle cx={x} cy={y} r={28} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                {/* Inner decorative ring */}
+                <circle cx={x} cy={y} r={23} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
+                {/* Dashed rim accent — distinct chip pattern */}
+                <circle cx={x} cy={y} r={26} fill="none" stroke="#D9D9D9" strokeWidth="1"
+                  strokeDasharray="3 3" opacity="0.5" />
+                {/* Amount text */}
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
+                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  letterSpacing="0.3">
+                  {amt}
+                </text>
+              </g>
+            );
+          })}
+
+          </g>{/* /roulette-track */}
+
           {/* Winning number highlight */}
           {game && (() => {
             const wz = gridZones.find(z => z.number === game.drawnNumber);
@@ -2459,76 +2529,6 @@ export default function RouletteTable({
               </g>
             );
           })}
-
-          {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
-          {fieldSource && fieldSource.trackBets.map(tb => {
-            const { x, y } = tb.position;
-            const amt = String(showReportField ? tb.amount : (seriesDisplayAmounts?.get(tb.type) ?? tb.amount));
-            const fs = amt.length >= 4 ? "15" : "18";
-            const r = 40;
-            return (
-              <g key={tb.type} style={{ pointerEvents: "none" }}>
-                {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#B87333" strokeWidth="2.2" opacity="0.45" />
-                {/* Main body */}
-                <circle cx={x} cy={y} r={r} fill="#111418" stroke="#B87333" strokeWidth="4" />
-                {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={r - 7} fill="none" stroke="#D9D9D9" strokeWidth="1.1" opacity="0.6" />
-                {/* Dashed rim accent — distinct chip pattern */}
-                <circle cx={x} cy={y} r={r - 3} fill="none" stroke="#D9D9D9" strokeWidth="1.4"
-                  strokeDasharray="4 4" opacity="0.5" />
-                {/* Amount text */}
-                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
-                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.8" paintOrder="stroke"
-                  letterSpacing="0.3">
-                  {amt}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
-          {fieldSource && fieldSource.neighboursBets.map(nb => {
-            const { x, y } = nb.position;
-            const displayNbAmt = (!showReportField && settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
-              ? (acceptedNeighboursAmounts.get(nb.number) ?? nb.amount)
-              : nb.amount;
-            const amt = String(displayNbAmt);
-            const fs = amt.length >= 6 ? "10" : amt.length >= 5 ? "11" : amt.length >= 4 ? "13" : "15";
-            return (
-              <g key={`nb-${nb.number}`} style={{ pointerEvents: "none" }}>
-                {/* Outer glow ring */}
-                <circle cx={x} cy={y} r={32} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
-                {/* Main body */}
-                <circle cx={x} cy={y} r={28} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
-                {/* Inner decorative ring */}
-                <circle cx={x} cy={y} r={23} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
-                {/* Dashed rim accent — distinct chip pattern */}
-                <circle cx={x} cy={y} r={26} fill="none" stroke="#D9D9D9" strokeWidth="1"
-                  strokeDasharray="3 3" opacity="0.5" />
-                {/* Amount text */}
-                <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
-                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
-                  letterSpacing="0.3">
-                  {amt}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* ── Track focus overlay — dims track only (complete-field-intersections mode) ── */}
-          {focusMode === "complete-field-intersections" && showTrack && (
-            <rect
-              x={trackOverlayX}
-              y={trackOverlayY}
-              width={trackOverlayW}
-              height={trackOverlayH}
-              fill="rgba(0,0,0,0.62)"
-              style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
-            />
-          )}
 
           {/* Winning field — solo color chips: keep as original blue chip */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
