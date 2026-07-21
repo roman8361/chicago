@@ -2197,10 +2197,24 @@ export default function RouletteTable({
   const showReportField  = quizPhase?.kind === "report";
 
   // ── Focus Mode ───────────────────────────────────────────────────────────────
-  // "complete-multiplicity": active on the completes-change question; dims all
-  // field elements except the complete bets themselves.
-  type FocusMode = "none" | "complete-multiplicity";
-  const focusMode: FocusMode = quizPhase?.kind === "completes" ? "complete-multiplicity" : "none";
+  // "complete-multiplicity"       : dims the whole field+track; complete bets
+  //                                 float above with a pulsing cyan glow.
+  // "complete-field-intersections": dims only the track; field + completes stay
+  //                                 at full brightness, no glow/animation.
+  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections";
+  const focusMode: FocusMode =
+    quizPhase?.kind === "completes"             ? "complete-multiplicity" :
+    quizPhase?.kind === "completesIntersection" ? "complete-field-intersections" :
+    "none";
+
+  // Bounding box of the track — used for the track-only focus overlay.
+  // Computed from live trackParams so it follows any user edits to the track geometry.
+  const trackOverlayX = Math.min(trackParams.arcLX1, trackParams.topX[0]);
+  const trackOverlayY = Math.min(trackParams.arcRY[0], trackParams.topY1);
+  const trackOverlayW =
+    Math.max(trackParams.arcRX1, trackParams.topX[trackParams.topX.length - 1]) - trackOverlayX;
+  const trackOverlayH =
+    Math.max(trackParams.arcLY[trackParams.arcLY.length - 1], trackParams.botY2) - trackOverlayY;
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
   const fieldSource = showReportField
     ? initialRoundSnapshot
@@ -2503,6 +2517,18 @@ export default function RouletteTable({
               </g>
             );
           })}
+
+          {/* ── Track focus overlay — dims track only (complete-field-intersections mode) ── */}
+          {focusMode === "complete-field-intersections" && showTrack && (
+            <rect
+              x={trackOverlayX}
+              y={trackOverlayY}
+              width={trackOverlayW}
+              height={trackOverlayH}
+              fill="rgba(0,0,0,0.62)"
+              style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
+            />
+          )}
 
           {/* Winning field — solo color chips: keep as original blue chip */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
