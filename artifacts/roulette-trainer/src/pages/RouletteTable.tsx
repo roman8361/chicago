@@ -1101,11 +1101,11 @@ export default function RouletteTable({
           };
         }
         if (num === 8) {
-          // arcL cell 1 (index 1): raise 15% from previous (0.80 → 0.65)
+          // arcL cell 1 (index 1): raise another 25% of current offset (0.65 → 0.4875)
           const cellH = Math.abs(trackParams.arcLY[2] - trackParams.arcLY[1]);
           pos = {
             x: pos.x,
-            y: trackParams.arcLY[1] + 0.65 * cellH,
+            y: trackParams.arcLY[1] + 0.4875 * cellH,
           };
         }
         if (num === 23) {
