@@ -2338,6 +2338,8 @@ export default function RouletteTable({
           {game && (() => {
             const wz = gridZones.find(z => z.number === game.drawnNumber);
             if (!wz) return null;
+            // Zero with a winning complete uses a compact badge (rendered in pass 2) — skip full-cell polygon here
+            if (game.drawnNumber === 0 && fieldSource?.numberCompleteBets.some(ncb => ncb.number === 0)) return null;
             return (
               <g style={{ pointerEvents: "none" }}>
                 <polygon points={wz.pts}
@@ -2354,6 +2356,40 @@ export default function RouletteTable({
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
             const isWinning = game?.drawnNumber === ncb.number;
+
+            // ── Zero winning complete: compact fixed-size badge (same dimensions as numbers 1–36) ──
+            if (ncb.number === 0 && isWinning) {
+              const COMPLETE_MARKER_SIZE = { width: 48, height: 48 };
+              const bw = COMPLETE_MARKER_SIZE.width;
+              const bh = COMPLETE_MARKER_SIZE.height;
+              const rx = 7;
+              return (
+                <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
+                  {/* Outer glow */}
+                  <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
+                    fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
+                  {/* Badge body — yellow fill, cyan border */}
+                  <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
+                    fill="rgba(255,255,60,0.82)"
+                    stroke="#00D4FF"
+                    strokeWidth="5"
+                    opacity="0.95"
+                    style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.60))" }} />
+                  {/* "C" symbol — centered, fixed size */}
+                  <text x={wz.cx} y={wz.cy}
+                    textAnchor="middle" dominantBaseline="central"
+                    fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                    fill="#D8F4FF"
+                    stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                    opacity="0.92"
+                    style={{ pointerEvents: "none" }}>
+                    C
+                  </text>
+                </g>
+              );
+            }
+
+            // ── Numbers 1–36: existing polygon-based rendering ──
             // Compute cell height from polygon bounding box to size the "C" letter
             const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
             const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
