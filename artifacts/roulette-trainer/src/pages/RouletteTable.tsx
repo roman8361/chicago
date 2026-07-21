@@ -2201,9 +2201,11 @@ export default function RouletteTable({
   //                                 float above with a pulsing cyan glow.
   // "complete-field-intersections": dims only the track; field + completes stay
   //                                 at full brightness, no glow/animation.
-  // "complete-track-intersections": dims field only (same overlay as Q3); complete bets
-  //                                 float above because they render after this overlay.
-  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections" | "dim-complete-bets-only" | "complete-track-intersections";
+  // "complete-track-intersections":        dims field only (same overlay as Q3); complete bets
+  //                                        float above because they render after this overlay.
+  // "winning-number-and-complete-only":    dims entire table (field + track); only the winning
+  //                                        number cell and winning complete float above.
+  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections" | "dim-complete-bets-only" | "complete-track-intersections" | "winning-number-and-complete-only";
   const focusMode: FocusMode =
     quizPhase?.kind === "completes"                    ? "complete-multiplicity" :
     quizPhase?.kind === "completesIntersection"        ? "complete-field-intersections" :
@@ -2211,6 +2213,7 @@ export default function RouletteTable({
     quizPhase?.kind === "trackIntersection"            ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "trackFieldIntersection"       ? "dim-complete-bets-only" :
     quizPhase?.kind === "completeTrackIntersection"    ? "complete-track-intersections" :
+    quizPhase?.kind === "completeNumberPayout"         ? "winning-number-and-complete-only" :
     "none";
 
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
@@ -2798,6 +2801,116 @@ export default function RouletteTable({
                 fill="rgba(0,0,0,0.62)"
                 style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
               />
+            );
+          })()}
+
+          {/* ── Q7 focus overlay — dims entire table (field + track) to all edges.
+               Above it: only the winning number cell and the winning complete are re-drawn.
+               Layer order: overlay → winning number → winning complete highlights + C badge. ── */}
+          {focusMode === "winning-number-and-complete-only" && game && (() => {
+            const drawnNumber = game.drawnNumber;
+            const wz = gridZones.find(z => z.number === drawnNumber);
+            if (!wz) return null;
+
+            // The winning complete is the numberCompleteBet for the drawn number
+            const winningComplete = fieldSource?.numberCompleteBets.find(ncb => ncb.number === drawnNumber);
+
+            // Shared helper: compute badge rect dimensions for zero (same formula used throughout)
+            const getZeroDims = () => {
+              const refZ = gridZones.find(z => z.number === 1);
+              const refPts = refZ?.pts.split(/\s+/) ?? [];
+              const rxs = refPts.map(p => Number(p.split(",")[0])).filter(n => !isNaN(n));
+              const rys = refPts.map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+              return {
+                bw: rxs.length >= 2 ? Math.max(...rxs) - Math.min(...rxs) : 60,
+                bh: rys.length >= 2 ? Math.max(...rys) - Math.min(...rys) : 60,
+                brx: 7,
+              };
+            };
+
+            return (
+              <>
+                {/* 1. Full-screen overlay — covers field and track to every edge */}
+                <rect x={0} y={0} width={BASE_WIDTH} height={BASE_HEIGHT}
+                  fill="rgba(0,0,0,0.62)"
+                  style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
+                />
+
+                {/* 2. Winning number cell — yellow fill.
+                     When drawnNumber=0 and there is a winning complete, the complete
+                     section below renders the yellow badge (same logic as normal render). */}
+                {!(drawnNumber === 0 && winningComplete) && (
+                  <g style={{ pointerEvents: "none" }}>
+                    <polygon points={wz.pts}
+                      fill="rgba(255,255,60,0.55)"
+                      stroke="#FFE500"
+                      strokeWidth="4"
+                      strokeLinejoin="round" />
+                  </g>
+                )}
+
+                {/* 3. Winning complete — re-drawn above overlay at full brightness.
+                     Mirrors the existing pass-1 + pass-2 rendering but filtered to
+                     drawnNumber only, and with no opacity reduction. */}
+                {winningComplete && (() => {
+                  if (drawnNumber === 0) {
+                    const { bw, bh, brx } = getZeroDims();
+                    return (
+                      <g style={{ pointerEvents: "none" }}>
+                        {/* Zero winning+complete: yellow fill + cyan border (pass-1 highlight) */}
+                        <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={brx}
+                          fill="rgba(0, 212, 255, 0.42)"
+                          stroke="#00D4FF"
+                          strokeWidth="3" />
+                        {/* Pass-2 badge: yellow fill + cyan border + C */}
+                        <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={brx + 2}
+                          fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
+                        <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={brx}
+                          fill="rgba(255,255,60,0.82)" stroke="#00D4FF" strokeWidth="5" opacity="0.95" />
+                        <text x={wz.cx} y={wz.cy}
+                          textAnchor="middle" dominantBaseline="central"
+                          fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                          fill="#D8F4FF"
+                          stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                          opacity="0.92"
+                          style={{ pointerEvents: "none" }}>
+                          C
+                        </text>
+                      </g>
+                    );
+                  }
+
+                  // Numbers 1–36: yellow cell already drawn above; add cyan border + C watermark (pass-2)
+                  const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
+                  const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
+                  const cFontSize = Math.round(cellH * 0.85);
+                  return (
+                    <g style={{ pointerEvents: "none" }}>
+                      {/* Cyan fill highlight (pass-1 equivalent — not skipped here because yellow is already painted) */}
+                      <polygon points={wz.pts}
+                        fill="rgba(0, 212, 255, 0.42)"
+                        stroke="#00D4FF"
+                        strokeWidth="3"
+                        strokeLinejoin="round" />
+                      {/* Cyan border + C watermark (pass-2) */}
+                      <polygon points={wz.pts}
+                        fill="none"
+                        stroke="#00D4FF"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        opacity="0.95" />
+                      <text x={wz.cx} y={wz.cy}
+                        textAnchor="middle" dominantBaseline="central"
+                        fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
+                        stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                        opacity="0.72"
+                        style={{ pointerEvents: "none" }}>
+                        C
+                      </text>
+                    </g>
+                  );
+                })()}
+              </>
             );
           })()}
 
