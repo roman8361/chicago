@@ -2201,10 +2201,11 @@ export default function RouletteTable({
   //                                 float above with a pulsing cyan glow.
   // "complete-field-intersections": dims only the track; field + completes stay
   //                                 at full brightness, no glow/animation.
-  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections";
+  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections";
   const focusMode: FocusMode =
     quizPhase?.kind === "completes"             ? "complete-multiplicity" :
     quizPhase?.kind === "completesIntersection" ? "complete-field-intersections" :
+    quizPhase?.kind === "trackIntersection"     ? "track-series-neighbours-intersections" :
     "none";
 
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
@@ -2749,6 +2750,21 @@ export default function RouletteTable({
           })()}
 
           </g>{/* /complete-bets */}
+
+          {/* ── Q3 focus overlay — dims main betting field only; track stays bright.
+               Placed last so it renders above field chips and complete bets.
+               Covers y=0..trackTop only — track elements live at y≥trackTop so are unaffected. ── */}
+          {focusMode === "track-series-neighbours-intersections" && (() => {
+            const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
+            return (
+              <rect
+                x={0} y={0}
+                width={BASE_WIDTH} height={trackTop}
+                fill="rgba(0,0,0,0.62)"
+                style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
+              />
+            );
+          })()}
 
         </svg>
       </div>
