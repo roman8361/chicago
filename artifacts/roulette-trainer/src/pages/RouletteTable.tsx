@@ -605,6 +605,36 @@ function loadDozens(): DozensParams {
   return DEFAULT_DOZENS;
 }
 
+// ── Complete-bet helpers ──────────────────────────────────────────────────────
+
+type CompleteBetsArray = ReturnType<typeof import("@/lib/rulesContext").useRouletteRules>["getAllRules"] extends () => infer R
+  ? R extends { completeBets: infer C } ? C : never
+  : never;
+
+/** All roulette numbers covered by any position of the complete bet centred on `completeNumber`. */
+function getNumbersCoveredByComplete(
+  completeNumber: number,
+  completeBets: { number: number; bets: { straightUp: { numbers: number[] }[]; splits: { numbers: number[] }[]; streets: { numbers: number[] }[]; corners: { numbers: number[] }[]; sixLines: { numbers: number[] }[] } }[],
+): number[] {
+  const rule = completeBets.find(cb => cb.number === completeNumber);
+  if (!rule) return [];
+  const nums = new Set<number>();
+  const { straightUp, splits, streets, corners, sixLines } = rule.bets;
+  for (const pos of [...straightUp, ...splits, ...streets, ...corners, ...sixLines]) {
+    for (const n of pos.numbers) nums.add(n);
+  }
+  return Array.from(nums);
+}
+
+/** True if any bet position of the complete on `completeNumber` covers `winningNumber`. */
+function completeTouchesNumber(
+  completeNumber: number,
+  winningNumber: number,
+  completeBets: Parameters<typeof getNumbersCoveredByComplete>[1],
+): boolean {
+  return getNumbersCoveredByComplete(completeNumber, completeBets).includes(winningNumber);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 interface RouletteTableProps {
   settings: GameSettings;
@@ -1029,8 +1059,55 @@ export default function RouletteTable({
     const currentChipPosMap = buildDynamicPositions(gridParams);
     const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
 
-    // Draw number first so both color and cash generation can guarantee a winning position
-    const drawnNumber = Math.floor(Math.random() * 37);
+    // ── Choose winning number ──────────────────────────────────────────────────
+    // When complete bets are present, guarantee at least one complete intersects
+    // the winning number. Otherwise fall back to a fully random draw.
+    let drawnNumber: number;
+
+    if (numberCompleteBets.length > 0) {
+      const allCompleteBets = getAllRules().completeBets;
+
+      // Randomly decide how many completes will be "winning" (at least 1, up to all)
+      const winningCompleteCount =
+        Math.floor(Math.random() * numberCompleteBets.length) + 1;
+
+      // Shuffle a copy and take the first `winningCompleteCount` entries
+      const shuffled = [...numberCompleteBets].sort(() => Math.random() - 0.5);
+      const winningCompletes = shuffled.slice(0, winningCompleteCount);
+
+      // Collect every number covered by the winning completes
+      const coveredSet = new Set<number>();
+      for (const c of winningCompletes) {
+        for (const n of getNumbersCoveredByComplete(c.number, allCompleteBets)) {
+          coveredSet.add(n);
+        }
+      }
+
+      const coveredArray = Array.from(coveredSet);
+      if (coveredArray.length > 0) {
+        drawnNumber =
+          coveredArray[Math.floor(Math.random() * coveredArray.length)];
+      } else {
+        drawnNumber = Math.floor(Math.random() * 37);
+      }
+
+      // Final safety check: if somehow no complete touches the drawn number,
+      // replace only the drawn number (not the completes).
+      const anyHit = numberCompleteBets.some(c =>
+        completeTouchesNumber(c.number, drawnNumber, allCompleteBets),
+      );
+      if (!anyHit) {
+        const fallback = getNumbersCoveredByComplete(
+          numberCompleteBets[Math.floor(Math.random() * numberCompleteBets.length)].number,
+          allCompleteBets,
+        );
+        if (fallback.length > 0) {
+          drawnNumber = fallback[Math.floor(Math.random() * fallback.length)];
+        }
+      }
+    } else {
+      drawnNumber = Math.floor(Math.random() * 37);
+    }
 
     // Generate color chips using the new number-center algorithm
     const colorNumbersCount = Math.max(0, Math.floor(settings.colorNumbersCount ?? 1));
