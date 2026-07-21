@@ -2756,10 +2756,12 @@ export default function RouletteTable({
                Covers y=0..trackTop only — track elements live at y≥trackTop so are unaffected. ── */}
           {focusMode === "track-series-neighbours-intersections" && (() => {
             const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
+            const INSET = 12;
             return (
               <rect
-                x={0} y={0}
-                width={BASE_WIDTH} height={trackTop}
+                x={INSET} y={INSET}
+                width={BASE_WIDTH - INSET * 2} height={trackTop - INSET * 2}
+                rx={10} ry={10}
                 fill="rgba(0,0,0,0.62)"
                 style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
               />
