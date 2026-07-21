@@ -1908,14 +1908,11 @@ export default function RouletteTable({
     const userAnswer = parseInt(completeNumberPayoutInput || "0", 10) || 0;
     const maxBet = Math.max(1, settings.maxBet);
     const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
+    const chipValue = settings.chipValue ?? 10;
     const rules = getAllRules();
 
-    // positionId → { positionLabel, contributions: Map<completeLabel, playPerUnit> }
-    type PosEntry = { positionLabel: string; contributions: Map<string, number> };
-    const posMap = new Map<string, PosEntry>();
-
-    // Per-complete info for building display lines
-    type CompleteInfo = { label: string; playPerUnit: number; positions: string[] };
+    // Per-complete: count how many bet positions include the winning number
+    type CompleteInfo = { label: string; playPerUnit: number; intersectionCount: number };
     const completesInfo: CompleteInfo[] = [];
 
     const processComplete = (
@@ -1925,27 +1922,18 @@ export default function RouletteTable({
       betsRule: Record<string, Array<{ numbers: number[]; chips: number }>>,
     ) => {
       const { playPerUnit } = calcOneCompleteChange(amount, chipsRequired, maxBet, completeMultiplicity);
-      const winningPositionIds: string[] = [];
-      for (const [categoryKey, { betType, label: catLabel }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
-        const entries = betsRule[categoryKey];
+      let intersectionCount = 0;
+      for (const entries of Object.values(betsRule)) {
         if (!Array.isArray(entries)) continue;
         for (const entry of entries) {
-          if (!Array.isArray(entry.numbers) || !entry.numbers.includes(game.drawnNumber)) continue;
-          const positionId = findPositionId(betType, entry.numbers as number[]);
-          if (!positionId) continue;
-          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
-          const posLabel = `${catLabel} ${sortedNums}`;
-          let posEntry = posMap.get(positionId);
-          if (!posEntry) {
-            posEntry = { positionLabel: posLabel, contributions: new Map() };
-            posMap.set(positionId, posEntry);
+          if (Array.isArray(entry.numbers) && entry.numbers.includes(game.drawnNumber)) {
+            intersectionCount++;
           }
-          // Each complete contributes playPerUnit once per winning position (not ×chips)
-          posEntry.contributions.set(label, (posEntry.contributions.get(label) ?? 0) + playPerUnit);
-          winningPositionIds.push(positionId);
         }
       }
-      completesInfo.push({ label, playPerUnit, positions: winningPositionIds });
+      if (intersectionCount > 0) {
+        completesInfo.push({ label, playPerUnit, intersectionCount });
+      }
     };
 
     if (game.dozenCompleteBet) {
@@ -1962,55 +1950,47 @@ export default function RouletteTable({
       processComplete(`Комплит №${ncb.number}`, ncb.amount, ncb.chipsRequired, completeRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
     }
 
-    // Classify positions: capped (sum > maxBet) vs non-capped
-    const cappedPositions = new Set<string>();
-    for (const [positionId, posEntry] of posMap.entries()) {
-      const total = Array.from(posEntry.contributions.values()).reduce((s, v) => s + v, 0);
-      if (total > maxBet) cappedPositions.add(positionId);
-    }
+    // Field stakes physically on the winning number (straight-up position only)
+    const straightPosId = `su-${game.drawnNumber}`;
+    const colorStack = game.chips.find(c => c.positionId === straightPosId);
+    const colorAmount = colorStack ? colorStack.count * chipValue : 0;
+    const cashStack = game.cashChipStacks.find(c => c.positionId === straightPosId);
+    const cashAmount = cashStack ? cashStack.denomination : 0;
+    const fieldStakeAmount = colorAmount + cashAmount;
 
-    // Build per-complete lines (unique/non-capped positions only)
+    // Build per-complete lines: intersectionCount × playPerUnit
     const lines: CompleteNumberPayoutLine[] = [];
     let correctAnswer = 0;
 
     for (const ci of completesInfo) {
-      const uniquePositions: CompleteNumberPayoutWinningPos[] = [];
-      for (const positionId of ci.positions) {
-        if (cappedPositions.has(positionId)) continue; // handled separately
-        const posEntry = posMap.get(positionId)!;
-        const contribution = posEntry.contributions.get(ci.label) ?? 0;
-        uniquePositions.push({ positionLabel: posEntry.positionLabel, amount: contribution });
-        correctAnswer += contribution;
-      }
+      const contribution = ci.intersectionCount * ci.playPerUnit;
       lines.push({
         label: ci.label,
         playPerUnit: ci.playPerUnit,
-        uniquePositions,
-        uniqueTotal: uniquePositions.reduce((s, p) => s + p.amount, 0),
+        uniquePositions: [{ positionLabel: `${ci.intersectionCount} пересечений × ${ci.playPerUnit}`, amount: contribution }],
+        uniqueTotal: contribution,
       });
+      correctAnswer += contribution;
     }
 
-    // Build capped lines (each counted once at maxBet)
-    const cappedLines: CompleteNumberPayoutCappedLine[] = [];
-    const processedCapped = new Set<string>();
-    for (const positionId of cappedPositions) {
-      if (processedCapped.has(positionId)) continue;
-      processedCapped.add(positionId);
-      const posEntry = posMap.get(positionId)!;
-      const sumPlayPerUnit = Array.from(posEntry.contributions.values()).reduce((s, v) => s + v, 0);
-      cappedLines.push({
-        positionLabel: posEntry.positionLabel,
-        completeLabels: Array.from(posEntry.contributions.keys()),
-        sumPlayPerUnit,
-        cappedAmount: maxBet,
+    // Add field stakes as a separate display line (if any)
+    if (fieldStakeAmount > 0) {
+      lines.push({
+        label: "Ставки на номере",
+        playPerUnit: 0,
+        uniquePositions: [{ positionLabel: `Цвет + кэш на номере ${game.drawnNumber}`, amount: fieldStakeAmount }],
+        uniqueTotal: fieldStakeAmount,
       });
-      correctAnswer += maxBet;
+      correctAnswer += fieldStakeAmount;
     }
+
+    // Capping is not applied in the new formula
+    const cappedLines: CompleteNumberPayoutCappedLine[] = [];
 
     setCompleteNumberPayoutRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines, cappedLines });
     setCompleteNumberPayoutInput("");
     setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
-  }, [game, quizPhase, completeNumberPayoutInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
+  }, [game, quizPhase, completeNumberPayoutInput, activeSeries, settings.maxBet, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Series Field Payout (выигравшие серии → сумма в поле) ───────────────────
   const handleCheckSeriesFieldPayout = useCallback(() => {
