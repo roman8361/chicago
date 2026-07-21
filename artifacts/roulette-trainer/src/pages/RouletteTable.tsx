@@ -2757,10 +2757,11 @@ export default function RouletteTable({
           {focusMode === "track-series-neighbours-intersections" && (() => {
             const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
             const INSET = 12;
+            const fieldH = trackTop - INSET * 2;
             return (
               <rect
                 x={INSET} y={INSET}
-                width={BASE_WIDTH - INSET * 2} height={trackTop - INSET * 2}
+                width={BASE_WIDTH - INSET * 2} height={fieldH * 0.95}
                 rx={10} ry={10}
                 fill="rgba(0,0,0,0.62)"
                 style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
