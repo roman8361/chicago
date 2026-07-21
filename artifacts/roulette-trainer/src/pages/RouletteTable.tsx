@@ -2761,7 +2761,7 @@ export default function RouletteTable({
             return (
               <rect
                 x={0} y={0}
-                width={BASE_WIDTH} height={fieldH * 0.97}
+                width={BASE_WIDTH} height={fieldH * 0.99}
                 rx={0} ry={0}
                 fill="rgba(0,0,0,0.62)"
                 style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
