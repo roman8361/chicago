@@ -2458,12 +2458,14 @@ export default function RouletteTable({
 
           {/* ── Track focus overlay — darkens entire track area uniformly; same mechanism as complete-multiplicity ── */}
           {focusMode === "complete-field-intersections" && (() => {
-            const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
-            const shift = BASE_HEIGHT * 0.03;
+            const trackTop    = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
+            const trackBottom = Math.max(trackParams.botY2, trackParams.arcLY[3]) + 10;
+            const height      = trackBottom - trackTop;   // true track height, not SVG bottom
+            const shift       = BASE_HEIGHT * 0.03;       // 3% shift applied to both boundaries
             return (
               <rect
                 x={0} y={trackTop - shift}
-                width={BASE_WIDTH} height={BASE_HEIGHT - trackTop}
+                width={BASE_WIDTH} height={height}
                 fill="rgba(0,0,0,0.62)"
                 style={{ pointerEvents: "none", transition: "opacity 200ms ease" }}
               />
