@@ -2201,13 +2201,16 @@ export default function RouletteTable({
   //                                 float above with a pulsing cyan glow.
   // "complete-field-intersections": dims only the track; field + completes stay
   //                                 at full brightness, no glow/animation.
-  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections" | "dim-complete-bets-only";
+  // "complete-track-intersections": dims field only (same overlay as Q3); complete bets
+  //                                 float above because they render after this overlay.
+  type FocusMode = "none" | "complete-multiplicity" | "complete-field-intersections" | "track-series-neighbours-intersections" | "dim-complete-bets-only" | "complete-track-intersections";
   const focusMode: FocusMode =
-    quizPhase?.kind === "completes"                 ? "complete-multiplicity" :
-    quizPhase?.kind === "completesIntersection"     ? "complete-field-intersections" :
-    quizPhase?.kind === "series"                    ? "track-series-neighbours-intersections" :
-    quizPhase?.kind === "trackIntersection"         ? "track-series-neighbours-intersections" :
-    quizPhase?.kind === "trackFieldIntersection"    ? "dim-complete-bets-only" :
+    quizPhase?.kind === "completes"                    ? "complete-multiplicity" :
+    quizPhase?.kind === "completesIntersection"        ? "complete-field-intersections" :
+    quizPhase?.kind === "series"                       ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "trackIntersection"            ? "track-series-neighbours-intersections" :
+    quizPhase?.kind === "trackFieldIntersection"       ? "dim-complete-bets-only" :
+    quizPhase?.kind === "completeTrackIntersection"    ? "complete-track-intersections" :
     "none";
 
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
@@ -2613,6 +2616,25 @@ export default function RouletteTable({
               style={{ pointerEvents: "none", transition: "opacity 200ms ease" }}
             />
           )}
+
+          {/* ── Q6 focus overlay — dims main field only; same geometry as Q3 overlay.
+               Placed immediately before the complete bets group so those bets render
+               above it (higher z-order) without any duplication. Track stays bright
+               because the rect only covers y=0..trackTop. ── */}
+          {focusMode === "complete-track-intersections" && (() => {
+            const trackTop = Math.min(trackParams.topY1, trackParams.arcRY[0]) - 10;
+            const BOTTOM_INSET = 24;
+            const fieldH = trackTop - BOTTOM_INSET;
+            return (
+              <rect
+                x={0} y={0}
+                width={BASE_WIDTH} height={fieldH * 0.99}
+                rx={0} ry={0}
+                fill="rgba(0,0,0,0.62)"
+                style={{ pointerEvents: "none", transition: "opacity 180ms ease" }}
+              />
+            );
+          })()}
 
           {/* ── Complete bets — rendered above the focus overlay ── */}
           <g
