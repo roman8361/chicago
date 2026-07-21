@@ -2195,6 +2195,16 @@ export default function RouletteTable({
 
   const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
   const showReportField  = quizPhase?.kind === "report";
+
+  // ── Focus Mode ───────────────────────────────────────────────────────────────
+  // "complete-multiplicity": active on the completes-change question; dims all
+  // field elements except the complete bets themselves.
+  type FocusMode = "none" | "complete-multiplicity";
+  const focusMode: FocusMode = quizPhase?.kind === "completes" ? "complete-multiplicity" : "none";
+  const dimStyle: React.CSSProperties =
+    focusMode === "complete-multiplicity"
+      ? { opacity: 0.35, transition: "opacity 180ms ease" }
+      : { opacity: 1,    transition: "opacity 180ms ease" };
   // In report mode use the immutable snapshot; otherwise use live game (hidden when winning field active)
   const fieldSource = showReportField
     ? initialRoundSnapshot
@@ -2410,6 +2420,7 @@ export default function RouletteTable({
           })}
 
           {/* Winning number highlight */}
+          <g style={dimStyle}>
           {game && (() => {
             const wz = gridZones.find(z => z.number === game.drawnNumber);
             if (!wz) return null;
@@ -2425,6 +2436,7 @@ export default function RouletteTable({
               </g>
             );
           })()}
+          </g>
 
           {/* Number complete — pass 2 (after winning yellow): cyan border for winning+complete, then "C" for all */}
           {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
@@ -2502,6 +2514,7 @@ export default function RouletteTable({
           })}
 
           {/* Chips */}
+          <g style={dimStyle}>
           {fieldSource && fieldSource.chips.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
@@ -2518,8 +2531,10 @@ export default function RouletteTable({
               </g>
             );
           })}
+          </g>
 
           {/* Cash chips — round, slightly larger than color chips */}
+          <g style={dimStyle}>
           {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
@@ -2548,6 +2563,7 @@ export default function RouletteTable({
               </g>
             );
           })}
+          </g>
 
           {/* Dozen complete badge — cyan rectangle with "C" watermark letter, no amount shown */}
           {fieldSource?.dozenCompleteBet && (() => {
@@ -2581,6 +2597,7 @@ export default function RouletteTable({
           {/* Number complete chips — replaced by pink highlight + "C" label above */}
 
           {/* Track series chips — Chicago-1932 copper/silver cash-chip style, 70% of previous size (r≈40) */}
+          <g style={dimStyle}>
           {fieldSource && fieldSource.trackBets.map(tb => {
             const { x, y } = tb.position;
             const amt = String(showReportField ? tb.amount : (seriesDisplayAmounts?.get(tb.type) ?? tb.amount));
@@ -2607,8 +2624,10 @@ export default function RouletteTable({
               </g>
             );
           })}
+          </g>
 
           {/* Neighbours ("Соседи номера") cash chips — Chicago-1932 copper/silver style */}
+          <g style={dimStyle}>
           {fieldSource && fieldSource.neighboursBets.map(nb => {
             const { x, y } = nb.position;
             const displayNbAmt = (!showReportField && settings.showBetBeforeChange && acceptedNeighboursAmounts !== null)
@@ -2637,6 +2656,7 @@ export default function RouletteTable({
               </g>
             );
           })}
+          </g>
 
           {/* Winning field — solo color chips: keep as original blue chip */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
