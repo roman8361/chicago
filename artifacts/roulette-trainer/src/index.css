@@ -414,15 +414,15 @@
   opacity: 0.7;
 }
 
-/* Remove spinner arrows from number inputs — Chrome, Edge, Safari */
-.settings-input[type="number"]::-webkit-outer-spin-button,
-.settings-input[type="number"]::-webkit-inner-spin-button {
+/* Remove spinner arrows from all number inputs app-wide — Chrome, Edge, Safari */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Remove spinner arrows from number inputs — Firefox */
-.settings-input[type="number"] {
+/* Remove spinner arrows from all number inputs app-wide — Firefox */
+input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
