@@ -3249,7 +3249,7 @@ export default function RouletteTable({
             <div className={showReportField ? "quiz-report quiz-report--panel" : "quiz-report"}>
               {completesRecord && (
                 <div className={`quiz-report-item ${completesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">1. Сдача с кратности приема ставок «комплит».</div>
+                  <div className="quiz-report-name">1. Посчитайте сдачу с кратности приема ставок «комплит».</div>
                   {completesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3279,7 +3279,7 @@ export default function RouletteTable({
               )}
               {intersectionRecord && (
                 <div className={`quiz-report-item ${intersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">2. Сдача с пересечений ставок «комплит» со ставками на поле, без учета трека.</div>
+                  <div className="quiz-report-name">2. Посчитайте сдачу с пересечений ставок «комплит» со ставками на поле, без учета трека.</div>
                   {intersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3325,7 +3325,7 @@ export default function RouletteTable({
               )}
               {seriesRecord && (
                 <div className={`quiz-report-item ${seriesRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{seriesBaseNum}. Общая сдача с кратности приема серий.</div>
+                  <div className="quiz-report-name">{seriesBaseNum}. Посчитайте общую сдачу с кратности приема серий.</div>
                   {seriesRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3359,7 +3359,7 @@ export default function RouletteTable({
               )}
               {trackIntersectionRecord && (
                 <div className={`quiz-report-item ${trackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{trackIntQuestionNum}. Сдача с пересечений на треке серий и ставок «соседи номера».</div>
+                  <div className="quiz-report-name">{trackIntQuestionNum}. Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.</div>
                   {trackIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3396,7 +3396,7 @@ export default function RouletteTable({
               )}
               {trackFieldIntersectionRecord && (
                 <div className={`quiz-report-item ${trackFieldIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{trackFieldIntQuestionNum}. Сдача с пересечений трека со ставками на поле.</div>
+                  <div className="quiz-report-name">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле, без учета ставок «комплит».</div>
                   {trackFieldIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3432,7 +3432,7 @@ export default function RouletteTable({
               )}
               {completeTrackIntersectionRecord && (
                 <div className={`quiz-report-item ${completeTrackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{completeTrackIntQuestionNum}. Сдача с пересечений ставок «комплит» со ставками на треке.</div>
+                  <div className="quiz-report-name">{completeTrackIntQuestionNum}. Посчитайте сдачу с пересечений ставок «комплит» со ставками на треке.</div>
                   {completeTrackIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
@@ -3606,7 +3606,7 @@ export default function RouletteTable({
 
               {fieldRecord && (
                 <div className={`quiz-report-item ${fieldRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{fieldQuestionNum}. Общая сумма выплаты.</div>
+                  <div className="quiz-report-name">{fieldQuestionNum}. Посчитайте общую сумму выплаты.</div>
                   {fieldRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
