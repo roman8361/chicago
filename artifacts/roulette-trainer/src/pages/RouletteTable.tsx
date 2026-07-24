@@ -1533,6 +1533,24 @@ export default function RouletteTable({
       }
     }
 
+    // --- Standalone color / cash positions (not part of any complete) ---
+    // Include every field position that has color chips or cash, even when it
+    // has no complete contribution. Track positions are excluded because
+    // game.chips / game.cashChipStacks only hold field bets.
+    for (const positionId of new Set([...chipCountByPos.keys(), ...cashByPos.keys()])) {
+      if (posMap.has(positionId)) continue; // already seeded by a complete
+      const betPos = BET_POSITIONS_MAP.get(positionId);
+      if (!betPos) continue;
+      const limitMultiplier = BET_COVER_COUNT[betPos.type];
+      const typeLabel: Record<string, string> = {
+        straight: "Straight Up", split: "Split", street: "Street",
+        corner: "Corner", sixline: "Six-Line",
+      };
+      const sortedNums = [...betPos.numbers].sort((a, b) => a - b).join("-");
+      const betLabel = `${typeLabel[betPos.type] ?? betPos.type} ${sortedNums}`;
+      ensurePos(positionId, limitMultiplier, betLabel);
+    }
+
     // --- Collect lines with limit overflows ---
     const lines: IntersectionLineSummary[] = [];
     for (const [positionId, acc] of posMap.entries()) {
@@ -3291,7 +3309,7 @@ export default function RouletteTable({
                       <div className="quiz-report-detail">Ваш ответ: {intersectionRecord.userAnswer}</div>
                       <div className="quiz-report-detail">Правильный ответ: {intersectionRecord.correctAnswer}</div>
                       {intersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                        <div className="quiz-report-calc">Превышений лимитов по позициям основного поля не найдено — сдачи нет.</div>
                       ) : (
                         <div className="quiz-report-calc">
                           {intersectionRecord.lines.map((line, li) => (
