@@ -108,6 +108,8 @@ interface IntersectionQuizRecord {
 
 interface TrackIntersectionLineSummary {
   label: string;
+  typeLabel: string;        // "Straight Up" | "Split" | "Street" | "Corner" | "Six-Line"
+  limitMultiplier: number;  // 1 | 2 | 3 | 4 | 6
   positionLimit: number;
   contributions: Array<{ source: string; amount: number }>;
   totalAmount: number;
@@ -1593,33 +1595,54 @@ export default function RouletteTable({
     const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const rules = getAllRules();
 
-    // positionId → { betLabel, limitMultiplier, contributions: source → amount }
-    type PosEntry = { betLabel: string; limitMultiplier: number; contributions: Map<string, number> };
+    // positionId → { betLabel, typeLabel, limitMultiplier, contributions: source → amount }
+    // typeLabel is the display name for this position type (e.g. "Split", "Straight Up").
+    type PosEntry = {
+      betLabel: string;
+      typeLabel: string;
+      limitMultiplier: number;
+      contributions: Map<string, number>;
+    };
     const posMap = new Map<string, PosEntry>();
 
     const addContrib = (
-      positionId: string, limitMultiplier: number, betLabel: string, source: string, amount: number,
+      positionId: string,
+      limitMultiplier: number,
+      betLabel: string,
+      typeLabel: string,
+      source: string,
+      amount: number,
     ) => {
       let entry = posMap.get(positionId);
       if (!entry) {
-        entry = { betLabel, limitMultiplier, contributions: new Map() };
+        entry = { betLabel, typeLabel, limitMultiplier, contributions: new Map() };
         posMap.set(positionId, entry);
       }
+      // Accumulate per-source contribution (handles multiple neighbours covering
+      // the same number, and multiple series covering the same position).
       entry.contributions.set(source, (entry.contributions.get(source) ?? 0) + amount);
     };
 
     // --- Neighbours: expand each bet into 5 straight-up positions ---
+    // Each NeighboursBet covers 5 numbers; every number gets baseAmount as its
+    // Straight contribution. Identical Straight positions from different
+    // neighbours bets accumulate in the same posMap entry.
     const neighboursMap = rules.neighbours as Record<string, number[]>;
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
       if (!Array.isArray(nums)) continue;
-      const sourceLabel = `Соседи ${nb.number}`;
+      const sourceLabel = `Соседи №${nb.number}`;
       for (const n of nums) {
-        addContrib(`su-${n}`, 1, `Straight Up ${n}`, sourceLabel, nb.baseAmount);
+        addContrib(`su-${n}`, BET_COVER_COUNT.straight, `Straight Up ${n}`, "Straight Up", sourceLabel, nb.baseAmount);
       }
     }
 
-    // --- Series: expand each active bet using trackBets[type].bets ---
+    // --- Series: expand each active series into its individual bet positions ---
+    // playPerUnit is the accepted amount per one unit of the series.
+    // Each position in the series gets: playPerUnit × chips_for_that_position.
+    // Positions shared between multiple series (e.g. Split 12-15 in both
+    // Serie 0/2/3 and Zero Spiel) are identified by the canonical positionId
+    // from ALL_BET_POSITIONS and their contributions are summed.
     for (const tb of activeSeries) {
       const trackRule = (rules.trackBets as Record<string, { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
       if (!trackRule) continue;
@@ -1628,19 +1651,22 @@ export default function RouletteTable({
       for (const [catKey, entries] of Object.entries(trackRule.bets)) {
         const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
         if (!catInfo || !Array.isArray(entries)) continue;
-        const limitMult = catInfo.limitMultiplier;
         for (const entry of entries) {
           if (!Array.isArray(entry.numbers) || typeof entry.chips !== "number") continue;
+          // Normalize: findPositionId sorts numbers internally, so [15,12] and [12,15]
+          // both resolve to the same canonical position id (sp-h-12).
           const positionId = findPositionId(catInfo.betType, entry.numbers);
           if (!positionId) continue;
           const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
           const betLabel = `${catInfo.label} ${sortedNums}`;
-          addContrib(positionId, limitMult, betLabel, tb.label, playPerUnit * entry.chips);
+          addContrib(positionId, catInfo.limitMultiplier, betLabel, catInfo.label, tb.label, playPerUnit * entry.chips);
         }
       }
     }
 
-    // --- Collect positions with limit overflow ---
+    // --- Collect positions where the combined total exceeds the limit ---
+    // Only track-source contributions (series + neighbours) are summed here.
+    // Field bets (color chips, cash, completes) are excluded per spec.
     const lines: TrackIntersectionLineSummary[] = [];
     for (const acc of posMap.values()) {
       const totalAmount = Array.from(acc.contributions.values()).reduce((s, v) => s + v, 0);
@@ -1648,8 +1674,12 @@ export default function RouletteTable({
       if (totalAmount > positionLimit) {
         lines.push({
           label: acc.betLabel,
+          typeLabel: acc.typeLabel,
+          limitMultiplier: acc.limitMultiplier,
           positionLimit,
-          contributions: Array.from(acc.contributions.entries()).map(([source, amount]) => ({ source, amount })),
+          contributions: Array.from(acc.contributions.entries())
+            .map(([source, amount]) => ({ source, amount }))
+            .sort((a, b) => a.source.localeCompare(b.source)),
           totalAmount,
           change: totalAmount - positionLimit,
         });
@@ -3389,18 +3419,18 @@ export default function RouletteTable({
                       <div className="quiz-report-detail">Ваш ответ: {trackIntersectionRecord.userAnswer}</div>
                       <div className="quiz-report-detail">Правильный ответ: {trackIntersectionRecord.correctAnswer}</div>
                       {trackIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                        <div className="quiz-report-calc">Превышений лимитов по позициям трека не найдено — сдачи нет.</div>
                       ) : (
                         <div className="quiz-report-calc">
                           {trackIntersectionRecord.lines.map((line, li) => (
                             <div key={li} style={{ marginBottom: 8 }}>
                               <strong>{line.label}</strong><br/>
-                              Лимит: {line.positionLimit}<br/>
                               {line.contributions.map(c => (
                                 <span key={c.source}>{c.source}: {c.amount}<br/></span>
                               ))}
-                              Итого: {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                              Общая ставка: {line.totalAmount}<br/>
+                              Лимит {line.typeLabel} (×{line.limitMultiplier}): {line.positionLimit}<br/>
+                              Сдача: {line.change}
                             </div>
                           ))}
                           <div className="quiz-report-total">
