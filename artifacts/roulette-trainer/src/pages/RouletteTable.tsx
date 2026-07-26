@@ -3190,7 +3190,7 @@ export default function RouletteTable({
             {quizPhase.kind === "trackFieldIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле, без учета ставок «комплит».</span>
+                  <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -3469,7 +3469,7 @@ export default function RouletteTable({
               )}
               {trackFieldIntersectionRecord && (
                 <div className={`quiz-report-item ${trackFieldIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле, без учета ставок «комплит».</div>
+                  <div className="quiz-report-name">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле.</div>
                   {trackFieldIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
