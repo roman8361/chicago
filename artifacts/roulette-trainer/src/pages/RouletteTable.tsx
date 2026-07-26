@@ -1797,14 +1797,8 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setTrackFieldIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setTrackFieldIntersectionInput("");
-    // Complete × track intersection question comes next when the round has at
-    // least one complete bet; otherwise skip straight to the payout phase.
-    const hasCompletesNow = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
-    if (hasCompletesNow) {
-      setQuizPhase({ kind: "completeTrackIntersection" });
-    } else {
-      setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
-    }
+    // completeTrackIntersection question is excluded from the exam.
+    setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
   }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, getAllRules]);
 
   // ── Complete × Track Intersection (комплиты × ставки трека) ─────────────────
@@ -2322,10 +2316,10 @@ export default function RouletteTable({
   const trackIntQuestionNum = seriesBaseNum + (activeSeries.length > 0 ? 1 : 0);
   const trackFieldIntQuestionNum = trackIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
   const completeTrackIntQuestionNum = trackFieldIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
-  const completeNumberPayoutQuestionNum = completeTrackIntQuestionNum + (hasCompleteTrackQuestion ? 1 : 0);
+  const completeNumberPayoutQuestionNum = completeTrackIntQuestionNum; // completeTrackIntersection question excluded
   const seriesFieldPayoutQuestionNum = completeNumberPayoutQuestionNum + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (hasCompleteTrackQuestion ? 1 : 0) + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1;
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 2 : 0) + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1; // completeTrackIntersection question excluded
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
@@ -3161,27 +3155,6 @@ export default function RouletteTable({
               </div>
             )}
 
-            {/* Complete × Track intersection question */}
-            {quizPhase.kind === "completeTrackIntersection" && (
-              <div className="game-answer-area">
-                <div className="quiz-series-header">
-                  <span className="quiz-series-title">{completeTrackIntQuestionNum}. Посчитайте сдачу с пересечений ставок «комплит» со ставками на треке.</span>
-                  <span className="quiz-series-sub">Общая сдача</span>
-                </div>
-                <input
-                  type="number"
-                  className="game-answer-input"
-                  placeholder="Общая сдача"
-                  value={completeTrackIntersectionInput}
-                  min="0"
-                  onKeyDown={e => { if (e.key === "-") e.preventDefault(); if (e.key === "Enter") handleCheckCompleteTrackIntersection(); }}
-                  onChange={e => { const v = e.target.value; setCompleteTrackIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
-                  autoFocus
-                />
-                <button className="game-check-btn" onClick={handleCheckCompleteTrackIntersection}>Проверить</button>
-              </div>
-            )}
-
             {/* Complete number payout question */}
             {quizPhase.kind === "completeNumberPayout" && (
               <div className="game-answer-area">
@@ -3471,42 +3444,6 @@ export default function RouletteTable({
                           ))}
                           <div className="quiz-report-total">
                             Итого сдача: {trackFieldIntersectionRecord.lines.map(l => l.change).join(" + ")} = {trackFieldIntersectionRecord.correctAnswer}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              {completeTrackIntersectionRecord && (
-                <div className={`quiz-report-item ${completeTrackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{completeTrackIntQuestionNum}. Посчитайте сдачу с пересечений ставок «комплит» со ставками на треке.</div>
-                  {completeTrackIntersectionRecord.correct ? (
-                    <>
-                      <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
-                      <div className="quiz-report-detail">Ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="quiz-report-verdict quiz-err">❌ Неверно</div>
-                      <div className="quiz-report-detail">Ваш ответ: {completeTrackIntersectionRecord.userAnswer}</div>
-                      <div className="quiz-report-detail">Правильный ответ: {completeTrackIntersectionRecord.correctAnswer}</div>
-                      {completeTrackIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений комплитов со ставками трека не найдено — сдачи нет.</div>
-                      ) : (
-                        <div className="quiz-report-calc">
-                          {completeTrackIntersectionRecord.lines.map((line, li) => (
-                            <div key={li} style={{ marginBottom: 8 }}>
-                              <strong>{line.label}</strong><br/>
-                              Лимит: {line.positionLimit}<br/>
-                              Комплиты: {line.completeAmount}<br/>
-                              Ставки трека: {line.effectiveTrackAmount}<br/>
-                              Итого: {line.completeAmount} + {line.effectiveTrackAmount} = {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
-                            </div>
-                          ))}
-                          <div className="quiz-report-total">
-                            Итого сдача: {completeTrackIntersectionRecord.lines.map(l => l.change).join(" + ")} = {completeTrackIntersectionRecord.correctAnswer}
                           </div>
                         </div>
                       )}
