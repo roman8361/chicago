@@ -157,31 +157,28 @@ interface CompleteTrackIntersectionQuizRecord {
   lines: CompleteTrackIntersectionLineSummary[];
 }
 
+interface CompleteNumberPayoutContrib {
+  completeLabel: string;
+  playPerUnit: number;
+  stakeOnPos: number;  // playPerUnit × limitMultiplier
+}
+
 interface CompleteNumberPayoutWinningPos {
   positionLabel: string;
-  amount: number; // playPerUnit for this touch
-}
-
-interface CompleteNumberPayoutLine {
-  label: string;        // "Комплит №4" / "Комплит дюжины"
-  playPerUnit: number;
-  uniquePositions: CompleteNumberPayoutWinningPos[]; // non-capped winning positions only
-  uniqueTotal: number;
-}
-
-interface CompleteNumberPayoutCappedLine {
-  positionLabel: string;
-  completeLabels: string[];  // which completes share this position
-  sumPlayPerUnit: number;    // combined (exceeds maxBet)
-  cappedAmount: number;      // = maxBet
+  limitMultiplier: number;
+  contributions: CompleteNumberPayoutContrib[];
+  totalStake: number;
+  positionLimit: number;
+  atMax: boolean;                // totalStake >= positionLimit
+  contributionToAnswer: number;  // maxBet if atMax, else sum of playPerUnit
 }
 
 interface CompleteNumberPayoutQuizRecord {
   userAnswer: number;
   correctAnswer: number;
   correct: boolean;
-  lines: CompleteNumberPayoutLine[];           // per-complete, unique (non-capped) positions
-  cappedLines: CompleteNumberPayoutCappedLine[]; // positions capped by multi-complete intersection
+  drawnNumber: number;
+  winningPositions: CompleteNumberPayoutWinningPos[];
 }
 
 interface SeriesFieldPayoutLineSummary {
@@ -1849,8 +1846,28 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setTrackFieldIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setTrackFieldIntersectionInput("");
-    // completeTrackIntersection question is excluded from the exam.
-    setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
+    // completeTrackIntersection question is excluded. Go to completeNumberPayout
+    // when at least one complete position covers the winning number; otherwise skip.
+    const anyCompleteWonNow = (() => {
+      if (game.dozenCompleteBet) {
+        const dozenNum = game.dozenCompleteBet.dozen === "1ST_12" ? 1 : game.dozenCompleteBet.dozen === "2ND_12" ? 2 : 3;
+        const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }> })?.dozens?.find(d => d.dozen === dozenNum);
+        if (dozenRule) {
+          for (const entries of Object.values(dozenRule.bets)) {
+            if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
+          }
+        }
+      }
+      for (const ncb of game.numberCompleteBets) {
+        const cr = (rules.completeBets as Array<{ number: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)?.find(cb => cb.number === ncb.number);
+        if (!cr) continue;
+        for (const entries of Object.values(cr.bets)) {
+          if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
+        }
+      }
+      return false;
+    })();
+    setQuizPhase(anyCompleteWonNow ? { kind: "completeNumberPayout" } : decidePostTrackFieldPhase(game, activeSeries, rules));
   }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Complete × Track Intersection (комплиты × ставки трека) ─────────────────
@@ -2002,89 +2019,88 @@ export default function RouletteTable({
     const userAnswer = parseInt(completeNumberPayoutInput || "0", 10) || 0;
     const maxBet = Math.max(1, settings.maxBet);
     const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
-    const chipValue = settings.chipValue ?? 10;
     const rules = getAllRules();
+    const drawnNumber = game.drawnNumber;
 
-    // Per-complete: count how many bet positions include the winning number
-    type CompleteInfo = { label: string; playPerUnit: number; intersectionCount: number };
-    const completesInfo: CompleteInfo[] = [];
+    // positionId → accumulated contributions from all completes
+    type PosAcc = {
+      positionLabel: string;
+      limitMultiplier: number;
+      contributions: Array<{ completeLabel: string; playPerUnit: number; stakeOnPos: number }>;
+      totalStake: number;
+    };
+    const posMap = new Map<string, PosAcc>();
 
-    const processComplete = (
-      label: string,
+    const addCompleteWinningPositions = (
+      completeLabel: string,
       amount: number,
       chipsRequired: number,
       betsRule: Record<string, Array<{ numbers: number[]; chips: number }>>,
     ) => {
       const { playPerUnit } = calcOneCompleteChange(amount, chipsRequired, maxBet, completeMultiplicity);
-      let intersectionCount = 0;
-      for (const entries of Object.values(betsRule)) {
-        if (!Array.isArray(entries)) continue;
+      if (playPerUnit <= 0) return;
+      for (const [catKey, entries] of Object.entries(betsRule)) {
+        const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
+        if (!catInfo || !Array.isArray(entries)) continue;
         for (const entry of entries) {
-          if (Array.isArray(entry.numbers) && entry.numbers.includes(game.drawnNumber)) {
-            intersectionCount++;
+          if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+          const positionId = findPositionId(catInfo.betType, entry.numbers);
+          if (!positionId) continue;
+          const sortedNums = [...entry.numbers].sort((a, b) => a - b).join("-");
+          const positionLabel = `${catInfo.label} ${sortedNums}`;
+          const limitMultiplier = catInfo.limitMultiplier;
+          const stakeOnPos = playPerUnit * limitMultiplier;
+          let acc = posMap.get(positionId);
+          if (!acc) {
+            acc = { positionLabel, limitMultiplier, contributions: [], totalStake: 0 };
+            posMap.set(positionId, acc);
           }
+          acc.contributions.push({ completeLabel, playPerUnit, stakeOnPos });
+          acc.totalStake += stakeOnPos;
         }
-      }
-      if (intersectionCount > 0) {
-        completesInfo.push({ label, playPerUnit, intersectionCount });
       }
     };
 
+    // Dozen complete
     if (game.dozenCompleteBet) {
       const { amount, dozen } = game.dozenCompleteBet;
       const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
-      const dozenRule = rules.dozenComplete.dozens.find(d => d.dozen === dozenNum);
-      if (dozenRule) {
-        processComplete("Комплит дюжины", amount, dozenRule.chipsRequired, dozenRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
-      }
+      const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }> }).dozens.find(d => d.dozen === dozenNum);
+      if (dozenRule) addCompleteWinningPositions("Комплит дюжины", amount, dozenRule.chipsRequired, dozenRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
     }
+
+    // Number completes
     for (const ncb of game.numberCompleteBets) {
-      const completeRule = rules.completeBets.find(cb => cb.number === ncb.number);
+      const completeRule = (rules.completeBets as Array<{ number: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>).find(cb => cb.number === ncb.number);
       if (!completeRule) continue;
-      processComplete(`Комплит №${ncb.number}`, ncb.amount, ncb.chipsRequired, completeRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
+      addCompleteWinningPositions(`Комплит №${ncb.number}`, ncb.amount, ncb.chipsRequired, completeRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>);
     }
 
-    // Field stakes physically on the winning number (straight-up position only)
-    const straightPosId = `su-${game.drawnNumber}`;
-    const colorStack = game.chips.find(c => c.positionId === straightPosId);
-    const colorAmount = colorStack ? colorStack.count * chipValue : 0;
-    const cashStack = game.cashChipStacks.find(c => c.positionId === straightPosId);
-    const cashAmount = cashStack ? cashStack.denomination : 0;
-    const fieldStakeAmount = colorAmount + cashAmount;
-
-    // Build per-complete lines: intersectionCount × playPerUnit
-    const lines: CompleteNumberPayoutLine[] = [];
+    // Build final winning positions with limit check
+    const winningPositions: CompleteNumberPayoutWinningPos[] = [];
     let correctAnswer = 0;
-
-    for (const ci of completesInfo) {
-      const contribution = ci.intersectionCount * ci.playPerUnit;
-      lines.push({
-        label: ci.label,
-        playPerUnit: ci.playPerUnit,
-        uniquePositions: [{ positionLabel: `${ci.intersectionCount} пересечений × ${ci.playPerUnit}`, amount: contribution }],
-        uniqueTotal: contribution,
+    for (const acc of posMap.values()) {
+      const positionLimit = maxBet * acc.limitMultiplier;
+      const atMax = acc.totalStake >= positionLimit;
+      const contributionToAnswer = atMax
+        ? maxBet
+        : acc.contributions.reduce((s, c) => s + c.playPerUnit, 0);
+      winningPositions.push({
+        positionLabel: acc.positionLabel,
+        limitMultiplier: acc.limitMultiplier,
+        contributions: acc.contributions,
+        totalStake: acc.totalStake,
+        positionLimit,
+        atMax,
+        contributionToAnswer,
       });
-      correctAnswer += contribution;
+      correctAnswer += contributionToAnswer;
     }
 
-    // Add field stakes as a separate display line (if any)
-    if (fieldStakeAmount > 0) {
-      lines.push({
-        label: "Ставки на номере",
-        playPerUnit: 0,
-        uniquePositions: [{ positionLabel: `Цвет + кэш на номере ${game.drawnNumber}`, amount: fieldStakeAmount }],
-        uniqueTotal: fieldStakeAmount,
-      });
-      correctAnswer += fieldStakeAmount;
-    }
-
-    // Capping is not applied in the new formula
-    const cappedLines: CompleteNumberPayoutCappedLine[] = [];
-
-    setCompleteNumberPayoutRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines, cappedLines });
+    setCompleteNumberPayoutRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, drawnNumber, winningPositions });
     setCompleteNumberPayoutInput("");
     setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
-  }, [game, quizPhase, completeNumberPayoutInput, activeSeries, settings.maxBet, settings.completeMultiplicity, settings.chipValue, getAllRules]);
+  }, [game, quizPhase, completeNumberPayoutInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
 
   // ── Series Field Payout (выигравшие серии → сумма в поле) ───────────────────
   const handleCheckSeriesFieldPayout = useCallback(() => {
@@ -3519,41 +3535,33 @@ export default function RouletteTable({
                       <div className="quiz-report-detail">Ваш ответ: {completeNumberPayoutRecord.userAnswer}</div>
                       <div className="quiz-report-detail">Правильный ответ: {completeNumberPayoutRecord.correctAnswer}</div>
                       <div className="quiz-report-calc">
-                        {completeNumberPayoutRecord.lines.map((line, li) => (
-                          <div key={li} style={{ marginBottom: 8 }}>
-                            <strong>{line.label}</strong> (играет по {line.playPerUnit})<br/>
-                            {line.uniquePositions.length === 0 ? (
-                              <span>Касаний нет (все позиции ограничены максимумом)<br/></span>
-                            ) : (
-                              line.uniquePositions.map((pos, pi) => (
-                                <span key={pi}>{pos.positionLabel} → {pos.amount}<br/></span>
-                              ))
-                            )}
-                            {line.uniquePositions.length > 0 && (
-                              <>Итого: {line.uniqueTotal}<br/></>
-                            )}
-                          </div>
-                        ))}
-                        {completeNumberPayoutRecord.cappedLines.length > 0 && (
-                          <>
-                            <div style={{ marginTop: 8, marginBottom: 4 }}><strong>Позиции, ограниченные максимумом (пересечение комплитов):</strong></div>
-                            {completeNumberPayoutRecord.cappedLines.map((cl, ci) => (
-                              <div key={ci} style={{ marginBottom: 6 }}>
-                                {cl.positionLabel} — {cl.completeLabels.join(" + ")} = {cl.sumPlayPerUnit} &gt; максимум {cl.cappedAmount}<br/>
-                                → используем {cl.cappedAmount}
-                              </div>
-                            ))}
-                          </>
-                        )}
-                        {completeNumberPayoutRecord.lines.every(l => l.uniquePositions.length === 0) && completeNumberPayoutRecord.cappedLines.length === 0 ? (
+                        <div>Выпавший номер: {completeNumberPayoutRecord.drawnNumber}</div>
+                        {completeNumberPayoutRecord.winningPositions.length === 0 ? (
                           <div>Выигравших позиций комплитов нет — ответ 0.</div>
                         ) : (
-                          <div className="quiz-report-total">
-                            Итого: {[
-                              ...completeNumberPayoutRecord.lines.filter(l => l.uniqueTotal > 0).map(l => `${l.uniqueTotal}`),
-                              ...completeNumberPayoutRecord.cappedLines.map(cl => `${cl.cappedAmount}`),
-                            ].join(" + ")} = {completeNumberPayoutRecord.correctAnswer}
-                          </div>
+                          <>
+                            {completeNumberPayoutRecord.winningPositions.map((pos, pi) => (
+                              <div key={pi} style={{ marginBottom: 8 }}>
+                                <strong>{pos.positionLabel}</strong><br/>
+                                {pos.contributions.map((c, ci) => (
+                                  <span key={ci}>{c.completeLabel}, по {c.playPerUnit}: {c.stakeOnPos}<br/></span>
+                                ))}
+                                {pos.contributions.length > 1 && (
+                                  <span>Общая ставка: {pos.totalStake}<br/></span>
+                                )}
+                                Лимит {pos.positionLabel}: {pos.positionLimit}<br/>
+                                {pos.atMax ? (
+                                  <span>Позиция играет по максимуму<br/></span>
+                                ) : (
+                                  <span>Превышения нет<br/></span>
+                                )}
+                                В номер поставить: {pos.contributionToAnswer}
+                              </div>
+                            ))}
+                            <div className="quiz-report-total">
+                              Итого: {completeNumberPayoutRecord.winningPositions.map(p => p.contributionToAnswer).join(" + ")} = {completeNumberPayoutRecord.correctAnswer}
+                            </div>
+                          </>
                         )}
                       </div>
                     </>
