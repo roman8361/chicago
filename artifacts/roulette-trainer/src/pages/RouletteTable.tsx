@@ -2306,7 +2306,7 @@ export default function RouletteTable({
     quizPhase?.kind === "series"                       ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "seriesFieldPayout"            ? "track-series-neighbours-intersections" :
     quizPhase?.kind === "trackIntersection"            ? "track-series-neighbours-intersections" :
-    quizPhase?.kind === "trackFieldIntersection"       ? "dim-complete-bets-only" :
+    quizPhase?.kind === "trackFieldIntersection"       ? "none" :
     quizPhase?.kind === "neighboursPayout"             ? "dim-complete-bets-only" :
     quizPhase?.kind === "completeTrackIntersection"    ? "complete-track-intersections" :
     quizPhase?.kind === "completeNumberPayout"         ? "winning-number-and-complete-only" :
