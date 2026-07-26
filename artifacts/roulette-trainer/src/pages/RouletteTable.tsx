@@ -125,12 +125,13 @@ interface TrackIntersectionQuizRecord {
 
 interface TrackFieldIntersectionLineSummary {
   label: string;
+  fieldAmount: number;      // total field (color + cash + completes)
+  q2Change: number;         // change already paid in Q2
+  fieldRemainder: number;   // fieldAmount − q2Change
+  trackAmount: number;      // total track bet on this position
+  totalAmount: number;      // fieldRemainder + trackAmount
   positionLimit: number;
-  effectiveTrackAmount: number;
-  colorAmount: number;
-  cashAmount: number;
-  totalAmount: number;
-  change: number;
+  change: number;           // max(0, totalAmount − positionLimit)
 }
 
 interface TrackFieldIntersectionQuizRecord {
@@ -1721,22 +1722,23 @@ export default function RouletteTable({
     const userAnswer = parseInt(trackFieldIntersectionInput || "0", 10) || 0;
     const maxBet = Math.max(1, settings.maxBet);
     const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
+    const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
     const chipValue = settings.chipValue ?? 10;
     const rules = getAllRules();
 
-    // --- Build track contribution map ---
-    type PosEntry = { betLabel: string; limitMultiplier: number; trackTotal: number };
-    const posMap = new Map<string, PosEntry>();
+    // ── Step 1: Build track position map (series + neighbours) ──────────────
+    // Each unique positionId accumulates trackTotal from all sources.
+    type TrackEntry = { betLabel: string; limitMultiplier: number; trackTotal: number };
+    const trackMap = new Map<string, TrackEntry>();
     const addTrack = (positionId: string, limitMultiplier: number, betLabel: string, amount: number) => {
-      let entry = posMap.get(positionId);
+      let entry = trackMap.get(positionId);
       if (!entry) {
         entry = { betLabel, limitMultiplier, trackTotal: 0 };
-        posMap.set(positionId, entry);
+        trackMap.set(positionId, entry);
       }
       entry.trackTotal += amount;
     };
 
-    // Neighbours → straight-up positions
     const neighboursMap = rules.neighbours as Record<string, number[]>;
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
@@ -1746,7 +1748,6 @@ export default function RouletteTable({
       }
     }
 
-    // Series → positions from trackBets[type].bets
     for (const tb of activeSeries) {
       const trackRule = (rules.trackBets as Record<string, { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
       if (!trackRule) continue;
@@ -1765,31 +1766,82 @@ export default function RouletteTable({
       }
     }
 
-    // --- Field bets lookup ---
+    // ── Step 2: Build field position map (color + cash + completes) ─────────
+    // fieldMap: positionId → total field amount on that position.
     const chipCountByPos = new Map<string, number>();
     for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
     const cashByPos = new Map<string, number>();
     for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
 
-    // --- Check each track position for overflow with field bets ---
+    const fieldMap = new Map<string, number>(); // positionId → total field amount
+    const addField = (positionId: string, amount: number) =>
+      fieldMap.set(positionId, (fieldMap.get(positionId) ?? 0) + amount);
+
+    // Dozen complete → expand to real positions
+    if (game.dozenCompleteBet) {
+      const { amount, dozen } = game.dozenCompleteBet;
+      const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+      const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; chipsRequired: number; bets: Record<string, unknown> }> }).dozens.find(d => d.dozen === dozenNum);
+      if (dozenRule) {
+        const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, completeMultiplicity);
+        for (const [catKey, { betType }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+          const rawEntries = (dozenRule.bets as Record<string, unknown>)[catKey];
+          if (!Array.isArray(rawEntries)) continue;
+          for (const e of rawEntries) {
+            if (!e || !Array.isArray(e.numbers) || typeof e.chips !== "number") continue;
+            const posId = findPositionId(betType, e.numbers as number[]);
+            if (posId) addField(posId, playPerUnit * e.chips);
+          }
+        }
+      }
+    }
+
+    // Number completes → expand to real positions
+    for (const ncb of game.numberCompleteBets) {
+      const completeRule = (rules.completeBets as Array<{ number: number; chipsRequired: number; bets: Record<string, unknown> }>).find(cb => cb.number === ncb.number);
+      if (!completeRule) continue;
+      const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, completeMultiplicity);
+      for (const [catKey, { betType }] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+        const rawEntries = (completeRule.bets as Record<string, unknown>)[catKey];
+        if (!Array.isArray(rawEntries)) continue;
+        for (const e of rawEntries) {
+          if (!e || !Array.isArray(e.numbers) || typeof e.chips !== "number") continue;
+          const posId = findPositionId(betType, e.numbers as number[]);
+          if (posId) addField(posId, playPerUnit * e.chips);
+        }
+      }
+    }
+
+    // Color chips and cash
+    for (const [posId, count] of chipCountByPos.entries()) addField(posId, count * chipValue);
+    for (const [posId, denom] of cashByPos.entries()) addField(posId, denom);
+
+    // ── Steps 3-8: Iterate track positions, compute additional change ────────
+    // For each track position:
+    //   fieldAmount  = field map value (0 if absent)
+    //   q2Change     = max(0, fieldAmount − positionLimit)  (already paid in Q2)
+    //   fieldRem     = fieldAmount − q2Change = min(fieldAmount, positionLimit)
+    //   total        = fieldRem + trackTotal
+    //   change       = max(0, total − positionLimit)
     const lines: TrackFieldIntersectionLineSummary[] = [];
-    for (const [positionId, entry] of posMap.entries()) {
+    for (const [positionId, entry] of trackMap.entries()) {
       const positionLimit = maxBet * entry.limitMultiplier;
-      const effectiveTrackAmount = Math.min(entry.trackTotal, positionLimit);
-      const colorAmount = (chipCountByPos.get(positionId) ?? 0) * chipValue;
-      const cashAmount = cashByPos.get(positionId) ?? 0;
-      const fieldAmount = colorAmount + cashAmount;
-      if (fieldAmount === 0) continue;
-      const totalAmount = effectiveTrackAmount + fieldAmount;
-      if (totalAmount > positionLimit) {
+      const fieldAmount   = fieldMap.get(positionId) ?? 0;
+      const q2Change      = Math.max(0, fieldAmount - positionLimit);
+      const fieldRemainder = fieldAmount - q2Change; // = min(fieldAmount, positionLimit)
+      const trackAmount   = entry.trackTotal;
+      const totalAmount   = fieldRemainder + trackAmount;
+      const change        = Math.max(0, totalAmount - positionLimit);
+      if (change > 0) {
         lines.push({
           label: entry.betLabel,
-          positionLimit,
-          effectiveTrackAmount,
-          colorAmount,
-          cashAmount,
+          fieldAmount,
+          q2Change,
+          fieldRemainder,
+          trackAmount,
           totalAmount,
-          change: totalAmount - positionLimit,
+          positionLimit,
+          change,
         });
       }
     }
@@ -1799,7 +1851,7 @@ export default function RouletteTable({
     setTrackFieldIntersectionInput("");
     // completeTrackIntersection question is excluded from the exam.
     setQuizPhase(decidePostTrackFieldPhase(game, activeSeries, rules));
-  }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, getAllRules]);
+  }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Complete × Track Intersection (комплиты × ставки трека) ─────────────────
   const handleCheckCompleteTrackIntersection = useCallback(() => {
@@ -3429,17 +3481,19 @@ export default function RouletteTable({
                       <div className="quiz-report-detail">Ваш ответ: {trackFieldIntersectionRecord.userAnswer}</div>
                       <div className="quiz-report-detail">Правильный ответ: {trackFieldIntersectionRecord.correctAnswer}</div>
                       {trackFieldIntersectionRecord.lines.length === 0 ? (
-                        <div className="quiz-report-calc">Пересечений с лимитом позиций не найдено — сдачи нет.</div>
+                        <div className="quiz-report-calc">Пересечений с дополнительной сдачей не найдено.</div>
                       ) : (
                         <div className="quiz-report-calc">
                           {trackFieldIntersectionRecord.lines.map((line, li) => (
                             <div key={li} style={{ marginBottom: 8 }}>
                               <strong>{line.label}</strong><br/>
+                              Поле: {line.fieldAmount}<br/>
+                              Сдача во втором вопросе: {line.q2Change}<br/>
+                              Осталось на позиции: {line.fieldRemainder}<br/>
+                              Трек: {line.trackAmount}<br/>
+                              Итого: {line.totalAmount}<br/>
                               Лимит: {line.positionLimit}<br/>
-                              Ставки трека после уже отданной сдачи: {line.effectiveTrackAmount}<br/>
-                              Ставки поля: {line.colorAmount > 0 ? `цвет ${line.colorAmount}` : ""}{line.colorAmount > 0 && line.cashAmount > 0 ? " + " : ""}{line.cashAmount > 0 ? `кэш ${line.cashAmount}` : ""} = {line.colorAmount + line.cashAmount}<br/>
-                              Итого: {line.effectiveTrackAmount} + {line.colorAmount + line.cashAmount} = {line.totalAmount}<br/>
-                              Сдача: {line.totalAmount} − {line.positionLimit} = {line.change}
+                              Дополнительная сдача: {line.change}
                             </div>
                           ))}
                           <div className="quiz-report-total">
