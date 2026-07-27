@@ -220,16 +220,17 @@ interface NeighboursPayoutQuizRecord {
   userAnswer: number;
   correctAnswer: number;
   correct: boolean;
-  winningLines: NeighboursPayoutWinLine[];
-  winningNeighboursAmount: number;
-  seriesContrib: number;
+  winningNeighbours: NeighboursPayoutWinLine[];
+  totalNeighboursAmount: number;    // sum of amountPerNumber across all winning neighbours
+  cappedNeighboursAmount: number;   // min(totalNeighboursAmount, positionLimit)
   colorContrib: number;
   cashContrib: number;
-  numberCompletesContrib: number;
-  dozenCompleteContrib: number;
-  existingAmount: number;
-  effectiveExistingAmount: number;
-  availableAmount: number;
+  completeContrib: number;
+  seriesContrib: number;
+  fieldTotal: number;
+  positionLimit: number;
+  effectiveOccupied: number;
+  freeCapacity: number;
   winningNumber: number;
 }
 
@@ -2267,7 +2268,6 @@ export default function RouletteTable({
     if (!game || !quizPhase || quizPhase.kind !== "neighboursPayout") return;
     const userAnswer = parseInt(neighboursPayoutInput || "0", 10) || 0;
     const maxBet = Math.max(1, settings.maxBet);
-    const mult = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const chipValue = settings.chipValue ?? 10;
     const completeMultiplicity = Math.max(1, settings.completeMultiplicity);
     const rules = getAllRules();
@@ -2275,45 +2275,38 @@ export default function RouletteTable({
     const winningNumber = game.drawnNumber;
     const suPositionId = `su-${winningNumber}`;
 
-    // Steps 1 & 2: Find winning neighbours bets and sum their contributions
-    let winningNeighboursAmount = 0;
-    const winningLines: NeighboursPayoutWinLine[] = [];
+    // Steps 1 & 2: Find winning neighbours and their per-number amounts
+    const winningNeighbours: NeighboursPayoutWinLine[] = [];
+    let totalNeighboursAmount = 0;
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
       if (!Array.isArray(nums) || !nums.includes(winningNumber)) continue;
-      winningNeighboursAmount += nb.baseAmount;
-      winningLines.push({ label: `Соседи ${nb.number}`, totalAmount: nb.amount, amountPerNumber: nb.baseAmount });
+      totalNeighboursAmount += nb.baseAmount;
+      winningNeighbours.push({ label: `Соседи ${nb.number}`, totalAmount: nb.amount, amountPerNumber: nb.baseAmount });
     }
 
-    // Step 3: Calculate what already plays on Straight Up {winningNumber}
-    // Series contributions (only straightUp positions)
-    let seriesContrib = 0;
-    for (const tb of activeSeries) {
-      const trackRule = (rules.trackBets as Record<string, { divisor: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)[tb.type];
-      if (!trackRule) continue;
-      const { playPerUnit } = calcSeriesResult(tb.amount, trackRule.divisor, mult);
-      if (playPerUnit <= 0) continue;
-      const suEntries = trackRule.bets["straightUp"];
-      if (!Array.isArray(suEntries)) continue;
-      for (const entry of suEntries) {
-        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(winningNumber)) continue;
-        seriesContrib += playPerUnit * entry.chips;
-      }
-    }
+    // Neighbours always play on Straight Up of the winning number; positionLimit = maxBet × 1
+    const positionLimit = maxBet;
 
-    // Color chips on Straight Up
-    const chipCountByPos = new Map<string, number>();
-    for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
-    const colorContrib = (chipCountByPos.get(suPositionId) ?? 0) * chipValue;
+    // Step 3: Cap total neighbours amount by position limit
+    const cappedNeighboursAmount = Math.min(totalNeighboursAmount, positionLimit);
 
-    // Cash on Straight Up
-    const cashByPos = new Map<string, number>();
-    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
-    const cashContrib = cashByPos.get(suPositionId) ?? 0;
+    // Step 5: Calculate already-occupied sum on Straight Up {winningNumber}
 
-    // Number complete contributions (only straightUp positions)
+    // Color chips
+    const colorContrib = game.chips
+      .filter(s => s.positionId === suPositionId)
+      .reduce((sum, s) => sum + s.count * chipValue, 0);
+
+    // Cash chips
+    const cashContrib = game.cashChipStacks
+      .filter(cc => cc.positionId === suPositionId)
+      .reduce((sum, cc) => sum + cc.denomination, 0);
+
+    // Completes — only their straightUp contribution to the winning number
     type CompleteBetRule = { number: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
-    let numberCompletesContrib = 0;
+    type DozenBetRule = { dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+    let completeContrib = 0;
     for (const ncb of game.numberCompleteBets) {
       const completeRule = (rules.completeBets as CompleteBetRule[]).find(cb => cb.number === ncb.number);
       if (!completeRule) continue;
@@ -2322,13 +2315,9 @@ export default function RouletteTable({
       if (!Array.isArray(suEntries)) continue;
       for (const entry of suEntries) {
         if (!Array.isArray(entry.numbers) || !entry.numbers.includes(winningNumber)) continue;
-        numberCompletesContrib += playPerUnit * entry.chips;
+        completeContrib += playPerUnit * entry.chips;
       }
     }
-
-    // Dozen complete contribution (only straightUp positions)
-    type DozenBetRule = { dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
-    let dozenCompleteContrib = 0;
     if (game.dozenCompleteBet) {
       const { amount, dozen } = game.dozenCompleteBet;
       const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
@@ -2339,41 +2328,48 @@ export default function RouletteTable({
         if (Array.isArray(suEntries)) {
           for (const entry of suEntries) {
             if (!Array.isArray(entry.numbers) || !entry.numbers.includes(winningNumber)) continue;
-            dozenCompleteContrib += playPerUnit * entry.chips;
+            completeContrib += playPerUnit * entry.chips;
           }
         }
       }
     }
 
-    // Steps 4–9: Cap existing amount at maximum (account for already-given change)
-    const existingAmount = seriesContrib + colorContrib + cashContrib + numberCompletesContrib + dozenCompleteContrib;
-    const effectiveExistingAmount = Math.min(existingAmount, maxBet);
+    // Winning series — use the ACCEPTED amount from the previous seriesFieldPayout question,
+    // not a fresh recalculation, so the limit already applied there is respected.
+    let seriesContrib = 0;
+    if (seriesFieldPayoutRecord) {
+      const seriesPos = seriesFieldPayoutRecord.positions.find(p => p.positionId === suPositionId);
+      if (seriesPos) seriesContrib = seriesPos.acceptedAmount;
+    }
 
-    // Step 10: Available limit
-    const availableAmount = Math.max(0, maxBet - effectiveExistingAmount);
+    // Step 6: fieldTotal, cap at positionLimit to account for previously returned field change
+    const fieldTotal = colorContrib + cashContrib + completeContrib + seriesContrib;
+    const effectiveOccupied = Math.min(fieldTotal, positionLimit);
 
-    // Step 11: Correct answer
-    const correctAnswer = Math.min(winningNeighboursAmount, availableAmount);
+    // Steps 8–9: Free capacity and accepted amount
+    const freeCapacity = Math.max(0, positionLimit - effectiveOccupied);
+    const correctAnswer = Math.min(cappedNeighboursAmount, freeCapacity);
 
     setNeighboursPayoutRecord({
       userAnswer,
       correctAnswer,
       correct: userAnswer === correctAnswer,
-      winningLines,
-      winningNeighboursAmount,
-      seriesContrib,
+      winningNeighbours,
+      totalNeighboursAmount,
+      cappedNeighboursAmount,
       colorContrib,
       cashContrib,
-      numberCompletesContrib,
-      dozenCompleteContrib,
-      existingAmount,
-      effectiveExistingAmount,
-      availableAmount,
+      completeContrib,
+      seriesContrib,
+      fieldTotal,
+      positionLimit,
+      effectiveOccupied,
+      freeCapacity,
       winningNumber,
     });
     setNeighboursPayoutInput("");
     setQuizPhase({ kind: "field" });
-  }, [game, quizPhase, neighboursPayoutInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules]);
+  }, [game, quizPhase, neighboursPayoutInput, seriesFieldPayoutRecord, settings.maxBet, settings.chipValue, settings.completeMultiplicity, getAllRules]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
@@ -3746,31 +3742,35 @@ export default function RouletteTable({
                           <strong>Выпавший номер: {neighboursPayoutRecord.winningNumber}</strong>
                         </div>
                         <div style={{ marginBottom: 6 }}>
+                          <strong>Выигрышная позиция: Straight Up {neighboursPayoutRecord.winningNumber}</strong><br/>
                           <strong>Выигравшие соседи:</strong><br/>
-                          {neighboursPayoutRecord.winningLines.map((line, li) => (
+                          {neighboursPayoutRecord.winningNeighbours.map((line, li) => (
                             <span key={li}>{line.label}: {line.totalAmount} / 5 = {line.amountPerNumber}<br/></span>
                           ))}
-                          Всего с соседей: {neighboursPayoutRecord.winningLines.map(l => l.amountPerNumber).join(" + ")} = {neighboursPayoutRecord.winningNeighboursAmount}
-                        </div>
-                        <div style={{ marginBottom: 6 }}>
-                          <strong>Уже играет на Straight Up {neighboursPayoutRecord.winningNumber}:</strong><br/>
-                          Серии: {neighboursPayoutRecord.seriesContrib}<br/>
-                          Цветные ставки: {neighboursPayoutRecord.colorContrib}<br/>
-                          Кэш: {neighboursPayoutRecord.cashContrib}<br/>
-                          Комплиты номеров: {neighboursPayoutRecord.numberCompletesContrib}<br/>
-                          Комплит дюжины: {neighboursPayoutRecord.dozenCompleteContrib}<br/>
-                          Итого уже играет: {neighboursPayoutRecord.existingAmount}
-                          {neighboursPayoutRecord.existingAmount !== neighboursPayoutRecord.effectiveExistingAmount && (
-                            <> → ограничено максимумом: {neighboursPayoutRecord.effectiveExistingAmount}</>
+                          Общая ставка соседей: {neighboursPayoutRecord.winningNeighbours.map(l => l.amountPerNumber).join(" + ")} = {neighboursPayoutRecord.totalNeighboursAmount}<br/>
+                          Максимум Straight Up: {neighboursPayoutRecord.positionLimit}<br/>
+                          {neighboursPayoutRecord.totalNeighboursAmount > neighboursPayoutRecord.positionLimit && (
+                            <span>Соседи играют по максимуму: {neighboursPayoutRecord.cappedNeighboursAmount}<br/></span>
                           )}
                         </div>
                         <div style={{ marginBottom: 6 }}>
-                          Максимум Straight Up: {settings.maxBet}<br/>
-                          Свободный лимит: {settings.maxBet} − {neighboursPayoutRecord.effectiveExistingAmount} = {neighboursPayoutRecord.availableAmount}
+                          <strong>На позиции уже стоит:</strong><br/>
+                          Серии: {neighboursPayoutRecord.seriesContrib}<br/>
+                          Цветные ставки: {neighboursPayoutRecord.colorContrib}<br/>
+                          Кэш: {neighboursPayoutRecord.cashContrib}<br/>
+                          Комплиты: {neighboursPayoutRecord.completeContrib}<br/>
+                          Всего: {neighboursPayoutRecord.fieldTotal}
+                          {neighboursPayoutRecord.fieldTotal > neighboursPayoutRecord.positionLimit && (
+                            <> → ранее возвращена сдача с поля: {neighboursPayoutRecord.fieldTotal - neighboursPayoutRecord.positionLimit}</>
+                          )}<br/>
+                          Фактически занято: {neighboursPayoutRecord.effectiveOccupied}
+                        </div>
+                        <div style={{ marginBottom: 6 }}>
+                          Свободная ёмкость: {neighboursPayoutRecord.positionLimit} − {neighboursPayoutRecord.effectiveOccupied} = {neighboursPayoutRecord.freeCapacity}
                         </div>
                         <div className="quiz-report-total">
-                          С соседей нужно поставить: {neighboursPayoutRecord.winningNeighboursAmount}<br/>
-                          Можно поставить: min({neighboursPayoutRecord.winningNeighboursAmount}, {neighboursPayoutRecord.availableAmount}) = {neighboursPayoutRecord.correctAnswer}
+                          Соседи хотят поставить: {neighboursPayoutRecord.cappedNeighboursAmount}<br/>
+                          Фактически можно выставить: min({neighboursPayoutRecord.cappedNeighboursAmount}, {neighboursPayoutRecord.freeCapacity}) = {neighboursPayoutRecord.correctAnswer}
                         </div>
                       </div>
                     </>
