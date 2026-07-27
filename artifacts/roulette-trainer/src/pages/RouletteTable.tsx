@@ -50,6 +50,10 @@ interface WinningFieldEntry {
   displayAs: "color" | "cash" | "merged";
   /** Original chip count — only relevant when displayAs === "color" */
   colorCount: number;
+  /** Capped normal bets (color + cash + series + neighbours) on this position */
+  normalAmountCapped: number;
+  /** Complete payout amount added separately to Straight of drawn number (bypasses normal max); 0 on all other positions */
+  completeAmountAdded: number;
 }
 
 interface FieldQuizRecord {
@@ -329,13 +333,21 @@ function computeWinningField(
   completeMultiplicity: number,
   rules: Record<string, unknown>,
   payoutMap: Record<string, number>,
+  /** Total from the "complete → winning number" question; placed as a single
+   *  separate bet on Straight of drawnNumber, bypassing the normal position cap. */
+  completePayoutAmount: number,
 ): WinningFieldEntry[] {
   const drawnNumber = game.drawnNumber;
-  // Track contributions by source type so we can decide display mode per position
+  const straightId  = `su-${drawnNumber}`;
+
+  // Track contributions by source type so we can decide display mode per position.
+  // Complete bets are NO LONGER expanded into their physical positions here —
+  // their aggregate (completePayoutAmount) is added directly to the Straight of
+  // the winning number as a separate stake that ignores the normal position cap.
   const colorAmts  = new Map<string, number>(); // color chips: count * chipValue
   const colorCnts  = new Map<string, number>(); // color chips: raw count (for display)
   const cashAmts   = new Map<string, number>(); // field cash chips
-  const otherAmts  = new Map<string, number>(); // series + neighbours + completes
+  const otherAmts  = new Map<string, number>(); // series + neighbours (no completes)
 
   const addColor = (id: string, count: number, amount: number) => {
     colorAmts.set(id, (colorAmts.get(id) ?? 0) + amount);
@@ -383,52 +395,23 @@ function computeWinningField(
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
       if (!Array.isArray(nums) || !nums.includes(drawnNumber)) continue;
-      addOther(`su-${drawnNumber}`, nb.baseAmount);
+      addOther(straightId, nb.baseAmount);
     }
   }
 
-  // 5. Number completes – expand using completeBets bets
-  type CompleteBetRuleT = { number: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
-  for (const ncb of game.numberCompleteBets) {
-    const completeRule = (rules.completeBets as CompleteBetRuleT[] | undefined)?.find(cb => cb.number === ncb.number);
-    if (!completeRule) continue;
-    const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, completeMultiplicity);
-    for (const [catKey, entries] of Object.entries(completeRule.bets)) {
-      const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
-      if (!catInfo || !Array.isArray(entries)) continue;
-      for (const entry of entries) {
-        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
-        const positionId = findPositionId(catInfo.betType, entry.numbers);
-        if (!positionId) continue;
-        addOther(positionId, playPerUnit * entry.chips);
-      }
-    }
-  }
-
-  // 6. Dozen complete – expand using dozenComplete.dozens bets
-  type DozenBetRuleT = { dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
-  if (game.dozenCompleteBet) {
-    const { amount, dozen } = game.dozenCompleteBet;
-    const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
-    const dozenRule = (rules.dozenComplete as { dozens: DozenBetRuleT[] } | undefined)?.dozens.find(d => d.dozen === dozenNum);
-    if (dozenRule) {
-      const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, completeMultiplicity);
-      for (const [catKey, entries] of Object.entries(dozenRule.bets)) {
-        const catInfo = DOZEN_COMPLETE_CATEGORY_MAP[catKey];
-        if (!catInfo || !Array.isArray(entries)) continue;
-        for (const entry of entries) {
-          if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
-          const positionId = findPositionId(catInfo.betType, entry.numbers);
-          if (!positionId) continue;
-          addOther(positionId, playPerUnit * entry.chips);
-        }
-      }
-    }
-  }
+  // NOTE: Complete bets (steps 5 & 6 from the old logic) are intentionally NOT
+  // expanded here into Split / Street / Corner / Six-Line / Straight positions.
+  // The pre-computed completePayoutAmount is added as a single separate stake on
+  // the Straight of the winning number below, after the normal-cap is applied.
 
   // Collect all touched positions and build result entries
   const TYPE_LIMIT_MULT = BET_COVER_COUNT;
   const allIds = new Set([...colorAmts.keys(), ...cashAmts.keys(), ...otherAmts.keys()]);
+
+  // Ensure the Straight of the drawn number is included when there is a
+  // complete amount to add, even if no regular bets land on it.
+  if (completePayoutAmount > 0) allIds.add(straightId);
+
   const result: WinningFieldEntry[] = [];
 
   for (const positionId of allIds) {
@@ -438,14 +421,25 @@ function computeWinningField(
     const colorCnt = colorCnts.get(positionId) ?? 0;
     const cashAmt  = cashAmts.get(positionId) ?? 0;
     const otherAmt = otherAmts.get(positionId) ?? 0;
-    const total    = colorAmt + cashAmt + otherAmt;
+    const normalTotal = colorAmt + cashAmt + otherAmt;
     const limitMult = TYPE_LIMIT_MULT[pos.type] ?? 1;
-    const capped = Math.min(total, maxBet * limitMult);
-    if (capped <= 0) continue;
 
-    // Determine display mode
+    // Normal bets (color + cash + series + neighbours) are capped at position limit.
+    const normalCapped = Math.min(normalTotal, maxBet * limitMult);
+
+    // Complete amount is only added to the Straight of the drawn number and is
+    // NOT subject to the normal position cap (it is a separate, independent stake).
+    const completeAdded = (positionId === straightId) ? completePayoutAmount : 0;
+
+    const finalAmount = normalCapped + completeAdded;
+    if (finalAmount <= 0) continue;
+
+    // Determine display mode.
+    // Any position that receives the complete stake is shown as "merged".
     let displayAs: WinningFieldEntry["displayAs"];
-    if (colorAmt > 0 && cashAmt === 0 && otherAmt === 0) {
+    if (completeAdded > 0) {
+      displayAs = "merged";
+    } else if (colorAmt > 0 && cashAmt === 0 && otherAmt === 0) {
       displayAs = "color";   // solo color chip — keep as blue chip
     } else if (colorAmt === 0 && cashAmt > 0 && otherAmt === 0) {
       displayAs = "cash";    // solo cash chip — keep as bronze chip
@@ -455,12 +449,14 @@ function computeWinningField(
 
     result.push({
       positionId,
-      amount: capped,
+      amount: finalAmount,
       positionType: pos.type as WinningFieldEntry["positionType"],
       positionNums: [...pos.numbers].sort((a, b) => a - b),
       payoutMultiplier: payoutMap[pos.type] ?? 0,
       displayAs,
       colorCount: colorCnt,
+      normalAmountCapped: normalCapped,
+      completeAmountAdded: completeAdded,
     });
   }
   return result;
@@ -763,8 +759,9 @@ export default function RouletteTable({
     const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const chipValue = settings.chipValue ?? 10;
     const completeMultiplicity = Math.max(1, settings.completeMultiplicity ?? 10);
-    return computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap);
-  }, [game, quizPhase, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap]);
+    const completePayoutAmount = completeNumberPayoutRecord?.correctAnswer ?? 0;
+    return computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap, completePayoutAmount);
+  }, [game, quizPhase, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap, completeNumberPayoutRecord]);
 
   // Auto-save to localStorage whenever params change.
   // Skip the very first run (initial mount) so that, on first load with no
@@ -1409,7 +1406,8 @@ export default function RouletteTable({
     const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const chipValue = settings.chipValue ?? 10;
     const completeMultiplicity = Math.max(1, settings.completeMultiplicity ?? 10);
-    const entries = computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap);
+    const completePayoutAmount = completeNumberPayoutRecord?.correctAnswer ?? 0;
+    const entries = computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap, completePayoutAmount);
     const correctAnswer = entries.reduce((sum, e) => sum + e.amount * e.payoutMultiplier, 0);
     setFieldRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, entries });
     const generated = generateColorPayout(correctAnswer, chipValue);
@@ -1421,7 +1419,7 @@ export default function RouletteTable({
       setColorPayoutData(null);
       setQuizPhase({ kind: "report" });
     }
-  }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap]);
+  }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap, completeNumberPayoutRecord]);
 
   const handleCheckColorPayout = useCallback(() => {
     if (!colorPayoutData || !quizPhase || quizPhase.kind !== "colorPayout") return;
@@ -3798,10 +3796,22 @@ export default function RouletteTable({
                           <>
                             {fieldRecord.entries.map((e, j) => {
                               const typeLabel = ({ straight: "Straight Up", split: "Split", street: "Street", corner: "Corner", sixline: "Six-Line" } as Record<string, string>)[e.positionType] ?? e.positionType;
+                              const hasSeparateComplete = e.positionType === "straight" && e.completeAmountAdded > 0;
                               return (
                                 <div key={j} style={{ marginBottom: 6 }}>
                                   <strong>{typeLabel} {e.positionNums.join("-")}</strong><br/>
-                                  Итоговая ставка: {e.amount}<br/>
+                                  {hasSeparateComplete ? (
+                                    <>
+                                      Обычные ставки (цвет, кэш, серии, соседи): {e.normalAmountCapped}<br/>
+                                      Выигрышные комплиты (отдельная ставка): {e.completeAmountAdded}<br/>
+                                      (ставка комплита не ограничивается максимумом Straight)<br/>
+                                      Итоговая ставка Straight: {e.normalAmountCapped} + {e.completeAmountAdded} = {e.amount}<br/>
+                                    </>
+                                  ) : (
+                                    <>
+                                      Итоговая ставка: {e.amount}<br/>
+                                    </>
+                                  )}
                                   Коэффициент: {e.payoutMultiplier}<br/>
                                   {e.amount} × {e.payoutMultiplier} = {e.amount * e.payoutMultiplier}
                                 </div>
