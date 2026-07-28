@@ -130,15 +130,20 @@ interface TrackIntersectionQuizRecord {
 interface TrackFieldIntersectionLineSummary {
   label: string;
   positionLimit: number;
-  trackTotal: number;       // raw sum of all track bets (series + neighbours) on this position
-  trackChange: number;      // max(0, trackTotal − positionLimit) — already returned in prev. question
-  acceptedTrack: number;    // min(trackTotal, positionLimit) — capacity already occupied by track
-  freeCapacity: number;     // positionLimit − acceptedTrack
-  colorAmount: number;      // color chip field contribution
-  cashAmount: number;       // cash chip field contribution
-  completeAmount: number;   // complete bet field contribution
-  fieldTotal: number;       // colorAmount + cashAmount + completeAmount
-  change: number;           // max(0, fieldTotal − freeCapacity) — the field change answer
+  // ── Field side ─────────────────────────────────────────────────────────────
+  colorAmount: number;        // color chip field contribution
+  cashAmount: number;         // cash chip field contribution
+  completeAmount: number;     // complete bet field contribution
+  fieldTotal: number;         // colorAmount + cashAmount + completeAmount
+  fieldPrevChange: number;    // max(0, fieldTotal − positionLimit) — returned in field question
+  acceptedField: number;      // min(fieldTotal, positionLimit) — what actually sits on position
+  // ── Track side ─────────────────────────────────────────────────────────────
+  trackTotal: number;         // raw sum of all track bets (series + neighbours) on this position
+  trackPrevChange: number;    // max(0, trackTotal − positionLimit) — returned in track question
+  acceptedTrack: number;      // min(trackTotal, positionLimit) — what actually sits on position
+  // ── Intersection ───────────────────────────────────────────────────────────
+  combinedTotal: number;      // acceptedField + acceptedTrack
+  change: number;             // max(0, combinedTotal − positionLimit) — the only new change
 }
 
 interface TrackFieldIntersectionQuizRecord {
@@ -1828,49 +1833,59 @@ export default function RouletteTable({
       }
     }
 
-    // ── Steps 3–6: For each position with track bets, compute field change ──────
-    // New algorithm:
-    //   Step 3: acceptedTrack = min(trackTotal, positionLimit)
-    //           trackChange   = trackTotal − acceptedTrack  (already returned in prev. question)
-    //   Step 4: freeCapacity  = positionLimit − acceptedTrack
-    //   Step 5: fieldTotal    = color + cash + completes  (all field bets as one sum)
-    //   Step 6: fieldChange   = max(0, fieldTotal − freeCapacity)
+    // ── Steps 3–6: For each position with track bets, compute intersection change ──
     //
-    // The track change is NOT recalculated here — it was already returned in the
-    // previous "track×track" question. We only report how much field bets overflow
-    // the remaining capacity that the track has left.
+    // Step 3: acceptedField = min(fieldTotal, positionLimit)
+    //         The field question already returned max(0, fieldTotal − limit), so the
+    //         position effectively holds only min(fieldTotal, limit) after that question.
+    //
+    // Step 4: acceptedTrack = min(trackTotal, positionLimit)
+    //         The track question already returned max(0, trackTotal − limit), so the
+    //         position effectively holds only min(trackTotal, limit) after that question.
+    //
+    // Step 5: Only count positions where BOTH acceptedField > 0 AND acceptedTrack > 0.
+    //
+    // Step 6: change = max(0, acceptedField + acceptedTrack − positionLimit)
+    //         This is the NEW overflow that arises only because the two capped sums
+    //         are combined. Neither the field-only overflow nor the track-only overflow
+    //         is added here — they were already returned in their respective questions.
     const lines: TrackFieldIntersectionLineSummary[] = [];
     for (const [positionId, entry] of trackMap.entries()) {
       const positionLimit  = maxBet * entry.limitMultiplier;
 
-      // Step 3: cap track at position limit (change already returned in prev. question)
-      const trackTotal     = entry.trackTotal;
-      const trackChange    = Math.max(0, trackTotal - positionLimit);
-      const acceptedTrack  = trackTotal - trackChange; // = min(trackTotal, positionLimit)
+      // Track side — cap at limit; the excess was already returned in the previous question
+      const trackTotal        = entry.trackTotal;
+      const trackPrevChange   = Math.max(0, trackTotal - positionLimit);
+      const acceptedTrack     = trackTotal - trackPrevChange; // = min(trackTotal, positionLimit)
 
-      // Step 4: remaining capacity for field bets
-      const freeCapacity   = positionLimit - acceptedTrack; // always ≥ 0
+      // Field side — cap at limit; the excess was already returned in the field question
+      const colorAmount       = colorAmtByPos.get(positionId) ?? 0;
+      const cashAmount        = cashAmtByPos.get(positionId) ?? 0;
+      const completeAmount    = completeAmtByPos.get(positionId) ?? 0;
+      const fieldTotal        = colorAmount + cashAmount + completeAmount;
+      const fieldPrevChange   = Math.max(0, fieldTotal - positionLimit);
+      const acceptedField     = fieldTotal - fieldPrevChange; // = min(fieldTotal, positionLimit)
 
-      // Step 5: total field bets on this position
-      const colorAmount    = colorAmtByPos.get(positionId) ?? 0;
-      const cashAmount     = cashAmtByPos.get(positionId) ?? 0;
-      const completeAmount = completeAmtByPos.get(positionId) ?? 0;
-      const fieldTotal     = colorAmount + cashAmount + completeAmount;
+      // Only real intersections
+      if (acceptedField <= 0 || acceptedTrack <= 0) continue;
 
-      // Step 6: field change — only field bets that cannot fit in remaining capacity
-      const change         = Math.max(0, fieldTotal - freeCapacity);
+      // New change from combining both capped sums
+      const combinedTotal     = acceptedField + acceptedTrack;
+      const change            = Math.max(0, combinedTotal - positionLimit);
       if (change > 0) {
         lines.push({
           label: entry.betLabel,
           positionLimit,
-          trackTotal,
-          trackChange,
-          acceptedTrack,
-          freeCapacity,
           colorAmount,
           cashAmount,
           completeAmount,
           fieldTotal,
+          fieldPrevChange,
+          acceptedField,
+          trackTotal,
+          trackPrevChange,
+          acceptedTrack,
+          combinedTotal,
           change,
         });
       }
@@ -3623,16 +3638,19 @@ export default function RouletteTable({
                             <div key={li} style={{ marginBottom: 8 }}>
                               <strong>{line.label}</strong><br/>
                               Лимит: {line.positionLimit}<br/>
-                              Сумма трека: {line.trackTotal}<br/>
-                              Ранее возвращено (сдача трека): {line.trackChange}<br/>
-                              Принято треком: {line.acceptedTrack}<br/>
-                              Свободная ёмкость: {line.positionLimit} − {line.acceptedTrack} = {line.freeCapacity}<br/>
-                              Поле:{" "}
-                              {line.colorAmount > 0 && <>цвет {line.colorAmount}{(line.cashAmount > 0 || line.completeAmount > 0) ? " + " : ""}</>}
-                              {line.cashAmount > 0 && <>кэш {line.cashAmount}{line.completeAmount > 0 ? " + " : ""}</>}
-                              {line.completeAmount > 0 && <>комплиты {line.completeAmount}</>}
-                              {" "}= {line.fieldTotal}<br/>
-                              Сдача поля: max(0, {line.fieldTotal} − {line.freeCapacity}) = {line.change}
+                              <em>Поле:</em><br/>
+                              {line.colorAmount > 0 && <>• цвет: {line.colorAmount}<br/></>}
+                              {line.cashAmount > 0 && <>• кэш: {line.cashAmount}<br/></>}
+                              {line.completeAmount > 0 && <>• комплиты: {line.completeAmount}<br/></>}
+                              Исходное поле: {line.fieldTotal}<br/>
+                              Ранее возвращено с поля: {line.fieldPrevChange}<br/>
+                              Принятое поле: {line.acceptedField}<br/>
+                              <em>Трек:</em><br/>
+                              Исходный трек: {line.trackTotal}<br/>
+                              Ранее возвращено с трека: {line.trackPrevChange}<br/>
+                              Принятый трек: {line.acceptedTrack}<br/>
+                              После наложения: {line.acceptedField} + {line.acceptedTrack} = {line.combinedTotal}<br/>
+                              Сдача с пересечения: max(0, {line.combinedTotal} − {line.positionLimit}) = {line.change}
                             </div>
                           ))}
                           <div className="quiz-report-total">
