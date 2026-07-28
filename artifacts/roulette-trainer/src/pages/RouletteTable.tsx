@@ -129,13 +129,16 @@ interface TrackIntersectionQuizRecord {
 
 interface TrackFieldIntersectionLineSummary {
   label: string;
-  fieldAmount: number;      // total field (color + cash + completes)
-  q2Change: number;         // change already paid in Q2
-  fieldRemainder: number;   // fieldAmount − q2Change
-  trackAmount: number;      // total track bet on this position
-  totalAmount: number;      // fieldRemainder + trackAmount
   positionLimit: number;
-  change: number;           // max(0, totalAmount − positionLimit)
+  trackTotal: number;       // raw sum of all track bets (series + neighbours) on this position
+  trackChange: number;      // max(0, trackTotal − positionLimit) — already returned in prev. question
+  acceptedTrack: number;    // min(trackTotal, positionLimit) — capacity already occupied by track
+  freeCapacity: number;     // positionLimit − acceptedTrack
+  colorAmount: number;      // color chip field contribution
+  cashAmount: number;       // cash chip field contribution
+  completeAmount: number;   // complete bet field contribution
+  fieldTotal: number;       // colorAmount + cashAmount + completeAmount
+  change: number;           // max(0, fieldTotal − freeCapacity) — the field change answer
 }
 
 interface TrackFieldIntersectionQuizRecord {
@@ -1734,8 +1737,8 @@ export default function RouletteTable({
     const chipValue = settings.chipValue ?? 10;
     const rules = getAllRules();
 
-    // ── Step 1: Build track position map (series + neighbours) ──────────────
-    // Each unique positionId accumulates trackTotal from all sources.
+    // ── Steps 1–2: Build track position map (series + neighbours → physical positions, summed) ──
+    // All contributions to the same positionId are accumulated before any cap is applied.
     type TrackEntry = { betLabel: string; limitMultiplier: number; trackTotal: number };
     const trackMap = new Map<string, TrackEntry>();
     const addTrack = (positionId: string, limitMultiplier: number, betLabel: string, amount: number) => {
@@ -1774,17 +1777,23 @@ export default function RouletteTable({
       }
     }
 
-    // ── Step 2: Build field position map (color + cash + completes) ─────────
-    // fieldMap: positionId → total field amount on that position.
-    const chipCountByPos = new Map<string, number>();
-    for (const c of game.chips) chipCountByPos.set(c.positionId, (chipCountByPos.get(c.positionId) ?? 0) + c.count);
-    const cashByPos = new Map<string, number>();
-    for (const cc of game.cashChipStacks) cashByPos.set(cc.positionId, (cashByPos.get(cc.positionId) ?? 0) + cc.denomination);
+    // ── Step 5: Build field position maps (color + cash + completes → physical positions) ──
+    // Track color, cash, and complete amounts separately so the report can break them down.
+    const colorAmtByPos  = new Map<string, number>(); // positionId → color chip amount
+    const cashAmtByPos   = new Map<string, number>(); // positionId → cash chip amount
+    const completeAmtByPos = new Map<string, number>(); // positionId → complete contribution
 
-    const fieldMap = new Map<string, number>(); // positionId → total field amount
-    const addField = (positionId: string, amount: number) =>
-      fieldMap.set(positionId, (fieldMap.get(positionId) ?? 0) + amount);
+    const addComplete = (positionId: string, amount: number) =>
+      completeAmtByPos.set(positionId, (completeAmtByPos.get(positionId) ?? 0) + amount);
 
+    // Color chips
+    for (const c of game.chips) {
+      colorAmtByPos.set(c.positionId, (colorAmtByPos.get(c.positionId) ?? 0) + c.count * chipValue);
+    }
+    // Cash chips
+    for (const cc of game.cashChipStacks) {
+      cashAmtByPos.set(cc.positionId, (cashAmtByPos.get(cc.positionId) ?? 0) + cc.denomination);
+    }
     // Dozen complete → expand to real positions
     if (game.dozenCompleteBet) {
       const { amount, dozen } = game.dozenCompleteBet;
@@ -1798,12 +1807,11 @@ export default function RouletteTable({
           for (const e of rawEntries) {
             if (!e || !Array.isArray(e.numbers) || typeof e.chips !== "number") continue;
             const posId = findPositionId(betType, e.numbers as number[]);
-            if (posId) addField(posId, playPerUnit * e.chips);
+            if (posId) addComplete(posId, playPerUnit * e.chips);
           }
         }
       }
     }
-
     // Number completes → expand to real positions
     for (const ncb of game.numberCompleteBets) {
       const completeRule = (rules.completeBets as Array<{ number: number; chipsRequired: number; bets: Record<string, unknown> }>).find(cb => cb.number === ncb.number);
@@ -1815,40 +1823,54 @@ export default function RouletteTable({
         for (const e of rawEntries) {
           if (!e || !Array.isArray(e.numbers) || typeof e.chips !== "number") continue;
           const posId = findPositionId(betType, e.numbers as number[]);
-          if (posId) addField(posId, playPerUnit * e.chips);
+          if (posId) addComplete(posId, playPerUnit * e.chips);
         }
       }
     }
 
-    // Color chips and cash
-    for (const [posId, count] of chipCountByPos.entries()) addField(posId, count * chipValue);
-    for (const [posId, denom] of cashByPos.entries()) addField(posId, denom);
-
-    // ── Steps 3-8: Iterate track positions, compute additional change ────────
-    // For each track position:
-    //   fieldAmount  = field map value (0 if absent)
-    //   q2Change     = max(0, fieldAmount − positionLimit)  (already paid in Q2)
-    //   fieldRem     = fieldAmount − q2Change = min(fieldAmount, positionLimit)
-    //   total        = fieldRem + trackTotal
-    //   change       = max(0, total − positionLimit)
+    // ── Steps 3–6: For each position with track bets, compute field change ──────
+    // New algorithm:
+    //   Step 3: acceptedTrack = min(trackTotal, positionLimit)
+    //           trackChange   = trackTotal − acceptedTrack  (already returned in prev. question)
+    //   Step 4: freeCapacity  = positionLimit − acceptedTrack
+    //   Step 5: fieldTotal    = color + cash + completes  (all field bets as one sum)
+    //   Step 6: fieldChange   = max(0, fieldTotal − freeCapacity)
+    //
+    // The track change is NOT recalculated here — it was already returned in the
+    // previous "track×track" question. We only report how much field bets overflow
+    // the remaining capacity that the track has left.
     const lines: TrackFieldIntersectionLineSummary[] = [];
     for (const [positionId, entry] of trackMap.entries()) {
-      const positionLimit = maxBet * entry.limitMultiplier;
-      const fieldAmount   = fieldMap.get(positionId) ?? 0;
-      const q2Change      = Math.max(0, fieldAmount - positionLimit);
-      const fieldRemainder = fieldAmount - q2Change; // = min(fieldAmount, positionLimit)
-      const trackAmount   = entry.trackTotal;
-      const totalAmount   = fieldRemainder + trackAmount;
-      const change        = Math.max(0, totalAmount - positionLimit);
+      const positionLimit  = maxBet * entry.limitMultiplier;
+
+      // Step 3: cap track at position limit (change already returned in prev. question)
+      const trackTotal     = entry.trackTotal;
+      const trackChange    = Math.max(0, trackTotal - positionLimit);
+      const acceptedTrack  = trackTotal - trackChange; // = min(trackTotal, positionLimit)
+
+      // Step 4: remaining capacity for field bets
+      const freeCapacity   = positionLimit - acceptedTrack; // always ≥ 0
+
+      // Step 5: total field bets on this position
+      const colorAmount    = colorAmtByPos.get(positionId) ?? 0;
+      const cashAmount     = cashAmtByPos.get(positionId) ?? 0;
+      const completeAmount = completeAmtByPos.get(positionId) ?? 0;
+      const fieldTotal     = colorAmount + cashAmount + completeAmount;
+
+      // Step 6: field change — only field bets that cannot fit in remaining capacity
+      const change         = Math.max(0, fieldTotal - freeCapacity);
       if (change > 0) {
         lines.push({
           label: entry.betLabel,
-          fieldAmount,
-          q2Change,
-          fieldRemainder,
-          trackAmount,
-          totalAmount,
           positionLimit,
+          trackTotal,
+          trackChange,
+          acceptedTrack,
+          freeCapacity,
+          colorAmount,
+          cashAmount,
+          completeAmount,
+          fieldTotal,
           change,
         });
       }
@@ -3600,13 +3622,17 @@ export default function RouletteTable({
                           {trackFieldIntersectionRecord.lines.map((line, li) => (
                             <div key={li} style={{ marginBottom: 8 }}>
                               <strong>{line.label}</strong><br/>
-                              Поле: {line.fieldAmount}<br/>
-                              Сдача во втором вопросе: {line.q2Change}<br/>
-                              Осталось на позиции: {line.fieldRemainder}<br/>
-                              Трек: {line.trackAmount}<br/>
-                              Итого: {line.totalAmount}<br/>
                               Лимит: {line.positionLimit}<br/>
-                              Дополнительная сдача: {line.change}
+                              Сумма трека: {line.trackTotal}<br/>
+                              Ранее возвращено (сдача трека): {line.trackChange}<br/>
+                              Принято треком: {line.acceptedTrack}<br/>
+                              Свободная ёмкость: {line.positionLimit} − {line.acceptedTrack} = {line.freeCapacity}<br/>
+                              Поле:{" "}
+                              {line.colorAmount > 0 && <>цвет {line.colorAmount}{(line.cashAmount > 0 || line.completeAmount > 0) ? " + " : ""}</>}
+                              {line.cashAmount > 0 && <>кэш {line.cashAmount}{line.completeAmount > 0 ? " + " : ""}</>}
+                              {line.completeAmount > 0 && <>комплиты {line.completeAmount}</>}
+                              {" "}= {line.fieldTotal}<br/>
+                              Сдача поля: max(0, {line.fieldTotal} − {line.freeCapacity}) = {line.change}
                             </div>
                           ))}
                           <div className="quiz-report-total">
