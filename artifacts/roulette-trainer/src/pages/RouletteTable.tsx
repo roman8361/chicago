@@ -50,6 +50,11 @@ interface WinningFieldEntry {
   displayAs: "color" | "cash" | "merged";
   /** Original chip count — only relevant when displayAs === "color" */
   colorCount: number;
+  /** Per-source capped amounts that make up normalAmountCapped */
+  colorCapped: number;
+  cashCapped: number;
+  seriesCapped: number;
+  neighboursCapped: number;
   /** Capped normal bets (color + cash + series + neighbours) on this position */
   normalAmountCapped: number;
   /** Complete payout amount added separately to Straight of drawn number (bypasses normal max); 0 on all other positions */
@@ -399,17 +404,19 @@ function computeWinningField(
   }
 
   // ── Step B: Collect normal bets (color, cash, series, neighbours) ─────────────
-  const colorAmts  = new Map<string, number>(); // color chips: count * chipValue
-  const colorCnts  = new Map<string, number>(); // color chips: raw count (for display)
-  const cashAmts   = new Map<string, number>(); // field cash chips
-  const otherAmts  = new Map<string, number>(); // series + neighbours
+  const colorAmts      = new Map<string, number>(); // color chips: count * chipValue
+  const colorCnts      = new Map<string, number>(); // color chips: raw count (for display)
+  const cashAmts       = new Map<string, number>(); // field cash chips
+  const seriesAmts     = new Map<string, number>(); // series only
+  const neighboursAmts = new Map<string, number>(); // neighbours only
 
   const addColor = (id: string, count: number, amount: number) => {
     colorAmts.set(id, (colorAmts.get(id) ?? 0) + amount);
     colorCnts.set(id, (colorCnts.get(id) ?? 0) + count);
   };
-  const addCash  = (id: string, amount: number) => cashAmts.set(id, (cashAmts.get(id) ?? 0) + amount);
-  const addOther = (id: string, amount: number) => otherAmts.set(id, (otherAmts.get(id) ?? 0) + amount);
+  const addCash       = (id: string, amount: number) => cashAmts.set(id,       (cashAmts.get(id)       ?? 0) + amount);
+  const addSeries     = (id: string, amount: number) => seriesAmts.set(id,     (seriesAmts.get(id)     ?? 0) + amount);
+  const addNeighbours = (id: string, amount: number) => neighboursAmts.set(id, (neighboursAmts.get(id) ?? 0) + amount);
 
   // 1. Color chips (winning positions only)
   for (const stack of game.chips) {
@@ -439,7 +446,7 @@ function computeWinningField(
         if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
         const positionId = findPositionId(catInfo.betType, entry.numbers);
         if (!positionId) continue;
-        addOther(positionId, playPerUnit * entry.chips);
+        addSeries(positionId, playPerUnit * entry.chips);
       }
     }
   }
@@ -450,12 +457,15 @@ function computeWinningField(
     for (const nb of game.neighboursBets) {
       const nums = neighboursMap[String(nb.number)];
       if (!Array.isArray(nums) || !nums.includes(drawnNumber)) continue;
-      addOther(straightId, nb.baseAmount);
+      addNeighbours(straightId, nb.baseAmount);
     }
   }
 
   // ── Step C: Build result entries with complete-aware capacity ─────────────────
-  const allIds = new Set([...colorAmts.keys(), ...cashAmts.keys(), ...otherAmts.keys()]);
+  const allIds = new Set([
+    ...colorAmts.keys(), ...cashAmts.keys(),
+    ...seriesAmts.keys(), ...neighboursAmts.keys(),
+  ]);
   // Ensure Straight of drawnNumber is present when there is a complete payout to add.
   if (completePayoutAmount > 0) allIds.add(straightId);
 
@@ -464,22 +474,26 @@ function computeWinningField(
   for (const positionId of allIds) {
     const pos = BET_POSITIONS_MAP.get(positionId);
     if (!pos) continue;
-    const colorAmt = colorAmts.get(positionId) ?? 0;
-    const colorCnt = colorCnts.get(positionId) ?? 0;
-    const cashAmt  = cashAmts.get(positionId) ?? 0;
-    const otherAmt = otherAmts.get(positionId) ?? 0;
-    const normalTotal = colorAmt + cashAmt + otherAmt;
+    const colorAmt      = colorAmts.get(positionId)      ?? 0;
+    const colorCnt      = colorCnts.get(positionId)      ?? 0;
+    const cashAmt       = cashAmts.get(positionId)        ?? 0;
+    const seriesAmt     = seriesAmts.get(positionId)      ?? 0;
+    const neighboursAmt = neighboursAmts.get(positionId)  ?? 0;
 
-    const limitMult   = BET_COVER_COUNT[pos.type] ?? 1;
+    const limitMult     = BET_COVER_COUNT[pos.type] ?? 1;
     const positionLimit = maxBet * limitMult;
 
     // Internal complete occupies part of this position's limit (capped at limit).
     const completeOccupied = Math.min(completeInternal.get(positionId) ?? 0, positionLimit);
     // Free capacity remaining after the internal complete stake.
-    const freeCapacity = Math.max(0, positionLimit - completeOccupied);
+    let remaining = Math.max(0, positionLimit - completeOccupied);
 
-    // Normal bets can only fill the free capacity left after internal complete.
-    const normalCapped = Math.min(normalTotal, freeCapacity);
+    // Sequential capping: color → cash → series → neighbours, each consuming remaining capacity.
+    const colorCapped      = Math.min(colorAmt,      remaining); remaining -= colorCapped;
+    const cashCapped       = Math.min(cashAmt,       remaining); remaining -= cashCapped;
+    const seriesCapped     = Math.min(seriesAmt,     remaining); remaining -= seriesCapped;
+    const neighboursCapped = Math.min(neighboursAmt, remaining);
+    const normalCapped     = colorCapped + cashCapped + seriesCapped + neighboursCapped;
 
     // Complete payout amount is added ONLY to Straight Up of drawnNumber and is
     // NOT subject to the normal position cap (separate, unconditional stake).
@@ -489,15 +503,17 @@ function computeWinningField(
     if (finalAmount <= 0) continue;
 
     // Determine display mode.
+    const hasOnlyColor = colorCapped > 0 && cashCapped === 0 && seriesCapped === 0 && neighboursCapped === 0;
+    const hasOnlyCash  = colorCapped === 0 && cashCapped > 0 && seriesCapped === 0 && neighboursCapped === 0;
     let displayAs: WinningFieldEntry["displayAs"];
     if (completeAdded > 0) {
       displayAs = "merged";
-    } else if (colorAmt > 0 && cashAmt === 0 && otherAmt === 0) {
-      displayAs = "color";   // solo color chip
-    } else if (colorAmt === 0 && cashAmt > 0 && otherAmt === 0) {
-      displayAs = "cash";    // solo cash chip
+    } else if (hasOnlyColor) {
+      displayAs = "color";
+    } else if (hasOnlyCash) {
+      displayAs = "cash";
     } else {
-      displayAs = "merged";  // any mix → green merged chip
+      displayAs = "merged";
     }
 
     result.push({
@@ -508,6 +524,10 @@ function computeWinningField(
       payoutMultiplier: payoutMap[pos.type] ?? 0,
       displayAs,
       colorCount: colorCnt,
+      colorCapped,
+      cashCapped,
+      seriesCapped,
+      neighboursCapped,
       normalAmountCapped: normalCapped,
       completeAmountAdded: completeAdded,
     });
@@ -3886,21 +3906,82 @@ export default function RouletteTable({
                             {fieldRecord.entries.map((e, j) => {
                               const typeLabel = ({ straight: "Straight Up", split: "Split", street: "Street", corner: "Corner", sixline: "Six-Line" } as Record<string, string>)[e.positionType] ?? e.positionType;
                               const hasSeparateComplete = e.positionType === "straight" && e.completeAmountAdded > 0;
+
+                              // Per-source normal bets (non-zero only)
+                              const normalParts: Array<{ label: string; amount: number }> = [];
+                              if (e.colorCapped     > 0) normalParts.push({ label: "Цвет",   amount: e.colorCapped     });
+                              if (e.cashCapped      > 0) normalParts.push({ label: "Кэш",    amount: e.cashCapped      });
+                              if (e.seriesCapped    > 0) normalParts.push({ label: "Серии",  amount: e.seriesCapped    });
+                              if (e.neighboursCapped > 0) normalParts.push({ label: "Соседи", amount: e.neighboursCapped });
+
+                              // Per-complete summary for Straight Up (group by label)
+                              type CompleteEntry = { label: string; count: number; playPerUnit: number; total: number };
+                              const completeSummary: CompleteEntry[] = [];
+                              if (hasSeparateComplete && completeNumberPayoutRecord) {
+                                const byLabel = new Map<string, { playPerUnit: number; count: number }>();
+                                for (const wp of completeNumberPayoutRecord.winningPositions) {
+                                  for (const c of wp.contributions) {
+                                    const cur = byLabel.get(c.completeLabel) ?? { playPerUnit: c.playPerUnit, count: 0 };
+                                    cur.count += 1;
+                                    byLabel.set(c.completeLabel, cur);
+                                  }
+                                }
+                                for (const [label, { playPerUnit, count }] of byLabel) {
+                                  completeSummary.push({ label, count, playPerUnit, total: count * playPerUnit });
+                                }
+                              }
+
                               return (
-                                <div key={j} style={{ marginBottom: 6 }}>
+                                <div key={j} style={{ marginBottom: 8 }}>
                                   <strong>{typeLabel} {e.positionNums.join("-")}</strong><br/>
+
                                   {hasSeparateComplete ? (
+                                    // ── Straight Up: show normal parts + complete parts separately ──
                                     <>
-                                      Обычные ставки (цвет, кэш, серии, соседи): {e.normalAmountCapped}<br/>
-                                      Выигрышные комплиты (отдельная ставка): {e.completeAmountAdded}<br/>
-                                      (ставка комплита не ограничивается максимумом Straight)<br/>
-                                      Итоговая ставка Straight: {e.normalAmountCapped} + {e.completeAmountAdded} = {e.amount}<br/>
+                                      {e.normalAmountCapped > 0 && (
+                                        <>
+                                          Обычные ставки:<br/>
+                                          {normalParts.map((p, pi) => (
+                                            <span key={pi}>— {p.label}: {p.amount}<br/></span>
+                                          ))}
+                                          {normalParts.length > 1
+                                            ? <>Итого обычные: {normalParts.map(p => p.amount).join(" + ")} = {e.normalAmountCapped}<br/></>
+                                            : <>Итого обычные: {e.normalAmountCapped}<br/></>
+                                          }
+                                        </>
+                                      )}
+                                      Выигрышные комплиты:<br/>
+                                      {completeSummary.map((cs, ci) => (
+                                        <span key={ci}>{cs.label}: {cs.count} пересечений × {cs.playPerUnit} = {cs.total}<br/></span>
+                                      ))}
+                                      {completeSummary.length > 1
+                                        ? <>Итого комплиты: {completeSummary.map(cs => cs.total).join(" + ")} = {e.completeAmountAdded}<br/></>
+                                        : <>Итого комплиты: {e.completeAmountAdded}<br/></>
+                                      }
+                                      Ставка комплитов не ограничивается максимумом Straight.<br/>
+                                      {e.normalAmountCapped > 0
+                                        ? <>Итоговая ставка Straight: {e.normalAmountCapped} + {e.completeAmountAdded} = {e.amount}<br/></>
+                                        : <>Итоговая ставка Straight: {e.amount}<br/></>
+                                      }
                                     </>
                                   ) : (
+                                    // ── All other positions: show composition then total ──
                                     <>
-                                      Итоговая ставка: {e.amount}<br/>
+                                      {normalParts.length > 0 && (
+                                        <>
+                                          Состав ставки:<br/>
+                                          {normalParts.map((p, pi) => (
+                                            <span key={pi}>— {p.label}: {p.amount}<br/></span>
+                                          ))}
+                                        </>
+                                      )}
+                                      {normalParts.length > 1
+                                        ? <>Итоговая ставка: {normalParts.map(p => p.amount).join(" + ")} = {e.amount}<br/></>
+                                        : <>Итоговая ставка: {e.amount}<br/></>
+                                      }
                                     </>
                                   )}
+
                                   Коэффициент: {e.payoutMultiplier}<br/>
                                   {e.amount} × {e.payoutMultiplier} = {e.amount * e.payoutMultiplier}
                                 </div>
