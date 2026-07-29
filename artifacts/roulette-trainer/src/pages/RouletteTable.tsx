@@ -348,14 +348,61 @@ function computeWinningField(
   const drawnNumber = game.drawnNumber;
   const straightId  = `su-${drawnNumber}`;
 
-  // Track contributions by source type so we can decide display mode per position.
-  // Complete bets are NO LONGER expanded into their physical positions here —
-  // their aggregate (completePayoutAmount) is added directly to the Straight of
-  // the winning number as a separate stake that ignores the normal position cap.
+  // ── Step A: Internally spread winning completes across their physical positions ──
+  // These amounts are NEVER displayed on the field. They reduce the free capacity
+  // available to normal bets (color, cash, series, neighbours) on each position.
+  type CompleteBetRuleT = { number: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+  type DozenBetRuleT   = { dozen: number; chipsRequired: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> };
+
+  const completeInternal = new Map<string, number>(); // positionId → summed internal complete amount
+  const addInternal = (posId: string, amount: number) =>
+    completeInternal.set(posId, (completeInternal.get(posId) ?? 0) + amount);
+
+  // Number completes
+  for (const ncb of game.numberCompleteBets) {
+    const completeRule = (rules.completeBets as CompleteBetRuleT[])?.find(cb => cb.number === ncb.number);
+    if (!completeRule) continue;
+    const { playPerUnit } = calcOneCompleteChange(ncb.amount, ncb.chipsRequired, maxBet, completeMultiplicity);
+    if (playPerUnit <= 0) continue;
+    for (const [catKey, catInfo] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+      const entries = (completeRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>)[catKey];
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+        const posId = findPositionId(catInfo.betType, entry.numbers);
+        if (!posId) continue;
+        addInternal(posId, playPerUnit * entry.chips);
+      }
+    }
+  }
+
+  // Dozen complete
+  if (game.dozenCompleteBet) {
+    const { amount, dozen } = game.dozenCompleteBet;
+    const dozenNum = dozen === "1ST_12" ? 1 : dozen === "2ND_12" ? 2 : 3;
+    const dozenRule = (rules.dozenComplete as { dozens: DozenBetRuleT[] })?.dozens?.find(d => d.dozen === dozenNum);
+    if (dozenRule) {
+      const { playPerUnit } = calcOneCompleteChange(amount, dozenRule.chipsRequired, maxBet, completeMultiplicity);
+      if (playPerUnit > 0) {
+        for (const [catKey, catInfo] of Object.entries(DOZEN_COMPLETE_CATEGORY_MAP)) {
+          const entries = (dozenRule.bets as Record<string, Array<{ numbers: number[]; chips: number }>>)[catKey];
+          if (!Array.isArray(entries)) continue;
+          for (const entry of entries) {
+            if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+            const posId = findPositionId(catInfo.betType, entry.numbers);
+            if (!posId) continue;
+            addInternal(posId, playPerUnit * entry.chips);
+          }
+        }
+      }
+    }
+  }
+
+  // ── Step B: Collect normal bets (color, cash, series, neighbours) ─────────────
   const colorAmts  = new Map<string, number>(); // color chips: count * chipValue
   const colorCnts  = new Map<string, number>(); // color chips: raw count (for display)
   const cashAmts   = new Map<string, number>(); // field cash chips
-  const otherAmts  = new Map<string, number>(); // series + neighbours (no completes)
+  const otherAmts  = new Map<string, number>(); // series + neighbours
 
   const addColor = (id: string, count: number, amount: number) => {
     colorAmts.set(id, (colorAmts.get(id) ?? 0) + amount);
@@ -397,7 +444,7 @@ function computeWinningField(
     }
   }
 
-  // 4. Neighbours → Straight Up on drawnNumber
+  // 4. Neighbours → Straight Up of drawnNumber
   const neighboursMap = rules.neighbours as Record<string, number[]> | undefined;
   if (neighboursMap) {
     for (const nb of game.neighboursBets) {
@@ -407,17 +454,9 @@ function computeWinningField(
     }
   }
 
-  // NOTE: Complete bets (steps 5 & 6 from the old logic) are intentionally NOT
-  // expanded here into Split / Street / Corner / Six-Line / Straight positions.
-  // The pre-computed completePayoutAmount is added as a single separate stake on
-  // the Straight of the winning number below, after the normal-cap is applied.
-
-  // Collect all touched positions and build result entries
-  const TYPE_LIMIT_MULT = BET_COVER_COUNT;
+  // ── Step C: Build result entries with complete-aware capacity ─────────────────
   const allIds = new Set([...colorAmts.keys(), ...cashAmts.keys(), ...otherAmts.keys()]);
-
-  // Ensure the Straight of the drawn number is included when there is a
-  // complete amount to add, even if no regular bets land on it.
+  // Ensure Straight of drawnNumber is present when there is a complete payout to add.
   if (completePayoutAmount > 0) allIds.add(straightId);
 
   const result: WinningFieldEntry[] = [];
@@ -430,27 +469,33 @@ function computeWinningField(
     const cashAmt  = cashAmts.get(positionId) ?? 0;
     const otherAmt = otherAmts.get(positionId) ?? 0;
     const normalTotal = colorAmt + cashAmt + otherAmt;
-    const limitMult = TYPE_LIMIT_MULT[pos.type] ?? 1;
 
-    // Normal bets (color + cash + series + neighbours) are capped at position limit.
-    const normalCapped = Math.min(normalTotal, maxBet * limitMult);
+    const limitMult   = BET_COVER_COUNT[pos.type] ?? 1;
+    const positionLimit = maxBet * limitMult;
 
-    // Complete amount is only added to the Straight of the drawn number and is
-    // NOT subject to the normal position cap (it is a separate, independent stake).
+    // Internal complete occupies part of this position's limit (capped at limit).
+    const completeOccupied = Math.min(completeInternal.get(positionId) ?? 0, positionLimit);
+    // Free capacity remaining after the internal complete stake.
+    const freeCapacity = Math.max(0, positionLimit - completeOccupied);
+
+    // Normal bets can only fill the free capacity left after internal complete.
+    const normalCapped = Math.min(normalTotal, freeCapacity);
+
+    // Complete payout amount is added ONLY to Straight Up of drawnNumber and is
+    // NOT subject to the normal position cap (separate, unconditional stake).
     const completeAdded = (positionId === straightId) ? completePayoutAmount : 0;
 
     const finalAmount = normalCapped + completeAdded;
     if (finalAmount <= 0) continue;
 
     // Determine display mode.
-    // Any position that receives the complete stake is shown as "merged".
     let displayAs: WinningFieldEntry["displayAs"];
     if (completeAdded > 0) {
       displayAs = "merged";
     } else if (colorAmt > 0 && cashAmt === 0 && otherAmt === 0) {
-      displayAs = "color";   // solo color chip — keep as blue chip
+      displayAs = "color";   // solo color chip
     } else if (colorAmt === 0 && cashAmt > 0 && otherAmt === 0) {
-      displayAs = "cash";    // solo cash chip — keep as bronze chip
+      displayAs = "cash";    // solo cash chip
     } else {
       displayAs = "merged";  // any mix → green merged chip
     }
