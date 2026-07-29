@@ -2502,7 +2502,7 @@ export default function RouletteTable({
     });
   };
 
-  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
+  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout" || quizPhase?.kind === "report";
   const showReportField  = quizPhase?.kind === "report";
 
   // ── Focus Mode ───────────────────────────────────────────────────────────────
@@ -2807,8 +2807,10 @@ export default function RouletteTable({
             );
           })()}
 
-          {/* Chips */}
-          {fieldSource && fieldSource.chips.map(stack => {
+          {/* Chips — skip positions covered by winningFieldChips when winning field is active */}
+          {fieldSource && fieldSource.chips.filter(stack =>
+            !showWinningField || !(winningFieldChips?.some(e => e.positionId === stack.positionId))
+          ).map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const count = stack.count;
@@ -2825,8 +2827,10 @@ export default function RouletteTable({
             );
           })}
 
-          {/* Cash chips — round, slightly larger than color chips */}
-          {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.map(stack => {
+          {/* Cash chips — skip positions covered by winningFieldChips when winning field is active */}
+          {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.filter(stack =>
+            !showWinningField || !(winningFieldChips?.some(e => e.positionId === stack.positionId))
+          ).map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.denomination);
@@ -2855,11 +2859,14 @@ export default function RouletteTable({
             );
           })}
 
-          {/* Winning field — solo color chips: keep as original blue chip */}
+          {/* Winning field — solo color chips: keep as original blue chip.
+               Use capped chip count (colorCapped / chipValue) so that if completes
+               reduced the available capacity the shown count matches the payout calc. */}
           {showWinningField && winningFieldChips && winningFieldChips.filter(e => e.displayAs === "color").map(entry => {
             const pos = chipPosMap.get(entry.positionId);
             if (!pos) return null;
-            const count = entry.colorCount;
+            const chipValue = settings.chipValue ?? 10;
+            const count = Math.max(1, Math.round(entry.colorCapped / chipValue));
             return (
               <g key={`wf-color-${entry.positionId}`} style={{ pointerEvents: "none" }}>
                 <circle cx={pos.x} cy={pos.y} r={19.1}
