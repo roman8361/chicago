@@ -827,7 +827,7 @@ export default function RouletteTable({
 
   const winningFieldChips = useMemo<WinningFieldEntry[] | null>(() => {
     if (!game || !quizPhase) return null;
-    if (quizPhase.kind !== "field" && quizPhase.kind !== "colorPayout" && quizPhase.kind !== "report") return null;
+    if (quizPhase.kind !== "field" && quizPhase.kind !== "colorPayout") return null;
     const maxBet = Math.max(1, settings.maxBet);
     const mult   = Math.max(10, Math.min(1000, settings.multiplicity ?? 10));
     const chipValue = settings.chipValue ?? 10;
@@ -2502,7 +2502,7 @@ export default function RouletteTable({
     });
   };
 
-  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout" || quizPhase?.kind === "report";
+  const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
   const showReportField  = quizPhase?.kind === "report";
 
   // ── Focus Mode ───────────────────────────────────────────────────────────────
