@@ -1338,7 +1338,6 @@ export default function RouletteTable({
       .map(t => trackBets.find(tb => tb.type === t))
       .filter((tb): tb is TrackBet => tb !== undefined);
     const hasCompletes = settings.completeField === "yes" || settings.completeDozen === "yes";
-    const needsTrackInt = ordered.length > 0 || neighboursBets.length > 0;
     // Field bets = color chips or cash chips on the field (track bets excluded).
     // The completesIntersection question is asked whenever field bets are present,
     // regardless of whether completes are present.
@@ -1368,11 +1367,12 @@ export default function RouletteTable({
     setCompleteNumberPayoutInput("");
     setSeriesFieldPayoutInput("");
     setNeighboursPayoutInput("");
+    // trackIntersection requires BOTH field bets AND track bets.
+    // When no field bets are present at the start, trackIntersection is never the first phase.
     setQuizPhase(
       hasCompletes ? { kind: "completes" } :
       hasFieldBets  ? { kind: "completesIntersection" } :
       ordered.length > 0 ? { kind: "series" } :
-      needsTrackInt ? { kind: "trackIntersection" } :
       { kind: "field" }
     );
 
@@ -1474,8 +1474,13 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setSeriesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setSeriesInput("");
-    // Show track intersection question after series (activeSeries.length > 0 here, so condition is met)
-    setQuizPhase({ kind: "trackIntersection" });
+    // trackIntersection requires both track bets AND field bets.
+    // If field bets (color chips, cash, or completes) are absent, skip trackIntersection.
+    const hasFieldBetsForTrack = game.chips.length > 0
+      || (game.cashChipStacks ?? []).length > 0
+      || !!game.dozenCompleteBet
+      || game.numberCompleteBets.length > 0;
+    setQuizPhase(hasFieldBetsForTrack ? { kind: "trackIntersection" } : { kind: "trackFieldIntersection" });
   }, [game, quizPhase, activeSeries, seriesInput, settings.multiplicity, seriesDivisors]);
 
   const handleCheckField = useCallback(() => {
@@ -1542,11 +1547,11 @@ export default function RouletteTable({
     setCompletesInput("");
     // Go to completesIntersection only when field bets (color/cash chips) are present.
     // If there are no field bets, skip directly to the next phase.
+    // trackIntersection also requires field bets, so it is skipped here too.
     const hasFieldBets = game.chips.length > 0 || (game.cashChipStacks ?? []).length > 0;
     setQuizPhase(hasFieldBets
       ? { kind: "completesIntersection" }
       : activeSeries.length > 0 ? { kind: "series" }
-      : game.neighboursBets.length > 0 ? { kind: "trackIntersection" }
       : { kind: "field" }
     );
   }, [game, quizPhase, completesInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
@@ -2547,7 +2552,13 @@ export default function RouletteTable({
     : (showWinningField ? null : game);
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
-  const hasTrackIntersectionQuestion = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
+  // trackIntersection requires BOTH field bets (color/cash/completes) AND track bets (series/neighbours).
+  const hasTrackFieldBets = (game?.chips?.length ?? 0) > 0
+    || (game?.cashChipStacks?.length ?? 0) > 0
+    || !!game?.dozenCompleteBet
+    || (game?.numberCompleteBets?.length ?? 0) > 0;
+  const hasTrackBets = activeSeries.length > 0 || (game?.neighboursBets?.length ?? 0) > 0;
+  const hasTrackIntersectionQuestion = hasTrackFieldBets && hasTrackBets;
   const anySeriesWon = (() => {
     if (!game || activeSeries.length === 0) return false;
     const rules = getAllRules();
