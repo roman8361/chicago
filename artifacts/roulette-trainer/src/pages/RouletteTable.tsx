@@ -310,11 +310,8 @@ function decidePostTrackFieldPhase(
     );
   });
   const neighboursMap = rules.neighbours as Record<string, number[]>;
-  const neighboursWonNow = game.neighboursBets.length > 0 && game.neighboursBets.some(nb => {
-    const nums = neighboursMap[String(nb.number)];
-    return Array.isArray(nums) && nums.includes(game.drawnNumber);
-  });
-  return seriesWonNow ? { kind: "seriesFieldPayout" } : neighboursWonNow ? { kind: "neighboursPayout" } : { kind: "field" };
+  const hasNeighboursBetsNow = game.neighboursBets.length > 0;
+  return seriesWonNow ? { kind: "seriesFieldPayout" } : hasNeighboursBetsNow ? { kind: "neighboursPayout" } : { kind: "field" };
 }
 
 function generateColorPayout(
@@ -2385,11 +2382,8 @@ export default function RouletteTable({
     setSeriesFieldPayoutInput("");
     const rulesNow = getAllRules();
     const neighboursMapAfterSeries = rulesNow.neighbours as Record<string, number[]>;
-    const neighboursWonAfterSeries = game.neighboursBets.length > 0 && game.neighboursBets.some(nb => {
-      const nums = neighboursMapAfterSeries[String(nb.number)];
-      return Array.isArray(nums) && nums.includes(game.drawnNumber);
-    });
-    setQuizPhase(neighboursWonAfterSeries ? { kind: "neighboursPayout" } : { kind: "field" });
+    const hasNeighboursBetsAfterSeries = game.neighboursBets.length > 0;
+    setQuizPhase(hasNeighboursBetsAfterSeries ? { kind: "neighboursPayout" } : { kind: "field" });
   }, [game, quizPhase, seriesFieldPayoutInput, activeSeries, settings.multiplicity, settings.maxBet, settings.chipValue, settings.completeMultiplicity, getAllRules]);
 
   // ── Neighbours Payout (выигравшие соседи → сумма в номер) ───────────────────
@@ -2623,7 +2617,7 @@ export default function RouletteTable({
   const completeNumberPayoutQuestionNum = completeTrackIntQuestionNum; // completeTrackIntersection question excluded
   const seriesFieldPayoutQuestionNum = completeNumberPayoutQuestionNum + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 1 : 0) + (hasTrackFieldIntersectionQuestion ? 1 : 0) + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + (anyNeighboursWon ? 1 : 0) + 1; // completeTrackIntersection question excluded
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 1 : 0) + (hasTrackFieldIntersectionQuestion ? 1 : 0) + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + ((game?.neighboursBets?.length ?? 0) > 0 ? 1 : 0) + 1; // completeTrackIntersection question excluded
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
