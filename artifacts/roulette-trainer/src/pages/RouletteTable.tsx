@@ -1543,10 +1543,15 @@ export default function RouletteTable({
     // If there are no field bets, skip to the next phase.
     // trackIntersection only needs track bets, so it can follow even without field bets.
     const hasFieldBets = game.chips.length > 0 || (game.cashChipStacks ?? []).length > 0;
+    // When there are no color/cash field bets, completesIntersection is skipped.
+    // Still route to completeNumberPayout before field if any complete bet exists and there
+    // are no track bets (track paths handle the routing themselves via trackFieldIntersection).
+    const hasAnyCompleteBet = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
     setQuizPhase(hasFieldBets
       ? { kind: "completesIntersection" }
       : activeSeries.length > 0 ? { kind: "series" }
       : game.neighboursBets.length > 0 ? { kind: "trackIntersection" }
+      : hasAnyCompleteBet ? { kind: "completeNumberPayout" }
       : { kind: "field" }
     );
   }, [game, quizPhase, completesInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
@@ -1676,9 +1681,13 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setIntersectionInput("");
+    // Route to completeNumberPayout before field when any complete bet exists and there are
+    // no track bets (track paths handle the routing themselves via trackFieldIntersection).
+    const hasAnyCompleteBetHere = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
     setQuizPhase(
       activeSeries.length > 0 ? { kind: "series" } :
       game.neighboursBets.length > 0 ? { kind: "trackIntersection" } :
+      hasAnyCompleteBetHere ? { kind: "completeNumberPayout" } :
       { kind: "field" }
     );
   }, [game, quizPhase, intersectionInput, activeSeries, settings.maxBet, settings.completeMultiplicity, settings.chipValue, getAllRules]);
@@ -1986,27 +1995,9 @@ export default function RouletteTable({
     setTrackFieldIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setTrackFieldIntersectionInput("");
     // completeTrackIntersection question is excluded. Go to completeNumberPayout
-    // when at least one complete position covers the winning number; otherwise skip.
-    const anyCompleteWonNow = (() => {
-      if (game.dozenCompleteBet) {
-        const dozenNum = game.dozenCompleteBet.dozen === "1ST_12" ? 1 : game.dozenCompleteBet.dozen === "2ND_12" ? 2 : 3;
-        const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }> })?.dozens?.find(d => d.dozen === dozenNum);
-        if (dozenRule) {
-          for (const entries of Object.values(dozenRule.bets)) {
-            if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
-          }
-        }
-      }
-      for (const ncb of game.numberCompleteBets) {
-        const cr = (rules.completeBets as Array<{ number: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)?.find(cb => cb.number === ncb.number);
-        if (!cr) continue;
-        for (const entries of Object.values(cr.bets)) {
-          if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
-        }
-      }
-      return false;
-    })();
-    setQuizPhase(anyCompleteWonNow ? { kind: "completeNumberPayout" } : decidePostTrackFieldPhase(game, activeSeries, rules));
+    // whenever at least one complete bet exists in the round (regardless of whether it won).
+    const anyCompleteExistsNow = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
+    setQuizPhase(anyCompleteExistsNow ? { kind: "completeNumberPayout" } : decidePostTrackFieldPhase(game, activeSeries, rules));
   }, [game, quizPhase, trackFieldIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, settings.chipValue, getAllRules]);
 
   // ── Complete × Track Intersection (комплиты × ставки трека) ─────────────────
@@ -2129,27 +2120,9 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setCompleteTrackIntersectionRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setCompleteTrackIntersectionInput("");
-    // Only ask completeNumberPayout if at least one complete position contains the winning number
-    const anyCompleteWon = (() => {
-      if (game.dozenCompleteBet) {
-        const dozenNum = game.dozenCompleteBet.dozen === "1ST_12" ? 1 : game.dozenCompleteBet.dozen === "2ND_12" ? 2 : 3;
-        const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }> })?.dozens?.find(d => d.dozen === dozenNum);
-        if (dozenRule) {
-          for (const entries of Object.values(dozenRule.bets)) {
-            if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
-          }
-        }
-      }
-      for (const ncb of game.numberCompleteBets) {
-        const completeRule = (rules.completeBets as Array<{ number: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)?.find(cb => cb.number === ncb.number);
-        if (!completeRule) continue;
-        for (const entries of Object.values(completeRule.bets)) {
-          if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(game.drawnNumber))) return true;
-        }
-      }
-      return false;
-    })();
-    setQuizPhase(anyCompleteWon ? { kind: "completeNumberPayout" } : decidePostTrackFieldPhase(game, activeSeries, rules));
+    // Ask completeNumberPayout whenever at least one complete bet exists in the round (regardless of whether it won).
+    const anyCompleteExists = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
+    setQuizPhase(anyCompleteExists ? { kind: "completeNumberPayout" } : decidePostTrackFieldPhase(game, activeSeries, rules));
   }, [game, quizPhase, completeTrackIntersectionInput, activeSeries, settings.maxBet, settings.multiplicity, settings.completeMultiplicity, getAllRules]);
 
   // ── Complete Number Payout (касания комплитов → сумма в выпавший номер) ──────
@@ -2585,39 +2558,18 @@ export default function RouletteTable({
       return Array.isArray(nums) && nums.includes(game.drawnNumber);
     });
   })();
-  // True when at least one complete bet position (straight/split/street/corner/six-line)
-  // contains the winning number — determines whether the completeNumberPayout question is shown.
-  const anyCompletePositionWon = (() => {
-    if (!game) return false;
-    const rules = getAllRules();
-    const drawnNumber = game.drawnNumber;
-    if (game.dozenCompleteBet) {
-      const dozenNum = game.dozenCompleteBet.dozen === "1ST_12" ? 1 : game.dozenCompleteBet.dozen === "2ND_12" ? 2 : 3;
-      const dozenRule = (rules.dozenComplete as { dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }> })?.dozens?.find(d => d.dozen === dozenNum);
-      if (dozenRule) {
-        for (const entries of Object.values(dozenRule.bets)) {
-          if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(drawnNumber))) return true;
-        }
-      }
-    }
-    for (const ncb of game.numberCompleteBets) {
-      const completeRule = (rules.completeBets as Array<{ number: number; bets: Record<string, Array<{ numbers: number[]; chips: number }>> }>)?.find(cb => cb.number === ncb.number);
-      if (!completeRule) continue;
-      for (const entries of Object.values(completeRule.bets)) {
-        if (Array.isArray(entries) && entries.some(e => Array.isArray(e.numbers) && e.numbers.includes(drawnNumber))) return true;
-      }
-    }
-    return false;
-  })();
+  // True when at least one complete bet exists in the round — determines whether the completeNumberPayout question is shown.
+  // The question appears regardless of whether the complete bet covers the winning number.
+  const anyCompletePositionWon = !!game && (!!game.dozenCompleteBet || game.numberCompleteBets.length > 0);
   const hasCompleteTrackQuestion = hasCompletesQuestion && hasTrackIntersectionQuestion;
   const seriesBaseNum = hasCompletesQuestion ? 3 : 1;
   const trackIntQuestionNum = seriesBaseNum + (activeSeries.length > 0 ? 1 : 0);
   const trackFieldIntQuestionNum = trackIntQuestionNum + (hasTrackIntersectionQuestion ? 1 : 0);
   const completeTrackIntQuestionNum = trackFieldIntQuestionNum + (hasTrackFieldIntersectionQuestion ? 1 : 0);
   const completeNumberPayoutQuestionNum = completeTrackIntQuestionNum; // completeTrackIntersection question excluded
-  const seriesFieldPayoutQuestionNum = completeNumberPayoutQuestionNum + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0);
+  const seriesFieldPayoutQuestionNum = completeNumberPayoutQuestionNum + (anyCompletePositionWon ? 1 : 0);
   const neighboursPayoutQuestionNum = seriesFieldPayoutQuestionNum + (anySeriesWon ? 1 : 0);
-  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 1 : 0) + (hasTrackFieldIntersectionQuestion ? 1 : 0) + (hasCompleteTrackQuestion && anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + ((game?.neighboursBets?.length ?? 0) > 0 ? 1 : 0) + 1; // completeTrackIntersection question excluded
+  const fieldQuestionNum = (hasCompletesQuestion ? 2 : 0) + (activeSeries.length > 0 ? 1 : 0) + (hasTrackIntersectionQuestion ? 1 : 0) + (hasTrackFieldIntersectionQuestion ? 1 : 0) + (anyCompletePositionWon ? 1 : 0) + (anySeriesWon ? 1 : 0) + ((game?.neighboursBets?.length ?? 0) > 0 ? 1 : 0) + 1; // completeTrackIntersection question excluded
   const colorPayoutQuestionNum = fieldQuestionNum + 1;
 
   return (
