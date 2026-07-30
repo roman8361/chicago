@@ -805,15 +805,16 @@ export default function RouletteTable({
   }, [getPayouts]);
 
   // ── Display amounts after "без сдачи" reveal (showBetBeforeChange) ─────────
-  // Completes: show acceptedAmount once completesIntersection question is answered
+  // Completes: show acceptedAmount immediately after the first (completes) question is answered.
+  // Do NOT wait for the completesIntersection (field change) question.
   const completesDisplayAmounts = useMemo(() => {
-    if (!settings.showBetBeforeChange || !intersectionRecord || !completesRecord) return null;
+    if (!settings.showBetBeforeChange || !completesRecord) return null;
     const map = new Map<string, number>();
     for (const l of completesRecord.lines) {
       if (l.change > 0) map.set(l.label, l.acceptedAmount);
     }
     return map;
-  }, [settings.showBetBeforeChange, intersectionRecord, completesRecord]);
+  }, [settings.showBetBeforeChange, completesRecord]);
 
   // Series: show acceptedAmount once series question is answered
   const seriesDisplayAmounts = useMemo(() => {
