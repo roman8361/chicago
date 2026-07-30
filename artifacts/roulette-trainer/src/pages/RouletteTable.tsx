@@ -1339,6 +1339,10 @@ export default function RouletteTable({
       .filter((tb): tb is TrackBet => tb !== undefined);
     const hasCompletes = settings.completeField === "yes" || settings.completeDozen === "yes";
     const needsTrackInt = ordered.length > 0 || neighboursBets.length > 0;
+    // Field bets = color chips or cash chips on the field (track bets excluded).
+    // The completesIntersection question is asked whenever field bets are present,
+    // regardless of whether completes are present.
+    const hasFieldBets = newGameState.chips.length > 0 || (newGameState.cashChipStacks ?? []).length > 0;
     setActiveSeries(ordered);
     setSeriesRecord(null);
     setFieldRecord(null);
@@ -1366,6 +1370,7 @@ export default function RouletteTable({
     setNeighboursPayoutInput("");
     setQuizPhase(
       hasCompletes ? { kind: "completes" } :
+      hasFieldBets  ? { kind: "completesIntersection" } :
       ordered.length > 0 ? { kind: "series" } :
       needsTrackInt ? { kind: "trackIntersection" } :
       { kind: "field" }
@@ -1535,8 +1540,16 @@ export default function RouletteTable({
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setCompletesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
     setCompletesInput("");
-    setQuizPhase({ kind: "completesIntersection" });
-  }, [game, quizPhase, completesInput, settings.maxBet, settings.completeMultiplicity, getAllRules]);
+    // Go to completesIntersection only when field bets (color/cash chips) are present.
+    // If there are no field bets, skip directly to the next phase.
+    const hasFieldBets = game.chips.length > 0 || (game.cashChipStacks ?? []).length > 0;
+    setQuizPhase(hasFieldBets
+      ? { kind: "completesIntersection" }
+      : activeSeries.length > 0 ? { kind: "series" }
+      : game.neighboursBets.length > 0 ? { kind: "trackIntersection" }
+      : { kind: "field" }
+    );
+  }, [game, quizPhase, completesInput, activeSeries, settings.maxBet, settings.completeMultiplicity, getAllRules]);
 
   const handleCheckCompletesIntersection = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "completesIntersection") return;
