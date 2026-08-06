@@ -1160,36 +1160,33 @@ export default function RouletteTable({
     const currentChipPosMap = buildDynamicPositions(gridParams);
     const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
 
-    // ── Choose winning number ──────────────────────────────────────────────────
-    // Rules:
-    //   • If a dozen complete exists, the drawn number MUST be covered by it.
-    //   • If number completes exist, at least one MUST cover the drawn number.
-    //   • When both exist the drawn number must satisfy both constraints
-    //     (fall back to dozen-only if no intersection candidate exists).
-    //   • When neither exists, draw is fully random (0–36).
-    let drawnNumber: number;
-
     const hasDozenComplete  = !!dozenCompleteBet;
     const hasNumberCompletes = numberCompleteBets.length > 0;
 
-    if (hasDozenComplete || hasNumberCompletes) {
-      const allCompleteBets = getAllRules().completeBets;
+    // ── Pre-compute complete-based candidate set (used by neighbours generation) ─
+    // This mirrors the existing dozen/number-complete logic but produces a Set
+    // before neighbours bets are created, so that neighbours can be retried when
+    // their coverage would otherwise be disjoint from the complete constraints.
+    let completeCandidateSet: Set<number> | null = null;
+    let dozenCoveredSetForWin: Set<number> | null = null;
+    let numberCoveredSetForWin: Set<number> | null = null;
 
-      // ── Numbers covered by the dozen complete ────────────────────────────────
-      let dozenCoveredSet: Set<number> | null = null;
+    if (hasDozenComplete || hasNumberCompletes) {
+      const allCompleteBetsPrecheck = getAllRules().completeBets;
+
       if (hasDozenComplete) {
         const dcDozenNum = dozenCompleteBet!.dozen === "1ST_12" ? 1
                          : dozenCompleteBet!.dozen === "2ND_12" ? 2 : 3;
         const dcRule = (getAllRules().dozenComplete as {
           dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[] }>> }>;
         })?.dozens?.find(d => d.dozen === dcDozenNum);
-        dozenCoveredSet = new Set<number>();
+        dozenCoveredSetForWin = new Set<number>();
         if (dcRule) {
           for (const entries of Object.values(dcRule.bets)) {
             if (Array.isArray(entries)) {
               for (const e of entries) {
                 if (Array.isArray(e.numbers)) {
-                  for (const n of e.numbers) dozenCoveredSet.add(n);
+                  for (const n of e.numbers) dozenCoveredSetForWin.add(n);
                 }
               }
             }
@@ -1197,35 +1194,173 @@ export default function RouletteTable({
         }
       }
 
-      // ── Numbers covered by a random subset of number completes ───────────────
-      let numberCoveredSet: Set<number> | null = null;
       if (hasNumberCompletes) {
-        // Randomly decide how many completes will be "winning" (at least 1, up to all)
         const winningCompleteCount =
           Math.floor(Math.random() * numberCompleteBets.length) + 1;
         const shuffled = [...numberCompleteBets].sort(() => Math.random() - 0.5);
         const winningCompletes = shuffled.slice(0, winningCompleteCount);
-        numberCoveredSet = new Set<number>();
+        numberCoveredSetForWin = new Set<number>();
         for (const c of winningCompletes) {
-          for (const n of getNumbersCoveredByComplete(c.number, allCompleteBets)) {
-            numberCoveredSet.add(n);
+          for (const n of getNumbersCoveredByComplete(c.number, allCompleteBetsPrecheck)) {
+            numberCoveredSetForWin.add(n);
           }
         }
       }
 
-      // ── Build candidate list satisfying all active constraints ───────────────
-      let candidates: number[];
-      if (dozenCoveredSet && numberCoveredSet) {
-        // Both present: intersection must satisfy both constraints
-        candidates = [...dozenCoveredSet].filter(n => numberCoveredSet!.has(n));
-        if (candidates.length === 0) {
-          // No intersection: dozen constraint takes priority (winning number must touch dozen)
-          candidates = [...dozenCoveredSet];
-        }
-      } else if (dozenCoveredSet) {
-        candidates = [...dozenCoveredSet];
+      if (dozenCoveredSetForWin && numberCoveredSetForWin) {
+        const inter = [...dozenCoveredSetForWin].filter(n => numberCoveredSetForWin!.has(n));
+        completeCandidateSet = new Set(inter.length > 0 ? inter : [...dozenCoveredSetForWin]);
       } else {
-        candidates = [...(numberCoveredSet ?? new Set<number>())];
+        completeCandidateSet = dozenCoveredSetForWin ?? numberCoveredSetForWin;
+      }
+    }
+
+    // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
+    // Generated BEFORE the winning number so their coverage can constrain it.
+    // Up to MAX_NEIGH_ATTEMPTS attempts are made to find a set of centres whose
+    // union of 5-number coverages intersects the complete-based candidate set.
+    // On the final attempt the result is accepted regardless to prevent an
+    // infinite loop; in that edge case neighbours take priority and the drawn
+    // number will still satisfy the neighbours constraint.
+    const neighboursRule = getNeighboursRule();
+    const neighboursCountRaw = settings.neighborsCount ?? 0;
+    const neighboursCount = Math.max(0, Math.min(37, Math.floor(neighboursCountRaw)));
+    let neighboursBets: NeighboursBet[] = [];
+    let neighboursCoveredSet: Set<number> | null = null;
+
+    if (neighboursCount > 0) {
+      const minBet = Math.max(1, settings.minBet);
+      const maxBet = Math.max(minBet, settings.maxBet);
+      const lowerBoundRaw = Math.round(maxBet / 3);
+      const lowerBound = Math.min(Math.max(1, lowerBoundRaw), maxBet);
+      const neighMult = Math.max(1, settings.neighboursMultiplicity ?? 10);
+      const MAX_NEIGH_ATTEMPTS = 5;
+
+      for (let attempt = 0; attempt < MAX_NEIGH_ATTEMPTS; attempt++) {
+        const allNums = Array.from({ length: 37 }, (_, i) => i);
+        let selectedNumbers: number[];
+        if (neighboursCount === 1) {
+          selectedNumbers = [allNums[Math.floor(Math.random() * allNums.length)]];
+        } else {
+          const center1 = allNums[Math.floor(Math.random() * allNums.length)];
+          const center1Set = (neighboursRule as Record<string, number[]>)[String(center1)] ?? [];
+          const cands = center1Set.filter(n => n !== center1);
+          const center2 = cands[Math.floor(Math.random() * cands.length)];
+          selectedNumbers = [center1, center2];
+          if (neighboursCount > 2) {
+            const used = new Set([center1, center2]);
+            const remaining = allNums.filter(n => !used.has(n));
+            for (let i = 0; i < remaining.length - 1; i++) {
+              const j = i + Math.floor(Math.random() * (remaining.length - i));
+              [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+            }
+            selectedNumbers.push(...remaining.slice(0, neighboursCount - 2));
+          }
+        }
+
+        // Build the union of 5-number coverages for this attempt's centres
+        const trialCoveredSet = new Set<number>();
+        for (const num of selectedNumbers) {
+          const covered = (neighboursRule as Record<string, number[]>)[String(num)] ?? [];
+          for (const n of covered) trialCoveredSet.add(n);
+        }
+
+        // Accept if there is no complete constraint, the intersection is non-empty,
+        // or this is the last attempt (avoid infinite loop).
+        const intersects = !completeCandidateSet ||
+          [...completeCandidateSet].some(n => trialCoveredSet.has(n));
+
+        if (intersects || attempt === MAX_NEIGH_ATTEMPTS - 1) {
+          neighboursCoveredSet = trialCoveredSet;
+          neighboursBets = selectedNumbers.map(num => {
+            const rawBase = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
+            const baseAmount = Math.max(neighMult, Math.floor(rawBase / neighMult) * neighMult);
+            const amount = baseAmount * 5;
+            let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
+            if (num === 30) {
+              const cellW = Math.abs(trackParams.arcLX2 - trackParams.arcLX1);
+              const cellH = Math.abs(trackParams.arcLY[3] - trackParams.arcLY[2]);
+              pos = {
+                x: trackParams.arcLX2 - 0.2 * cellW,
+                y: trackParams.arcLY[2] + (-0.0232) * cellH,
+              };
+            }
+            if (num === 8) {
+              const cellH = Math.abs(trackParams.arcLY[2] - trackParams.arcLY[1]);
+              pos = { x: pos.x, y: trackParams.arcLY[1] + 0.4875 * cellH };
+            }
+            if (num === 23) {
+              const cellH = Math.abs(trackParams.arcLY[1] - trackParams.arcLY[0]);
+              pos = { x: pos.x, y: trackParams.arcLY[0] + 0.6375 * cellH };
+            }
+            if (num === 10) {
+              const cellH = Math.abs(trackParams.topY2 - trackParams.topY1);
+              pos = { x: pos.x, y: pos.y + 0.10 * cellH };
+            }
+            if (num === 3) {
+              const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+              const cellH = Math.abs(trackParams.arcRY[1] - trackParams.arcRY[0]);
+              pos = { x: pos.x - 0.3 * cellW, y: pos.y + 0.2 * cellH };
+            }
+            if (num === 26) {
+              const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+              pos = { x: pos.x + 0.1 * cellW, y: pos.y };
+            }
+            if (num === 0) {
+              const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
+              const neighbourChipHorizontalAdjustments: Record<number, number> = { 0: -0.10 };
+              const horizontalAdjustment = neighbourChipHorizontalAdjustments[num] ?? 0;
+              const baseChipX = pos.x - 0.2 * cellW;
+              pos = { x: baseChipX + cellW * horizontalAdjustment, y: pos.y };
+            }
+            void neighboursRule;
+            return { number: num, baseAmount, amount, position: pos, source: "NEIGHBOURS" as const };
+          });
+          break;
+        }
+      }
+    }
+
+    // ── Choose winning number ──────────────────────────────────────────────────
+    // Rules:
+    //   • If a dozen complete exists, the drawn number MUST be covered by it.
+    //   • If number completes exist, at least one MUST cover the drawn number.
+    //   • If neighbours bets exist, the drawn number MUST be in the union of
+    //     all 5-number coverages (guaranteeing at least one bet wins).
+    //   • All active constraints are intersected; the drawn number is chosen
+    //     randomly from that intersection.
+    //   • When no constraints exist, draw is fully random (0–36).
+    let drawnNumber: number;
+
+    const hasNeighbours = neighboursBets.length > 0;
+
+    if (hasDozenComplete || hasNumberCompletes || hasNeighbours) {
+      const allCompleteBets = (hasDozenComplete || hasNumberCompletes)
+        ? getAllRules().completeBets
+        : null;
+
+      // ── Build candidate list satisfying all active constraints ───────────────
+      // Start from the complete-based candidate set (already computed above),
+      // then intersect with the neighbours coverage union.
+      let candidates: number[];
+
+      if (completeCandidateSet && neighboursCoveredSet) {
+        // Both complete and neighbours constraints active: intersect them
+        const inter = [...completeCandidateSet].filter(n => neighboursCoveredSet!.has(n));
+        if (inter.length > 0) {
+          candidates = inter;
+        } else {
+          // Edge case: no common number (e.g. last-attempt neighbours that
+          // couldn't intersect). Neighbours constraint wins — drawn number
+          // must be in neighbours coverage so at least one bet wins.
+          candidates = [...neighboursCoveredSet];
+        }
+      } else if (completeCandidateSet) {
+        candidates = [...completeCandidateSet];
+      } else if (neighboursCoveredSet) {
+        candidates = [...neighboursCoveredSet];
+      } else {
+        candidates = Array.from({ length: 37 }, (_, i) => i);
       }
 
       drawnNumber = candidates.length > 0
@@ -1233,7 +1368,7 @@ export default function RouletteTable({
         : Math.floor(Math.random() * 37);
 
       // ── Safety: re-check number-complete constraint and fix if needed ─────────
-      if (hasNumberCompletes) {
+      if (hasNumberCompletes && allCompleteBets) {
         const anyHit = numberCompleteBets.some(c =>
           completeTouchesNumber(c.number, drawnNumber, allCompleteBets),
         );
@@ -1243,14 +1378,22 @@ export default function RouletteTable({
             allCompleteBets,
           );
           // Prefer a fallback number that also satisfies the dozen constraint
-          const dozenFallback = hasDozenComplete && dozenCoveredSet
-            ? fallback.filter(n => dozenCoveredSet!.has(n))
+          const dozenFallback = hasDozenComplete && dozenCoveredSetForWin
+            ? fallback.filter(n => dozenCoveredSetForWin!.has(n))
             : [];
           const chosen = dozenFallback.length > 0 ? dozenFallback : fallback;
           if (chosen.length > 0) {
             drawnNumber = chosen[Math.floor(Math.random() * chosen.length)];
           }
         }
+      }
+
+      // ── Safety: re-check neighbours constraint and fix if needed ─────────────
+      // By construction drawnNumber should already satisfy this, but guard
+      // against any edge case where the safety re-check above moved it out.
+      if (hasNeighbours && neighboursCoveredSet && !neighboursCoveredSet.has(drawnNumber)) {
+        const neighboursOnly = [...neighboursCoveredSet];
+        drawnNumber = neighboursOnly[Math.floor(Math.random() * neighboursOnly.length)];
       }
     } else {
       drawnNumber = Math.floor(Math.random() * 37);
@@ -1271,116 +1414,6 @@ export default function RouletteTable({
     const cashOnField = settings.cashOnField ?? 0;
     const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
     const cashChipStacks = generateCashChips(drawnNumber, cashOnField, cashChipValues, colorPositionIds);
-
-    // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
-    // Reference only — full 5-number layout (getNeighboursRule) is not laid out
-    // on the field at this stage, only a single cash chip per selected number.
-    const neighboursRule = getNeighboursRule();
-    const neighboursCountRaw = settings.neighborsCount ?? 0;
-    const neighboursCount = Math.max(0, Math.min(37, Math.floor(neighboursCountRaw)));
-    let neighboursBets: NeighboursBet[] = [];
-    if (neighboursCount > 0) {
-      const allNums = Array.from({ length: 37 }, (_, i) => i);
-      let selectedNumbers: number[];
-      if (neighboursCount === 1) {
-        // Single bet — no intersection required
-        selectedNumbers = [allNums[Math.floor(Math.random() * allNums.length)]];
-      } else {
-        // Pick first center randomly
-        const center1 = allNums[Math.floor(Math.random() * allNums.length)];
-        // Get the 5-number set for center1, exclude center1 itself → 4 candidates
-        const center1Set = (neighboursRule as Record<string, number[]>)[String(center1)] ?? [];
-        const candidates = center1Set.filter(n => n !== center1);
-        // Pick center2 from candidates — guaranteed intersection with center1
-        const center2 = candidates[Math.floor(Math.random() * candidates.length)];
-        selectedNumbers = [center1, center2];
-        // Remaining bets (if any): random from unused numbers
-        if (neighboursCount > 2) {
-          const used = new Set([center1, center2]);
-          const remaining = allNums.filter(n => !used.has(n));
-          for (let i = 0; i < remaining.length - 1; i++) {
-            const j = i + Math.floor(Math.random() * (remaining.length - i));
-            [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
-          }
-          selectedNumbers.push(...remaining.slice(0, neighboursCount - 2));
-        }
-      }
-      const minBet = Math.max(1, settings.minBet);
-      const maxBet = Math.max(minBet, settings.maxBet);
-      const lowerBoundRaw = Math.round(maxBet / 3);
-      const lowerBound = Math.min(Math.max(1, lowerBoundRaw), maxBet);
-      const neighMult = Math.max(1, settings.neighboursMultiplicity ?? 10);
-      neighboursBets = selectedNumbers.map(num => {
-        const rawBase = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
-        const baseAmount = Math.max(neighMult, Math.floor(rawBase / neighMult) * neighMult);
-        const amount = baseAmount * 5;
-        let pos = trackNumberPosMap.get(num) ?? { x: 0, y: 0 };
-        if (num === 30) {
-          // arcL cell 2 (index 2): raise another 10% of cellH from 0.0768 → 0.0768 - 0.10 = -0.0232
-          const cellW = Math.abs(trackParams.arcLX2 - trackParams.arcLX1);
-          const cellH = Math.abs(trackParams.arcLY[3] - trackParams.arcLY[2]);
-          pos = {
-            x: trackParams.arcLX2 - 0.2 * cellW,
-            y: trackParams.arcLY[2] + (-0.0232) * cellH,
-          };
-        }
-        if (num === 8) {
-          // arcL cell 1 (index 1): raise another 25% of current offset (0.65 → 0.4875)
-          const cellH = Math.abs(trackParams.arcLY[2] - trackParams.arcLY[1]);
-          pos = {
-            x: pos.x,
-            y: trackParams.arcLY[1] + 0.4875 * cellH,
-          };
-        }
-        if (num === 23) {
-          // arcL cell 0 (index 0): raise another 15% of current offset (0.75 → 0.6375)
-          const cellH = Math.abs(trackParams.arcLY[1] - trackParams.arcLY[0]);
-          pos = {
-            x: pos.x,
-            y: trackParams.arcLY[0] + 0.6375 * cellH,
-          };
-        }
-        if (num === 10) {
-          // top row cell 0: lower 10% of cell height from zone center
-          const cellH = Math.abs(trackParams.topY2 - trackParams.topY1);
-          pos = {
-            x: pos.x,
-            y: pos.y + 0.10 * cellH,
-          };
-        }
-        if (num === 3) {
-          // Right-arc cell for 3 is the first one (index 0 of ARC_R_NUMBERS)
-          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
-          const cellH = Math.abs(trackParams.arcRY[1] - trackParams.arcRY[0]);
-          pos = {
-            x: pos.x - 0.3 * cellW,
-            y: pos.y + 0.2 * cellH,
-          };
-        }
-        if (num === 26) {
-          // Right-arc cell for 26 is the second one (index 1 of ARC_R_NUMBERS)
-          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
-          pos = {
-            x: pos.x + 0.1 * cellW,
-            y: pos.y,
-          };
-        }
-        if (num === 0) {
-          // Right-arc cell for 0 is the third one (index 2 of ARC_R_NUMBERS)
-          const cellW = Math.abs(trackParams.arcRX2 - trackParams.arcRX1);
-          // Horizontal adjustment: move right 10% of cellW from previous (-0.4 → -0.3 total)
-          const neighbourChipHorizontalAdjustments: Record<number, number> = { 0: -0.10 };
-          const horizontalAdjustment = neighbourChipHorizontalAdjustments[num] ?? 0;
-          const baseChipX = pos.x - 0.2 * cellW;
-          pos = {
-            x: baseChipX + cellW * horizontalAdjustment,
-            y: pos.y,
-          };
-        }
-        void neighboursRule; // reference-only lookup for future straight-up layout
-        return { number: num, baseAmount, amount, position: pos, source: "NEIGHBOURS" as const };
-      });
-    }
 
     const newGameState: GameState = { ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks, neighboursBets };
     setGame(newGameState);
