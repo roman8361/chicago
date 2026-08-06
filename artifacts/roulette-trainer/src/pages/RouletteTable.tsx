@@ -1094,6 +1094,22 @@ export default function RouletteTable({
         source:   "TRACK" as const,
       }));
 
+    // ── Series covered set (for winning-number constraint) ────────────────────
+    // Built immediately after trackBets so that the winning number can be
+    // constrained to at least one active series' coverage.
+    // Algorithm (spec-preferred): if series are active, randomly pick one as
+    // the "primary" winner and take its numbers as the series candidate set.
+    // The drawn number is then chosen from the intersection of ALL active
+    // constraints (completes, neighbours, series), guaranteeing the primary
+    // series wins. Other active series may also win if their numbers overlap.
+    const trackRules = getAllRules().trackBets as Record<string, { numbers: number[] }>;
+    let seriesCoveredSet: Set<number> | null = null;
+    if (trackBets.length > 0) {
+      const primarySeries = trackBets[Math.floor(Math.random() * trackBets.length)];
+      const primaryNumbers = trackRules[primarySeries.type]?.numbers ?? [];
+      seriesCoveredSet = new Set<number>(primaryNumbers);
+    }
+
     // ── Dozen complete bet ──────────────────────────────────────────────────────
     let dozenCompleteBet: DozenCompleteBet | undefined;
     if (settings.completeDozen === "yes") {
@@ -1327,40 +1343,51 @@ export default function RouletteTable({
     //   • If number completes exist, at least one MUST cover the drawn number.
     //   • If neighbours bets exist, the drawn number MUST be in the union of
     //     all 5-number coverages (guaranteeing at least one bet wins).
+    //   • If series (track) bets exist, the drawn number MUST be in the numbers
+    //     of the randomly chosen primary series (guaranteeing it wins; other
+    //     active series may also win if their numbers overlap).
     //   • All active constraints are intersected; the drawn number is chosen
     //     randomly from that intersection.
     //   • When no constraints exist, draw is fully random (0–36).
     let drawnNumber: number;
 
-    const hasNeighbours = neighboursBets.length > 0;
+    const hasNeighbours  = neighboursBets.length > 0;
+    const hasTrackBets   = trackBets.length > 0;
 
-    if (hasDozenComplete || hasNumberCompletes || hasNeighbours) {
+    if (hasDozenComplete || hasNumberCompletes || hasNeighbours || hasTrackBets) {
       const allCompleteBets = (hasDozenComplete || hasNumberCompletes)
         ? getAllRules().completeBets
         : null;
 
       // ── Build candidate list satisfying all active constraints ───────────────
-      // Start from the complete-based candidate set (already computed above),
-      // then intersect with the neighbours coverage union.
-      let candidates: number[];
+      // Progressively intersect each active constraint set. When an intersection
+      // becomes empty we keep the most recently valid set so at least one
+      // mandatory constraint is always honoured.
+      //
+      // Priority order (most restrictive first):
+      //   1. completeCandidateSet (dozen + number completes)
+      //   2. neighboursCoveredSet (union of all 5-number neighbourhoods)
+      //   3. seriesCoveredSet     (primary randomly-chosen series numbers)
 
-      if (completeCandidateSet && neighboursCoveredSet) {
-        // Both complete and neighbours constraints active: intersect them
-        const inter = [...completeCandidateSet].filter(n => neighboursCoveredSet!.has(n));
-        if (inter.length > 0) {
-          candidates = inter;
-        } else {
-          // Edge case: no common number (e.g. last-attempt neighbours that
-          // couldn't intersect). Neighbours constraint wins — drawn number
-          // must be in neighbours coverage so at least one bet wins.
-          candidates = [...neighboursCoveredSet];
-        }
-      } else if (completeCandidateSet) {
+      // Start with all numbers; narrow as each constraint is applied.
+      let candidates: number[] = Array.from({ length: 37 }, (_, i) => i);
+
+      if (completeCandidateSet) {
         candidates = [...completeCandidateSet];
-      } else if (neighboursCoveredSet) {
-        candidates = [...neighboursCoveredSet];
-      } else {
-        candidates = Array.from({ length: 37 }, (_, i) => i);
+      }
+
+      if (neighboursCoveredSet) {
+        const inter = candidates.filter(n => neighboursCoveredSet!.has(n));
+        // Only apply if intersection is non-empty; otherwise keep current candidates
+        // (edge case handled by post-selection safety check for neighbours).
+        if (inter.length > 0) candidates = inter;
+      }
+
+      if (seriesCoveredSet) {
+        const inter = candidates.filter(n => seriesCoveredSet!.has(n));
+        // Only apply if intersection is non-empty; otherwise keep current candidates
+        // (edge case handled by post-selection safety check for series).
+        if (inter.length > 0) candidates = inter;
       }
 
       drawnNumber = candidates.length > 0
@@ -1389,11 +1416,23 @@ export default function RouletteTable({
       }
 
       // ── Safety: re-check neighbours constraint and fix if needed ─────────────
-      // By construction drawnNumber should already satisfy this, but guard
-      // against any edge case where the safety re-check above moved it out.
       if (hasNeighbours && neighboursCoveredSet && !neighboursCoveredSet.has(drawnNumber)) {
         const neighboursOnly = [...neighboursCoveredSet];
         drawnNumber = neighboursOnly[Math.floor(Math.random() * neighboursOnly.length)];
+      }
+
+      // ── Safety: re-check series constraint and fix if needed ──────────────────
+      // By construction drawnNumber should already satisfy this (series was the
+      // last constraint applied), but guard against the safety re-checks above
+      // moving the number out of the series coverage.
+      if (hasTrackBets && seriesCoveredSet && !seriesCoveredSet.has(drawnNumber)) {
+        // Prefer a number that also satisfies neighbours (if active)
+        const seriesOnly = [...seriesCoveredSet];
+        const seriesAndNeighbours = hasNeighbours && neighboursCoveredSet
+          ? seriesOnly.filter(n => neighboursCoveredSet!.has(n))
+          : [];
+        const chosen = seriesAndNeighbours.length > 0 ? seriesAndNeighbours : seriesOnly;
+        drawnNumber = chosen[Math.floor(Math.random() * chosen.length)];
       }
     } else {
       drawnNumber = Math.floor(Math.random() * 37);
