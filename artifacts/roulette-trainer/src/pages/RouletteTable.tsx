@@ -3342,6 +3342,10 @@ export default function RouletteTable({
                 </span>
               </div>
             ))}
+          </>
+        )}
+        {(game?.dozenCompleteBet || (game?.numberCompleteBets && game.numberCompleteBets.length > 0)) && (
+          <>
             <div className="info-sidebar-divider" />
             <div className="info-sidebar-row">
               <span className="info-sidebar-label">Кратность комплита</span>
