@@ -1102,29 +1102,49 @@ export default function RouletteTable({
       const { x, y1, y2 } = dozensParams;
       const cx = (x[idx] + x[idx + 1]) / 2;
       const cy = (y1 + y2) / 2;
-      const minBet = Math.max(1, settings.minBet);
-      const maxBet = Math.max(minBet, settings.maxBet);
+      const maxBet = Math.max(1, settings.maxBet);
       const multiplicity = Math.max(1, settings.completeMultiplicity);
       const dozenNum = idx + 1;
-      const chipsRequired = getAllRules().dozenComplete?.dozens?.find(d => d.dozen === dozenNum)?.chipsRequired ?? 100;
-      // Clamp minPlayUnit to maxBet so minAmount ≤ maxAmount even if multiplicity > maxBet
-      const minPlayUnit = Math.min(Math.max(minBet, multiplicity), maxBet);
-      const minAmount = minPlayUnit * chipsRequired;
-      const maxAmount = maxBet * chipsRequired;
-      const range = Math.max(0, maxAmount - minAmount);
-      const rawAmount = minAmount + Math.floor(Math.random() * (range + 1));
-      // Floor to nearest number ending in 5
-      let dozenAmount = Math.floor((rawAmount - 5) / 10) * 10 + 5;
-      // After rounding, clamp back into [minAmount, maxAmount]
-      if (dozenAmount < minAmount) {
-        dozenAmount = Math.ceil((minAmount - 5) / 10) * 10 + 5;
+      const dozenRules = getAllRules().dozenComplete as {
+        minCoeff: number; maxCoeff: number;
+        dozens: Array<{ dozen: number; chipsRequired: number }>;
+      };
+      const dozenRuleEntry = dozenRules.dozens.find(d => d.dozen === dozenNum);
+      // chipsRequired, minCoeff, maxCoeff come from config — not hardcoded here
+      const chipsRequired = dozenRuleEntry?.chipsRequired ?? 100;
+      const minCoeff = dozenRules.minCoeff ?? 0.1;
+      const maxCoeff = dozenRules.maxCoeff ?? 0.6;
+      // Minimum valid total: every chip must play at least one multiplicity unit
+      const minAmount = multiplicity * chipsRequired;
+
+      let dozenAmount: number;
+      if (multiplicity >= maxBet) {
+        // Branch 1: multiplicity ≥ maxBet — use minimum directly, no random generation
+        dozenAmount = minAmount;
+      } else {
+        // Branch 2: multiplicity < maxBet — random generation with up to 5 attempts (hardcoded)
+        const loBound = maxBet * minCoeff;
+        const hiBound = maxBet * maxCoeff;
+        dozenAmount = minAmount; // fallback used if all 5 attempts fail
+        for (let attempt = 0; attempt < 5; attempt++) {
+          // Step 1: random value per chip in [loBound, hiBound]
+          const perChip = loBound + Math.random() * (hiBound - loBound);
+          // Step 2: preliminary total = perChip × chipsRequired
+          const preliminary = perChip * chipsRequired;
+          // Step 3: reject if below minimum
+          if (preliminary < minAmount) continue;
+          // Step 4: floor down to nearest multiple of multiplicity
+          const floored = Math.floor(preliminary / multiplicity) * multiplicity;
+          // Step 5: accept only if still ≥ minimum after rounding
+          if (floored >= minAmount) {
+            dozenAmount = floored;
+            break;
+          }
+          // floored < minAmount after rounding → try next attempt
+        }
+        // After 5 failures the fallback minAmount is already set above
       }
-      if (dozenAmount > maxAmount) {
-        dozenAmount = maxAmount; // rare edge: no 5-ending value fits the range
-      }
-      // Round to nearest completeMultiplicity
-      dozenAmount = Math.round(dozenAmount / multiplicity) * multiplicity;
-      if (dozenAmount <= 0) dozenAmount = multiplicity;
+
       dozenCompleteBet = {
         type:      "DOZEN_COMPLETE",
         label:     "Комплит дюжины",
@@ -1141,49 +1161,95 @@ export default function RouletteTable({
     const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
 
     // ── Choose winning number ──────────────────────────────────────────────────
-    // When complete bets are present, guarantee at least one complete intersects
-    // the winning number. Otherwise fall back to a fully random draw.
+    // Rules:
+    //   • If a dozen complete exists, the drawn number MUST be covered by it.
+    //   • If number completes exist, at least one MUST cover the drawn number.
+    //   • When both exist the drawn number must satisfy both constraints
+    //     (fall back to dozen-only if no intersection candidate exists).
+    //   • When neither exists, draw is fully random (0–36).
     let drawnNumber: number;
 
-    if (numberCompleteBets.length > 0) {
+    const hasDozenComplete  = !!dozenCompleteBet;
+    const hasNumberCompletes = numberCompleteBets.length > 0;
+
+    if (hasDozenComplete || hasNumberCompletes) {
       const allCompleteBets = getAllRules().completeBets;
 
-      // Randomly decide how many completes will be "winning" (at least 1, up to all)
-      const winningCompleteCount =
-        Math.floor(Math.random() * numberCompleteBets.length) + 1;
-
-      // Shuffle a copy and take the first `winningCompleteCount` entries
-      const shuffled = [...numberCompleteBets].sort(() => Math.random() - 0.5);
-      const winningCompletes = shuffled.slice(0, winningCompleteCount);
-
-      // Collect every number covered by the winning completes
-      const coveredSet = new Set<number>();
-      for (const c of winningCompletes) {
-        for (const n of getNumbersCoveredByComplete(c.number, allCompleteBets)) {
-          coveredSet.add(n);
+      // ── Numbers covered by the dozen complete ────────────────────────────────
+      let dozenCoveredSet: Set<number> | null = null;
+      if (hasDozenComplete) {
+        const dcDozenNum = dozenCompleteBet!.dozen === "1ST_12" ? 1
+                         : dozenCompleteBet!.dozen === "2ND_12" ? 2 : 3;
+        const dcRule = (getAllRules().dozenComplete as {
+          dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[] }>> }>;
+        })?.dozens?.find(d => d.dozen === dcDozenNum);
+        dozenCoveredSet = new Set<number>();
+        if (dcRule) {
+          for (const entries of Object.values(dcRule.bets)) {
+            if (Array.isArray(entries)) {
+              for (const e of entries) {
+                if (Array.isArray(e.numbers)) {
+                  for (const n of e.numbers) dozenCoveredSet.add(n);
+                }
+              }
+            }
+          }
         }
       }
 
-      const coveredArray = Array.from(coveredSet);
-      if (coveredArray.length > 0) {
-        drawnNumber =
-          coveredArray[Math.floor(Math.random() * coveredArray.length)];
-      } else {
-        drawnNumber = Math.floor(Math.random() * 37);
+      // ── Numbers covered by a random subset of number completes ───────────────
+      let numberCoveredSet: Set<number> | null = null;
+      if (hasNumberCompletes) {
+        // Randomly decide how many completes will be "winning" (at least 1, up to all)
+        const winningCompleteCount =
+          Math.floor(Math.random() * numberCompleteBets.length) + 1;
+        const shuffled = [...numberCompleteBets].sort(() => Math.random() - 0.5);
+        const winningCompletes = shuffled.slice(0, winningCompleteCount);
+        numberCoveredSet = new Set<number>();
+        for (const c of winningCompletes) {
+          for (const n of getNumbersCoveredByComplete(c.number, allCompleteBets)) {
+            numberCoveredSet.add(n);
+          }
+        }
       }
 
-      // Final safety check: if somehow no complete touches the drawn number,
-      // replace only the drawn number (not the completes).
-      const anyHit = numberCompleteBets.some(c =>
-        completeTouchesNumber(c.number, drawnNumber, allCompleteBets),
-      );
-      if (!anyHit) {
-        const fallback = getNumbersCoveredByComplete(
-          numberCompleteBets[Math.floor(Math.random() * numberCompleteBets.length)].number,
-          allCompleteBets,
+      // ── Build candidate list satisfying all active constraints ───────────────
+      let candidates: number[];
+      if (dozenCoveredSet && numberCoveredSet) {
+        // Both present: intersection must satisfy both constraints
+        candidates = [...dozenCoveredSet].filter(n => numberCoveredSet!.has(n));
+        if (candidates.length === 0) {
+          // No intersection: dozen constraint takes priority (winning number must touch dozen)
+          candidates = [...dozenCoveredSet];
+        }
+      } else if (dozenCoveredSet) {
+        candidates = [...dozenCoveredSet];
+      } else {
+        candidates = [...(numberCoveredSet ?? new Set<number>())];
+      }
+
+      drawnNumber = candidates.length > 0
+        ? candidates[Math.floor(Math.random() * candidates.length)]
+        : Math.floor(Math.random() * 37);
+
+      // ── Safety: re-check number-complete constraint and fix if needed ─────────
+      if (hasNumberCompletes) {
+        const anyHit = numberCompleteBets.some(c =>
+          completeTouchesNumber(c.number, drawnNumber, allCompleteBets),
         );
-        if (fallback.length > 0) {
-          drawnNumber = fallback[Math.floor(Math.random() * fallback.length)];
+        if (!anyHit) {
+          const fallback = getNumbersCoveredByComplete(
+            numberCompleteBets[Math.floor(Math.random() * numberCompleteBets.length)].number,
+            allCompleteBets,
+          );
+          // Prefer a fallback number that also satisfies the dozen constraint
+          const dozenFallback = hasDozenComplete && dozenCoveredSet
+            ? fallback.filter(n => dozenCoveredSet!.has(n))
+            : [];
+          const chosen = dozenFallback.length > 0 ? dozenFallback : fallback;
+          if (chosen.length > 0) {
+            drawnNumber = chosen[Math.floor(Math.random() * chosen.length)];
+          }
         }
       }
     } else {

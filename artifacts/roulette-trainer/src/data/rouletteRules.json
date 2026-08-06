@@ -3708,6 +3708,8 @@
   ],
   "dozenComplete": {
     "label": "Комплит дюжины",
+    "minCoeff": 0.1,
+    "maxCoeff": 0.6,
     "dozens": [
       {
         "dozen": 1,
