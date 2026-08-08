@@ -8,6 +8,9 @@ import SettingsScreen from "@/pages/SettingsScreen";
 import RulesScreen from "@/pages/RulesScreen";
 import DebugScreen from "@/pages/DebugScreen";
 import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/LoginPage";
+import ManagerPage from "@/pages/manager/ManagerPage";
+import DealerPage from "@/pages/dealer/DealerPage";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 const queryClient = new QueryClient();
@@ -40,6 +43,9 @@ function AppContent() {
 
   return (
     <Switch>
+      <Route path="/login" component={LoginPage} />
+      <Route path="/manager" component={ManagerPage} />
+      <Route path="/dealer" component={DealerPage} />
       <Route path="/">
         <>
           {/*

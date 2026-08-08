@@ -2,6 +2,110 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+/* ── Account shell ──────────────────────────────────────────────── */
+
+.account-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(33, 83, 38, 0.42), transparent 42%),
+    #0e2110;
+  color: #f0d080;
+}
+
+.account-card {
+  width: min(100%, 440px);
+  box-sizing: border-box;
+  padding: 40px 36px 36px;
+  text-align: center;
+  background: rgba(10, 28, 14, 0.94);
+  border: 1px solid #c8a84b;
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+}
+
+.account-eyebrow {
+  margin: 0 0 12px;
+  color: #c8a84b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.account-card h1 {
+  margin: 0;
+  color: #ffe87a;
+  font-size: clamp(28px, 5vw, 38px);
+  line-height: 1.1;
+}
+
+.account-description {
+  margin: 16px 0 28px;
+  color: #c4b57d;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.account-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.account-button {
+  display: inline-flex;
+  min-height: 46px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border: 2px solid #c8a84b;
+  border-radius: 6px;
+  background: rgba(200, 168, 75, 0.16);
+  color: #ffe87a;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.account-button:hover,
+.account-button:focus-visible {
+  background: rgba(200, 168, 75, 0.3);
+  color: #fff3b0;
+  transform: translateY(-1px);
+}
+
+.account-button--secondary {
+  border-color: #6aa878;
+  background: rgba(61, 128, 75, 0.14);
+  color: #a9e3b2;
+}
+
+.account-button--secondary:hover,
+.account-button--secondary:focus-visible {
+  background: rgba(61, 128, 75, 0.28);
+  color: #d7f7db;
+}
+
+.account-link {
+  justify-self: center;
+  margin-top: 4px;
+  color: #c8a84b;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.account-link:hover,
+.account-link:focus-visible {
+  color: #ffe87a;
+  text-decoration: underline;
+}
+
 /* ── Roulette Trainer ─────────────────────────────────────────── */
 
 .roulette-page {
