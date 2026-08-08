@@ -1,0 +1,1 @@
+- [Roulette winning-number constraints](roulette-winning-number-constraints.md) — series, neighbours, and completes must be resolved through one strict candidate intersection.

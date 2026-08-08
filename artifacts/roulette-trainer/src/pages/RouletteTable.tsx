@@ -1055,7 +1055,7 @@ export default function RouletteTable({
   }
 
   // ── Spin ────────────────────────────────────────────────────────────────────
-  const generateRound = useCallback(() => {
+  const generateRound = useCallback((retryAttempt = 0) => {
     const chipCount = settings.chipsInField ?? 100;
     const chipValue = settings.chipValue ?? 10;
 
@@ -1095,19 +1095,18 @@ export default function RouletteTable({
       }));
 
     // ── Series covered set (for winning-number constraint) ────────────────────
-    // Built immediately after trackBets so that the winning number can be
-    // constrained to at least one active series' coverage.
-    // Algorithm (spec-preferred): if series are active, randomly pick one as
-    // the "primary" winner and take its numbers as the series candidate set.
-    // The drawn number is then chosen from the intersection of ALL active
-    // constraints (completes, neighbours, series), guaranteeing the primary
-    // series wins. Other active series may also win if their numbers overlap.
+    // Use the UNION of every active series. The winning number may therefore
+    // make several series win at once; it must not be limited to one randomly
+    // selected series.
     const trackRules = getAllRules().trackBets as Record<string, { numbers: number[] }>;
     let seriesCoveredSet: Set<number> | null = null;
     if (trackBets.length > 0) {
-      const primarySeries = trackBets[Math.floor(Math.random() * trackBets.length)];
-      const primaryNumbers = trackRules[primarySeries.type]?.numbers ?? [];
-      seriesCoveredSet = new Set<number>(primaryNumbers);
+      seriesCoveredSet = new Set<number>();
+      for (const trackBet of trackBets) {
+        for (const number of trackRules[trackBet.type]?.numbers ?? []) {
+          seriesCoveredSet.add(number);
+        }
+      }
     }
 
     // ── Dozen complete bet ──────────────────────────────────────────────────────
@@ -1172,72 +1171,81 @@ export default function RouletteTable({
       };
     }
 
-    // ── Number complete bets ────────────────────────────────────────────────────
-    const currentChipPosMap = buildDynamicPositions(gridParams);
-    const { bets: numberCompleteBets, excludedIds } = generateNumberCompletes(dozenCompleteBet, currentChipPosMap);
-
-    const hasDozenComplete  = !!dozenCompleteBet;
-    const hasNumberCompletes = numberCompleteBets.length > 0;
-
-    // ── Pre-compute complete-based candidate set (used by neighbours generation) ─
-    // This mirrors the existing dozen/number-complete logic but produces a Set
-    // before neighbours bets are created, so that neighbours can be retried when
-    // their coverage would otherwise be disjoint from the complete constraints.
-    let completeCandidateSet: Set<number> | null = null;
+    // ── Complete-based candidate set (used by neighbours and final draw) ───────
+    // Completes are part of the same mandatory intersection as series and
+    // neighbours. Never fall back to a dozen-only/number-only set when both
+    // complete sources are enabled.
+    const allCompleteBetsPrecheck = getAllRules().completeBets;
+    const hasDozenComplete = !!dozenCompleteBet;
     let dozenCoveredSetForWin: Set<number> | null = null;
+
+    if (hasDozenComplete) {
+      const dcDozenNum = dozenCompleteBet!.dozen === "1ST_12" ? 1
+                       : dozenCompleteBet!.dozen === "2ND_12" ? 2 : 3;
+      const dcRule = (getAllRules().dozenComplete as {
+        dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[] }>> }>;
+      })?.dozens?.find(d => d.dozen === dcDozenNum);
+      dozenCoveredSetForWin = new Set<number>();
+      if (dcRule) {
+        for (const entries of Object.values(dcRule.bets)) {
+          if (!Array.isArray(entries)) continue;
+          for (const entry of entries) {
+            if (!Array.isArray(entry.numbers)) continue;
+            for (const n of entry.numbers) dozenCoveredSetForWin.add(n);
+          }
+        }
+      }
+    }
+
+    const currentChipPosMap = buildDynamicPositions(gridParams);
+    let numberCompleteBets: NumberCompleteBet[] = [];
+    let excludedIds = new Set<string>();
+    let completeCandidateSet: Set<number> | null = null;
     let numberCoveredSetForWin: Set<number> | null = null;
 
-    if (hasDozenComplete || hasNumberCompletes) {
-      const allCompleteBetsPrecheck = getAllRules().completeBets;
-
-      if (hasDozenComplete) {
-        const dcDozenNum = dozenCompleteBet!.dozen === "1ST_12" ? 1
-                         : dozenCompleteBet!.dozen === "2ND_12" ? 2 : 3;
-        const dcRule = (getAllRules().dozenComplete as {
-          dozens: Array<{ dozen: number; bets: Record<string, Array<{ numbers: number[] }>> }>;
-        })?.dozens?.find(d => d.dozen === dcDozenNum);
-        dozenCoveredSetForWin = new Set<number>();
-        if (dcRule) {
-          for (const entries of Object.values(dcRule.bets)) {
-            if (Array.isArray(entries)) {
-              for (const e of entries) {
-                if (Array.isArray(e.numbers)) {
-                  for (const n of e.numbers) dozenCoveredSetForWin.add(n);
-                }
-              }
-            }
-          }
+    const buildNumberCoverage = (bets: NumberCompleteBet[]) => {
+      const covered = new Set<number>();
+      for (const bet of bets) {
+        for (const n of getNumbersCoveredByComplete(bet.number, allCompleteBetsPrecheck)) {
+          covered.add(n);
         }
       }
+      return covered;
+    };
 
-      if (hasNumberCompletes) {
-        const winningCompleteCount =
-          Math.floor(Math.random() * numberCompleteBets.length) + 1;
-        const shuffled = [...numberCompleteBets].sort(() => Math.random() - 0.5);
-        const winningCompletes = shuffled.slice(0, winningCompleteCount);
-        numberCoveredSetForWin = new Set<number>();
-        for (const c of winningCompletes) {
-          for (const n of getNumbersCoveredByComplete(c.number, allCompleteBetsPrecheck)) {
-            numberCoveredSetForWin.add(n);
-          }
-        }
+    const buildCompleteCandidate = (numberCoverage: Set<number> | null) => {
+      if (dozenCoveredSetForWin && numberCoverage) {
+        return new Set([...dozenCoveredSetForWin].filter(n => numberCoverage.has(n)));
       }
+      return dozenCoveredSetForWin ?? numberCoverage;
+    };
 
-      if (dozenCoveredSetForWin && numberCoveredSetForWin) {
-        const inter = [...dozenCoveredSetForWin].filter(n => numberCoveredSetForWin!.has(n));
-        completeCandidateSet = new Set(inter.length > 0 ? inter : [...dozenCoveredSetForWin]);
-      } else {
-        completeCandidateSet = dozenCoveredSetForWin ?? numberCoveredSetForWin;
+    const completeGenerationAttempts = seriesCoveredSet ? 12 : 1;
+    for (let attempt = 0; attempt < completeGenerationAttempts; attempt++) {
+      const generated = generateNumberCompletes(
+        dozenCompleteBet,
+        currentChipPosMap,
+      );
+      numberCompleteBets = generated.bets;
+      excludedIds = generated.excludedIds;
+      numberCoveredSetForWin = numberCompleteBets.length > 0
+        ? buildNumberCoverage(numberCompleteBets)
+        : null;
+      completeCandidateSet = buildCompleteCandidate(numberCoveredSetForWin);
+
+      const commonWithSeries = completeCandidateSet && seriesCoveredSet
+        ? [...completeCandidateSet].filter(n => seriesCoveredSet!.has(n))
+        : null;
+      if (!seriesCoveredSet || !completeCandidateSet || (commonWithSeries && commonWithSeries.length > 0)) {
+        break;
       }
     }
 
     // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
     // Generated BEFORE the winning number so their coverage can constrain it.
-    // Up to MAX_NEIGH_ATTEMPTS attempts are made to find a set of centres whose
-    // union of 5-number coverages intersects the complete-based candidate set.
-    // On the final attempt the result is accepted regardless to prevent an
-    // infinite loop; in that edge case neighbours take priority and the drawn
-    // number will still satisfy the neighbours constraint.
+    // When series and/or completes are active, the centres are retried until
+    // their union has a number in the same mandatory candidate set. This keeps
+    // the later draw from having to choose one constraint over another.
     const neighboursRule = getNeighboursRule();
     const neighboursCountRaw = settings.neighborsCount ?? 0;
     const neighboursCount = Math.max(0, Math.min(37, Math.floor(neighboursCountRaw)));
@@ -1250,18 +1258,38 @@ export default function RouletteTable({
       const lowerBoundRaw = Math.round(maxBet / 3);
       const lowerBound = Math.min(Math.max(1, lowerBoundRaw), maxBet);
       const neighMult = Math.max(1, settings.neighboursMultiplicity ?? 10);
-      const MAX_NEIGH_ATTEMPTS = 5;
+      const MAX_NEIGH_ATTEMPTS = 20;
+
+      const mandatoryTrackCompleteSet = (() => {
+        if (seriesCoveredSet && completeCandidateSet) {
+          return new Set(
+            [...seriesCoveredSet].filter(n => completeCandidateSet!.has(n)),
+          );
+        }
+        return seriesCoveredSet ?? completeCandidateSet;
+      })();
+
+      const coverageFor = (num: number) =>
+        (neighboursRule as Record<string, number[]>)[String(num)] ?? [];
+      const centrePoolFor = (required: Set<number> | null) => {
+        const allNums = Array.from({ length: 37 }, (_, i) => i);
+        if (!required || required.size === 0) return allNums;
+        return allNums.filter(num => coverageFor(num).some(n => required.has(n)));
+      };
 
       for (let attempt = 0; attempt < MAX_NEIGH_ATTEMPTS; attempt++) {
         const allNums = Array.from({ length: 37 }, (_, i) => i);
         let selectedNumbers: number[];
+        const compatibleCentres = centrePoolFor(mandatoryTrackCompleteSet);
+        const firstPool = compatibleCentres.length > 0 ? compatibleCentres : allNums;
         if (neighboursCount === 1) {
-          selectedNumbers = [allNums[Math.floor(Math.random() * allNums.length)]];
+          selectedNumbers = [firstPool[Math.floor(Math.random() * firstPool.length)]];
         } else {
-          const center1 = allNums[Math.floor(Math.random() * allNums.length)];
-          const center1Set = (neighboursRule as Record<string, number[]>)[String(center1)] ?? [];
+          const center1 = firstPool[Math.floor(Math.random() * firstPool.length)];
+          const center1Set = coverageFor(center1);
           const cands = center1Set.filter(n => n !== center1);
-          const center2 = cands[Math.floor(Math.random() * cands.length)];
+          const center2Pool = cands.length > 0 ? cands : allNums.filter(n => n !== center1);
+          const center2 = center2Pool[Math.floor(Math.random() * center2Pool.length)];
           selectedNumbers = [center1, center2];
           if (neighboursCount > 2) {
             const used = new Set([center1, center2]);
@@ -1274,19 +1302,16 @@ export default function RouletteTable({
           }
         }
 
-        // Build the union of 5-number coverages for this attempt's centres
+        // Build the union of 5-number coverages for this attempt's centres.
         const trialCoveredSet = new Set<number>();
         for (const num of selectedNumbers) {
-          const covered = (neighboursRule as Record<string, number[]>)[String(num)] ?? [];
-          for (const n of covered) trialCoveredSet.add(n);
+          for (const n of coverageFor(num)) trialCoveredSet.add(n);
         }
 
-        // Accept if there is no complete constraint, the intersection is non-empty,
-        // or this is the last attempt (avoid infinite loop).
-        const intersects = !completeCandidateSet ||
-          [...completeCandidateSet].some(n => trialCoveredSet.has(n));
+        const intersects = !mandatoryTrackCompleteSet ||
+          [...mandatoryTrackCompleteSet].some(n => trialCoveredSet.has(n));
 
-        if (intersects || attempt === MAX_NEIGH_ATTEMPTS - 1) {
+        if (intersects) {
           neighboursCoveredSet = trialCoveredSet;
           neighboursBets = selectedNumbers.map(num => {
             const rawBase = lowerBound + Math.floor(Math.random() * (maxBet - lowerBound + 1));
@@ -1335,6 +1360,23 @@ export default function RouletteTable({
           break;
         }
       }
+
+      // The deterministic centre pool above makes this fallback finite and
+      // compatible whenever a compatible number exists. It is only a guard
+      // against malformed/custom neighbour rules.
+      if (!neighboursCoveredSet) {
+        const fallbackCentre = centrePoolFor(mandatoryTrackCompleteSet)[0];
+        if (fallbackCentre !== undefined) {
+          neighboursCoveredSet = new Set(coverageFor(fallbackCentre));
+          neighboursBets = [{
+            number: fallbackCentre,
+            baseAmount: Math.max(neighMult, Math.floor(lowerBound / neighMult) * neighMult),
+            amount: Math.max(neighMult, Math.floor(lowerBound / neighMult) * neighMult) * 5,
+            position: trackNumberPosMap.get(fallbackCentre) ?? { x: 0, y: 0 },
+            source: "NEIGHBOURS",
+          }];
+        }
+      }
     }
 
     // ── Choose winning number ──────────────────────────────────────────────────
@@ -1343,9 +1385,8 @@ export default function RouletteTable({
     //   • If number completes exist, at least one MUST cover the drawn number.
     //   • If neighbours bets exist, the drawn number MUST be in the union of
     //     all 5-number coverages (guaranteeing at least one bet wins).
-    //   • If series (track) bets exist, the drawn number MUST be in the numbers
-    //     of the randomly chosen primary series (guaranteeing it wins; other
-    //     active series may also win if their numbers overlap).
+    //   • If series (track) bets exist, the drawn number MUST be in the union
+    //     of all active series (guaranteeing at least one series wins).
     //   • All active constraints are intersected; the drawn number is chosen
     //     randomly from that intersection.
     //   • When no constraints exist, draw is fully random (0–36).
@@ -1354,22 +1395,9 @@ export default function RouletteTable({
     const hasNeighbours  = neighboursBets.length > 0;
     const hasTrackBets   = trackBets.length > 0;
 
-    if (hasDozenComplete || hasNumberCompletes || hasNeighbours || hasTrackBets) {
-      const allCompleteBets = (hasDozenComplete || hasNumberCompletes)
-        ? getAllRules().completeBets
-        : null;
-
-      // ── Build candidate list satisfying all active constraints ───────────────
-      // Progressively intersect each active constraint set. When an intersection
-      // becomes empty we keep the most recently valid set so at least one
-      // mandatory constraint is always honoured.
-      //
-      // Priority order (most restrictive first):
-      //   1. completeCandidateSet (dozen + number completes)
-      //   2. neighboursCoveredSet (union of all 5-number neighbourhoods)
-      //   3. seriesCoveredSet     (primary randomly-chosen series numbers)
-
-      // Start with all numbers; narrow as each constraint is applied.
+    if (hasDozenComplete || completeCandidateSet || hasNeighbours || hasTrackBets) {
+      // Build one strict intersection. Never preserve an earlier candidate set
+      // when a later mandatory constraint has no overlap.
       let candidates: number[] = Array.from({ length: 37 }, (_, i) => i);
 
       if (completeCandidateSet) {
@@ -1377,63 +1405,23 @@ export default function RouletteTable({
       }
 
       if (neighboursCoveredSet) {
-        const inter = candidates.filter(n => neighboursCoveredSet!.has(n));
-        // Only apply if intersection is non-empty; otherwise keep current candidates
-        // (edge case handled by post-selection safety check for neighbours).
-        if (inter.length > 0) candidates = inter;
+        candidates = candidates.filter(n => neighboursCoveredSet!.has(n));
       }
 
       if (seriesCoveredSet) {
-        const inter = candidates.filter(n => seriesCoveredSet!.has(n));
-        // Only apply if intersection is non-empty; otherwise keep current candidates
-        // (edge case handled by post-selection safety check for series).
-        if (inter.length > 0) candidates = inter;
+        candidates = candidates.filter(n => seriesCoveredSet!.has(n));
       }
 
-      drawnNumber = candidates.length > 0
-        ? candidates[Math.floor(Math.random() * candidates.length)]
-        : Math.floor(Math.random() * 37);
-
-      // ── Safety: re-check number-complete constraint and fix if needed ─────────
-      if (hasNumberCompletes && allCompleteBets) {
-        const anyHit = numberCompleteBets.some(c =>
-          completeTouchesNumber(c.number, drawnNumber, allCompleteBets),
-        );
-        if (!anyHit) {
-          const fallback = getNumbersCoveredByComplete(
-            numberCompleteBets[Math.floor(Math.random() * numberCompleteBets.length)].number,
-            allCompleteBets,
-          );
-          // Prefer a fallback number that also satisfies the dozen constraint
-          const dozenFallback = hasDozenComplete && dozenCoveredSetForWin
-            ? fallback.filter(n => dozenCoveredSetForWin!.has(n))
-            : [];
-          const chosen = dozenFallback.length > 0 ? dozenFallback : fallback;
-          if (chosen.length > 0) {
-            drawnNumber = chosen[Math.floor(Math.random() * chosen.length)];
-          }
+      if (candidates.length === 0) {
+        // A custom ruleset can make the mandatory intersection impossible.
+        // Retry the whole round with a bounded limit instead of dropping a
+        // series/neighbour/complete constraint or recursing forever.
+        if (retryAttempt < 20) {
+          generateRound(retryAttempt + 1);
         }
+        return;
       }
-
-      // ── Safety: re-check neighbours constraint and fix if needed ─────────────
-      if (hasNeighbours && neighboursCoveredSet && !neighboursCoveredSet.has(drawnNumber)) {
-        const neighboursOnly = [...neighboursCoveredSet];
-        drawnNumber = neighboursOnly[Math.floor(Math.random() * neighboursOnly.length)];
-      }
-
-      // ── Safety: re-check series constraint and fix if needed ──────────────────
-      // By construction drawnNumber should already satisfy this (series was the
-      // last constraint applied), but guard against the safety re-checks above
-      // moving the number out of the series coverage.
-      if (hasTrackBets && seriesCoveredSet && !seriesCoveredSet.has(drawnNumber)) {
-        // Prefer a number that also satisfies neighbours (if active)
-        const seriesOnly = [...seriesCoveredSet];
-        const seriesAndNeighbours = hasNeighbours && neighboursCoveredSet
-          ? seriesOnly.filter(n => neighboursCoveredSet!.has(n))
-          : [];
-        const chosen = seriesAndNeighbours.length > 0 ? seriesAndNeighbours : seriesOnly;
-        drawnNumber = chosen[Math.floor(Math.random() * chosen.length)];
-      }
+      drawnNumber = candidates[Math.floor(Math.random() * candidates.length)];
     } else {
       drawnNumber = Math.floor(Math.random() * 37);
     }
