@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { getAssignmentsByTemplateId, getTrainingTemplates } from "@/data/attestationStorage";
+import { formatDateTime } from "@/lib/dateFormatting";
 
 export default function AttestationsPage() {
   const templates = useMemo(() => getTrainingTemplates().reverse(), []);
@@ -20,7 +21,7 @@ export default function AttestationsPage() {
                 <div>
                   <strong>{template.gameType === "ROULETTE" ? "Roulette" : template.gameType}</strong>
                   <span>{getAssignmentsByTemplateId(template.id).length} дилеров</span>
-                  <span>{new Date(template.createdAt).toLocaleDateString("ru-RU")}</span>
+                  <span>{formatDateTime(template.createdAt)}</span>
                 </div>
                 <Link className="review-edit-button" href={`/manager/attestations/${encodeURIComponent(template.id)}`}>
                   Открыть

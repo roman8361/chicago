@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import RouletteSettingsSummary from "@/components/RouletteSettingsSummary";
 import { getDealers } from "@/data/dealerStorage";
+import { formatDateTime } from "@/lib/dateFormatting";
 import {
   deleteAssignmentsByTemplateId,
   deleteTrainingTemplate,
@@ -52,7 +53,7 @@ export default function AttestationPage() {
 
         <div className="attestation-meta">
           <p><strong>Игра:</strong> Roulette</p>
-          <p><strong>Создана:</strong> {new Date(template.createdAt).toLocaleDateString("ru-RU")}</p>
+          <p><strong>Создана:</strong> {formatDateTime(template.createdAt)}</p>
           <p><strong>Статус:</strong> Создана</p>
         </div>
 
