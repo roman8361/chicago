@@ -51,5 +51,6 @@ export type TrainingResult = {
   answers: TrainingAnswer[];
   totalQuestions: number;
   correctAnswers: number;
+  createdAt: string;
   completedAt: string;
 };

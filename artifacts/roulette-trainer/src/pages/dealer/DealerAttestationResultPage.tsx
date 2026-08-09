@@ -79,7 +79,7 @@ export default function DealerAttestationResultPage() {
         <div className="attestation-meta">
           <p><strong>Игра:</strong> {gameTitle}</p>
           <p><strong>Начало:</strong> {assignment.startedAt ? formatDateTime(assignment.startedAt) : "—"}</p>
-          <p><strong>Завершение:</strong> {formatDateTime(result.completedAt)}</p>
+          <p><strong>Завершение:</strong> {formatDateTime(assignment.completedAt ?? result.completedAt)}</p>
         </div>
 
         <div className="dealer-result-summary" aria-label="Итог аттестации">

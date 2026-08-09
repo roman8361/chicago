@@ -67,6 +67,9 @@ export default function DealerAttestationPlayPage() {
     if (latestAssignment.status === "COMPLETED") {
       return "Аттестация уже завершена.";
     }
+    if (latestAssignment.status !== "IN_PROGRESS") {
+      return "Аттестация ещё не начата.";
+    }
     if (getTrainingResultByAssignmentId(latestAssignment.id)) {
       return "Результат этого прохождения уже сохранён.";
     }
@@ -74,12 +77,14 @@ export default function DealerAttestationPlayPage() {
       return "Не удалось сохранить ответы аттестации.";
     }
 
+    const createdAt = new Date().toISOString();
     const completedAt = new Date().toISOString();
     const result = addTrainingResult({
       assignmentId: latestAssignment.id,
       answers,
       totalQuestions: answers.length,
       correctAnswers: answers.filter((answer) => answer.correct).length,
+      createdAt,
       completedAt,
     });
     const updated = completeTrainingAssignment(latestAssignment.id, completedAt);

@@ -24,6 +24,7 @@ function isTrainingResult(value: unknown): value is TrainingResult {
     candidate.answers.every(isTrainingAnswer) &&
     typeof candidate.totalQuestions === "number" &&
     typeof candidate.correctAnswers === "number" &&
+    typeof candidate.createdAt === "string" &&
     typeof candidate.completedAt === "string"
   );
 }
