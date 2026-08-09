@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
 import ManagerPage from "@/pages/manager/ManagerPage";
 import DealerDetailsPage from "@/pages/manager/DealerDetailsPage";
+import CreateTrainingPage from "@/pages/manager/CreateTrainingPage";
 import DealerPage from "@/pages/dealer/DealerPage";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
@@ -45,6 +46,7 @@ function AppContent() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
+      <Route path="/manager/dealers/:dealerId/training/new" component={CreateTrainingPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />
       <Route path="/manager" component={ManagerPage} />
       <Route path="/dealer" component={DealerPage} />
