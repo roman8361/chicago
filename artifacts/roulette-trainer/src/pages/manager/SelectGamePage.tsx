@@ -17,11 +17,11 @@ function getContext() {
 export default function SelectGamePage() {
   const [, navigate] = useLocation();
   const { dealerId, isResume } = useMemo(getContext, []);
-  const { gameType: selectedGame, setGameType, reset } = useTrainingWizard();
+  const { gameType: selectedGame, setGameType, startNew } = useTrainingWizard();
 
   useEffect(() => {
-    if (!isResume) reset();
-  }, [isResume, reset]);
+    if (!isResume) startNew(dealerId);
+  }, [dealerId, isResume, startNew]);
 
   function handleNext() {
     if (!selectedGame) return;

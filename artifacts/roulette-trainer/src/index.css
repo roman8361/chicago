@@ -433,6 +433,46 @@
   margin-top: 4px;
 }
 
+.dealer-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 12px;
+}
+
+.dealer-selection-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 26px;
+  text-align: left;
+}
+
+.dealer-selection-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #c8a84b55;
+  border-radius: 6px;
+  background: rgba(200, 168, 75, 0.06);
+  color: #f0d080;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.dealer-selection-item:hover,
+.dealer-selection-item:focus-within,
+.dealer-selection-item--selected {
+  border-color: #c8a84b;
+  background: rgba(200, 168, 75, 0.14);
+}
+
+.dealer-selection-item input {
+  width: 17px;
+  height: 17px;
+  accent-color: #c8a84b;
+}
+
 /* ── Roulette Trainer ─────────────────────────────────────────── */
 
 .roulette-page {
