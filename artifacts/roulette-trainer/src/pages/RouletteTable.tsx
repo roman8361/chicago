@@ -315,6 +315,16 @@ function decidePostTrackFieldPhase(
   return seriesWonNow ? { kind: "seriesFieldPayout" } : hasNeighboursBetsNow ? { kind: "neighboursPayout" } : { kind: "field" };
 }
 
+function getInitialAttestationQuizPhase(savedGame: GameState): QuizPhase {
+  return savedGame.numberCompleteBets.length > 0 || savedGame.dozenCompleteBet
+    ? { kind: "completes" }
+    : savedGame.chips.length > 0 || savedGame.cashChipStacks.length > 0
+      ? { kind: "completesIntersection" }
+      : savedGame.trackBets.length > 0 || savedGame.neighboursBets.length > 0
+        ? { kind: "trackIntersection" }
+        : { kind: "field" };
+}
+
 function generateColorPayout(
   totalPayout: number,
   colorNominal: number,
@@ -719,6 +729,7 @@ function completeTouchesNumber(
 interface RouletteTableProps {
   mode?: RouletteMode;
   attestationExercise?: RouletteExercise;
+  startWithSpinAnimation?: boolean;
   autoGenerateRound?: boolean;
   onRoundGenerated?: (game: GameState) => void;
   onBackToAttestation?: () => void;
@@ -741,6 +752,7 @@ export type RouletteMode = "PRACTICE" | "ATTESTATION";
 export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
+  startWithSpinAnimation = false,
   autoGenerateRound = false,
   onRoundGenerated,
   onBackToAttestation,
@@ -799,34 +811,67 @@ export default function RouletteTable({
 
   const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule, getNeighboursRule } = useRouletteRules();
 
+  const revealAttestationExercise = useCallback((savedGame: GameState) => {
+    setGame(savedGame);
+    setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
+    setActiveSeries(
+      SERIES_QUIZ_ORDER
+        .map((type) => savedGame.trackBets.find((bet) => bet.type === type))
+        .filter((bet): bet is TrackBet => bet !== undefined),
+    );
+    setQuizPhase(getInitialAttestationQuizPhase(savedGame));
+    setAttestationCompletionError(null);
+    setEditMode(false);
+  }, [setEditMode]);
+
+  const playSpinAnimation = useCallback((onFinished: () => void) => {
+    if (isSpinningRef.current) return;
+    isSpinningRef.current = true;
+    setIsSpinning(true);
+
+    const audio = audioRef.current ?? new Audio(spinSoundUrl);
+    if (!audioRef.current) {
+      audio.preload = "auto";
+      audio.loop = false;
+      audioRef.current = audio;
+    }
+    audio.pause();
+    audio.currentTime = 0;
+    void audio.play().catch(err => console.warn("Spin audio play failed:", err));
+
+    spinTimeoutRef.current = setTimeout(() => {
+      isSpinningRef.current = false;
+      spinTimeoutRef.current = null;
+      setIsSpinning(false);
+      onFinished();
+    }, 2000);
+  }, []);
+
   // In ATTESTATION mode the exercise is an immutable, pre-generated round.
   // This effect only reads and displays it; it never calls the generator.
   useEffect(() => {
     if (!isAttestationMode || !attestationExercise) return;
 
     const savedGame = attestationExercise.data;
-    const snapshot = JSON.parse(JSON.stringify(savedGame)) as GameState;
-    setGame(savedGame);
-    setInitialRoundSnapshot(snapshot);
-    setActiveSeries(
-      SERIES_QUIZ_ORDER
-        .map((type) => savedGame.trackBets.find((bet) => bet.type === type))
-        .filter((bet): bet is TrackBet => bet !== undefined),
-    );
-    setQuizPhase(
-      savedGame.numberCompleteBets.length > 0 || savedGame.dozenCompleteBet
-        ? { kind: "completes" }
-        : savedGame.chips.length > 0 || savedGame.cashChipStacks.length > 0
-          ? { kind: "completesIntersection" }
-          : savedGame.trackBets.length > 0 || savedGame.neighboursBets.length > 0
-            ? { kind: "trackIntersection" }
-            : { kind: "field" },
-    );
-    setIsSpinning(false);
+    if (startWithSpinAnimation) {
+      setGame(null);
+      setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
+      setQuizPhase(null);
+      setActiveSeries([]);
+      playSpinAnimation(() => revealAttestationExercise(savedGame));
+      return;
+    }
+
     isSpinningRef.current = false;
-    setAttestationCompletionError(null);
-    setEditMode(false);
-  }, [isAttestationMode, attestationExercise, setEditMode]);
+    setIsSpinning(false);
+    revealAttestationExercise(savedGame);
+  }, [
+    isAttestationMode,
+    attestationExercise,
+    startWithSpinAnimation,
+    playSpinAnimation,
+    revealAttestationExercise,
+  ]);
 
   // Series divisors and payout map — re-derived whenever rules change
   const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
@@ -1589,12 +1634,14 @@ export default function RouletteTable({
 
   // Preload spin audio on mount so it's ready on first click
   useEffect(() => {
-    const audio = new Audio(spinSoundUrl);
-    audio.preload = "auto";
-    audio.loop = false;
-    audioRef.current = audio;
+    if (!audioRef.current) {
+      const audio = new Audio(spinSoundUrl);
+      audio.preload = "auto";
+      audio.loop = false;
+      audioRef.current = audio;
+    }
     return () => {
-      audio.pause();
+      audioRef.current?.pause();
       audioRef.current = null;
     };
   }, []);
@@ -1608,29 +1655,12 @@ export default function RouletteTable({
 
   const handleSpin = useCallback(() => {
     if (isAttestationMode) return;
-    if (isSpinningRef.current) return;
-    isSpinningRef.current = true;
 
     // Immediately exit report/quiz layout so the full-size field shows at once
     setQuizPhase(null);
     setGame(null);
-    setIsSpinning(true);
-
-    // Play spin sound — pause first to reset any in-progress playback, then rewind and play
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-      void audio.play().catch(err => console.warn("Spin audio play failed:", err));
-    }
-
-    // After 2 seconds: generate the round and unblock spin
-    spinTimeoutRef.current = setTimeout(() => {
-      isSpinningRef.current = false;
-      setIsSpinning(false);
-      generateRoundRef.current();
-    }, 2000);
-  }, [isAttestationMode]);
+    playSpinAnimation(() => generateRoundRef.current());
+  }, [isAttestationMode, playSpinAnimation]);
 
   const handleCheckSeries = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "series") return;

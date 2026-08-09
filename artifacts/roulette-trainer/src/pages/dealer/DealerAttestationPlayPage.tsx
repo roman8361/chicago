@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { getDealers } from "@/data/dealerStorage";
 import {
@@ -35,6 +35,11 @@ export default function DealerAttestationPlayPage() {
   const [, params] = useRoute("/dealer/attestations/:assignmentId/play");
   const [, navigate] = useLocation();
   const assignmentId = params?.assignmentId;
+  const [startWithSpinAnimation] = useState(
+    () =>
+      typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).get("startWithSpinAnimation") === "1",
+  );
   const currentDealerId = getCurrentDealerId();
   const dealer = getDealers().find((candidate) => candidate.id === currentDealerId);
   const assignment = assignmentId
@@ -48,6 +53,11 @@ export default function DealerAttestationPlayPage() {
     () => (assignmentId ? getRouletteExerciseByAssignmentId(assignmentId) : undefined),
     [assignmentId],
   );
+
+  useEffect(() => {
+    if (!startWithSpinAnimation || !assignmentId) return;
+    navigate(`/dealer/attestations/${encodeURIComponent(assignmentId)}/play`, { replace: true });
+  }, [assignmentId, navigate, startWithSpinAnimation]);
 
   function completeAttestation(answers: TrainingAnswer[]): string | null {
     const latestAssignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentId);
@@ -126,6 +136,7 @@ export default function DealerAttestationPlayPage() {
     <RouletteTable
       mode={mode}
       attestationExercise={exercise}
+      startWithSpinAnimation={startWithSpinAnimation}
       settings={template.config}
       onCompleteAttestation={completeAttestation}
       onOpenSettings={() => undefined}

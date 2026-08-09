@@ -137,7 +137,12 @@ export default function DealerAssignmentPage() {
       }
     }
 
-    navigate(`/dealer/attestations/${encodeURIComponent(latestAssignment.id)}/play`);
+    const playPath = `/dealer/attestations/${encodeURIComponent(latestAssignment.id)}/play`;
+    navigate(
+      latestAssignment.status === "CREATED"
+        ? `${playPath}?startWithSpinAnimation=1`
+        : playPath,
+    );
   }
 
   return (
