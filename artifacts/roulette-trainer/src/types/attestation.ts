@@ -19,6 +19,7 @@ export type TrainingAssignment = {
   dealerId: string;
   status: TrainingAssignmentStatus;
   createdAt: string;
+  startedAt?: string;
 };
 
 /**

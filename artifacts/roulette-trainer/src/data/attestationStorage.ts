@@ -59,7 +59,8 @@ function isTrainingAssignment(value: unknown): value is TrainingAssignment {
       candidate.status === "CREATED" ||
       candidate.status === "IN_PROGRESS" ||
       candidate.status === "COMPLETED") &&
-    typeof candidate.createdAt === "string"
+    typeof candidate.createdAt === "string" &&
+    (candidate.startedAt === undefined || typeof candidate.startedAt === "string")
   );
 }
 
@@ -200,12 +201,17 @@ export function deleteTrainingAssignment(assignmentId: string): void {
 export function updateTrainingAssignmentStatus(
   assignmentId: string,
   status: TrainingAssignmentStatus,
+  startedAt?: string,
 ): TrainingAssignment | null {
   const assignments = getTrainingAssignments();
   const index = assignments.findIndex((assignment) => assignment.id === assignmentId);
   if (index === -1) return null;
 
-  const updated = { ...assignments[index], status };
+  const updated = {
+    ...assignments[index],
+    status,
+    ...(startedAt ? { startedAt } : {}),
+  };
   const next = [...assignments];
   next[index] = updated;
   saveTrainingAssignments(next);

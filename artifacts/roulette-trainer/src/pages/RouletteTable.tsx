@@ -4,6 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import spinSoundUrl from "@assets/spin_2sec_1784187842896.mp4";
 import { GameSettings } from "@/types/gameSettings";
+import type { RouletteExercise } from "@/types/attestation";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
@@ -716,6 +717,9 @@ function completeTouchesNumber(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 interface RouletteTableProps {
+  mode?: RouletteMode;
+  attestationExercise?: RouletteExercise;
+  onBackToAttestation?: () => void;
   settings: GameSettings;
   onOpenSettings: () => void;
   onOpenDebug: () => void;
@@ -729,13 +733,19 @@ interface RouletteTableProps {
   setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+export type RouletteMode = "PRACTICE" | "ATTESTATION";
+
 export default function RouletteTable({
+  mode = "PRACTICE",
+  attestationExercise,
+  onBackToAttestation,
   settings, onOpenSettings, onOpenDebug,
   showGrid, setShowGrid,
   showTrack, setShowTrack,
   showDozens, setShowDozens,
   editMode, setEditMode,
 }: RouletteTableProps) {
+  const isAttestationMode = mode === "ATTESTATION";
   const [editTab,   setEditTab]   = useState<"grid" | "track" | "dozens">("grid");
   const [copied,    setCopied]    = useState(false);
   const [game,      setGame]      = useState<GameState | null>(null);
@@ -781,6 +791,34 @@ export default function RouletteTable({
   const [dozensParams, setDozensParams] = useState<DozensParams>(loadDozens);
 
   const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule, getNeighboursRule } = useRouletteRules();
+
+  // In ATTESTATION mode the exercise is an immutable, pre-generated round.
+  // This effect only reads and displays it; it never calls the generator.
+  useEffect(() => {
+    if (!isAttestationMode || !attestationExercise) return;
+
+    const savedGame = attestationExercise.data;
+    const snapshot = JSON.parse(JSON.stringify(savedGame)) as GameState;
+    setGame(savedGame);
+    setInitialRoundSnapshot(snapshot);
+    setActiveSeries(
+      SERIES_QUIZ_ORDER
+        .map((type) => savedGame.trackBets.find((bet) => bet.type === type))
+        .filter((bet): bet is TrackBet => bet !== undefined),
+    );
+    setQuizPhase(
+      savedGame.numberCompleteBets.length > 0 || savedGame.dozenCompleteBet
+        ? { kind: "completes" }
+        : savedGame.chips.length > 0 || savedGame.cashChipStacks.length > 0
+          ? { kind: "completesIntersection" }
+          : savedGame.trackBets.length > 0 || savedGame.neighboursBets.length > 0
+            ? { kind: "trackIntersection" }
+            : { kind: "field" },
+    );
+    setIsSpinning(false);
+    isSpinningRef.current = false;
+    setEditMode(false);
+  }, [isAttestationMode, attestationExercise, setEditMode]);
 
   // Series divisors and payout map — re-derived whenever rules change
   const seriesDivisors = useMemo<Record<TrackBet["type"], number>>(() => ({
@@ -1553,6 +1591,7 @@ export default function RouletteTable({
   }, []);
 
   const handleSpin = useCallback(() => {
+    if (isAttestationMode) return;
     if (isSpinningRef.current) return;
     isSpinningRef.current = true;
 
@@ -1575,7 +1614,7 @@ export default function RouletteTable({
       setIsSpinning(false);
       generateRoundRef.current();
     }, 2000);
-  }, []);
+  }, [isAttestationMode]);
 
   const handleCheckSeries = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "series") return;
@@ -2702,15 +2741,23 @@ export default function RouletteTable({
     <div className={showReportField ? "roulette-page roulette-page--report" : "roulette-page"}>
       {/* Controls */}
       <div className="controls-bar">
-        <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
-          {isSpinning ? "⏳ Spin…" : "▶ Spin"}
-        </button>
-        <button className="grid-toggle-btn settings-open-btn" onClick={onOpenSettings}>
-          ⚙ Настройки
-        </button>
-        <button className="grid-toggle-btn" onClick={onOpenDebug} disabled={isSpinning}>
-          🔧 Отладка
-        </button>
+        {isAttestationMode ? (
+          <button className="grid-toggle-btn settings-open-btn" onClick={onBackToAttestation}>
+            ← Назад к аттестации
+          </button>
+        ) : (
+          <>
+            <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
+              {isSpinning ? "⏳ Spin…" : "▶ Spin"}
+            </button>
+            <button className="grid-toggle-btn settings-open-btn" onClick={onOpenSettings}>
+              ⚙ Настройки
+            </button>
+            <button className="grid-toggle-btn" onClick={onOpenDebug} disabled={isSpinning}>
+              🔧 Отладка
+            </button>
+          </>
+        )}
       </div>
 
       {/* Two-column container in report mode, transparent otherwise */}

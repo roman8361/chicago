@@ -767,6 +767,12 @@
   margin-top: 24px;
 }
 
+.dealer-action-error {
+  margin: 14px 0 0;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
 .dealer-assignment-actions .account-button {
   flex: 1;
 }

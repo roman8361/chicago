@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { getDealers } from "@/data/dealerStorage";
 import {
   getTrainingAssignments,
   getTrainingTemplateById,
+  updateTrainingAssignmentStatus,
 } from "@/data/attestationStorage";
 import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
 import { getGameDefinition } from "@/data/gameRegistry";
@@ -27,6 +29,7 @@ export default function DealerAssignmentPage() {
   const assignment = assignmentId
     ? getTrainingAssignments().find((candidate) => candidate.id === assignmentId)
     : undefined;
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (!dealer) {
     return (
@@ -80,12 +83,57 @@ export default function DealerAssignmentPage() {
 
   const gameTitle = getGameDefinition(template.gameType)?.title ?? "Игра";
   const exercise = getRouletteExerciseByAssignmentId(assignment.id);
+  const assignmentRecordId = assignment.id;
   const actionLabel =
     assignment.status === "CREATED"
       ? "Начать аттестацию"
       : assignment.status === "IN_PROGRESS"
         ? "Продолжить аттестацию"
         : "Аттестация завершена";
+
+  function openPlay() {
+    setActionError(null);
+
+    // Re-read the records at click time so the checks are not based only on
+    // the data captured during the initial render.
+    const latestAssignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentRecordId);
+    if (!latestAssignment || latestAssignment.dealerId !== currentDealerId) {
+      setActionError("Аттестация недоступна");
+      return;
+    }
+
+    const latestTemplate = getTrainingTemplateById(latestAssignment.trainingTemplateId);
+    if (!latestTemplate) {
+      setActionError("Данные аттестации недоступны");
+      return;
+    }
+
+    const latestExercise = getRouletteExerciseByAssignmentId(latestAssignment.id);
+    if (!latestExercise) {
+      setActionError("Задание не подготовлено. Обратитесь к руководителю.");
+      return;
+    }
+
+    if (latestTemplate.gameType !== "ROULETTE") {
+      setActionError("Эта игра пока не поддерживается.");
+      return;
+    }
+
+    if (latestAssignment.status === "CREATED") {
+      const startedAt = latestAssignment.startedAt ?? new Date().toISOString();
+      const updated = updateTrainingAssignmentStatus(
+        latestAssignment.id,
+        "IN_PROGRESS",
+        startedAt,
+      );
+      if (!updated) {
+        setActionError("Не удалось начать аттестацию. Попробуйте ещё раз.");
+        return;
+      }
+    }
+
+    navigate(`/dealer/attestations/${encodeURIComponent(latestAssignment.id)}/play`);
+  }
 
   return (
     <main className="account-page">
@@ -107,13 +155,19 @@ export default function DealerAssignmentPage() {
         </div>
 
         <div className="dealer-assignment-actions">
-          <button className="account-button" type="button" disabled>
+          <button
+            className="account-button"
+            type="button"
+            onClick={openPlay}
+            disabled={assignment.status === "COMPLETED"}
+          >
             {actionLabel}
           </button>
           <button className="account-link dealer-cancel-button" type="button" onClick={() => navigate("/dealer")}>
             Назад
           </button>
         </div>
+        {actionError && <p className="dealer-action-error" role="alert">{actionError}</p>}
       </section>
     </main>
   );
