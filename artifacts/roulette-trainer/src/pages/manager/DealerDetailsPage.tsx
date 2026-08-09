@@ -45,7 +45,7 @@ export default function DealerDetailsPage() {
         <div className="account-actions">
           <Link
             className="account-button"
-            href={`/manager/dealers/${encodeURIComponent(dealer.id)}/training/new`}
+            href={`/manager/training/new/game?dealerId=${encodeURIComponent(dealer.id)}`}
           >
             Создать тренировку
           </Link>

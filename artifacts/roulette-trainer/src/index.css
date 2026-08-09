@@ -372,6 +372,67 @@
   text-decoration: underline;
 }
 
+.training-wizard-card {
+  width: min(100%, 520px);
+}
+
+.game-selection-list {
+  display: grid;
+  gap: 10px;
+  margin: 26px 0 30px;
+  text-align: left;
+}
+
+.game-selection-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #c8a84b55;
+  border-radius: 6px;
+  background: rgba(200, 168, 75, 0.06);
+  color: #f0d080;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.game-selection-card:hover,
+.game-selection-card:focus-within {
+  border-color: #c8a84b;
+  background: rgba(200, 168, 75, 0.14);
+}
+
+.game-selection-card--selected {
+  border-color: #ffe87a;
+  background: rgba(200, 168, 75, 0.18);
+  box-shadow: 0 0 0 1px rgba(255, 232, 122, 0.18);
+}
+
+.game-selection-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game-selection-radio {
+  width: 22px;
+  color: #ffe87a;
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+}
+
+.game-selection-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.training-wizard-actions {
+  margin-top: 4px;
+}
+
 /* ── Roulette Trainer ─────────────────────────────────────────── */
 
 .roulette-page {
