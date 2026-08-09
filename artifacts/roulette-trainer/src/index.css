@@ -50,6 +50,56 @@
   line-height: 1.5;
 }
 
+.dealer-section {
+  margin: 28px 0 30px;
+  text-align: left;
+}
+
+.dealer-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dealer-section h2 {
+  margin: 0;
+  color: #ffe87a;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.dealer-add-button {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid #c8a84b88;
+  border-radius: 5px;
+  background: rgba(200, 168, 75, 0.08);
+  color: #a08840;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+.dealer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dealer-list-item {
+  padding: 12px 14px;
+  border: 1px solid #c8a84b55;
+  border-radius: 6px;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.dealer-list-item-name {
+  color: #f0d080;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
 .account-actions {
   display: grid;
   gap: 12px;
