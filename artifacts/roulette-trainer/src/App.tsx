@@ -22,6 +22,7 @@ import AttestationDealersPage from "@/pages/manager/AttestationDealersPage";
 import AttestationSettingsPage from "@/pages/manager/AttestationSettingsPage";
 import RouletteExercisePreparationPage from "@/pages/manager/RouletteExercisePreparationPage";
 import AttestationsPage from "@/pages/manager/AttestationsPage";
+import ManagerDealerResultPage from "@/pages/manager/ManagerDealerResultPage";
 import DealerPage from "@/pages/dealer/DealerPage";
 import DealerAssignmentPage from "@/pages/dealer/DealerAssignmentPage";
 import DealerAttestationPlayPage from "@/pages/dealer/DealerAttestationPlayPage";
@@ -70,6 +71,7 @@ function AppContent() {
       <Route path="/manager/attestations/:templateId/dealers" component={AttestationDealersPage} />
       <Route path="/manager/attestations/:templateId/settings" component={AttestationSettingsPage} />
       <Route path="/manager/attestations/:templateId/prepare" component={RouletteExercisePreparationPage} />
+      <Route path="/manager/attestations/:templateId/results/:assignmentId" component={ManagerDealerResultPage} />
       <Route path="/manager/attestations/:templateId" component={AttestationPage} />
       <Route path="/manager/attestations" component={AttestationsPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />

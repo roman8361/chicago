@@ -511,6 +511,27 @@
   font-size: 12px;
 }
 
+.review-dealer-result {
+  color: #a9e3b2;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.review-dealer-status--warning {
+  color: #fca5a5;
+}
+
+.review-dealer-result-button {
+  justify-self: start;
+  margin-top: 4px;
+  text-decoration: none;
+}
+
+.review-dealer-result-button:hover,
+.review-dealer-result-button:focus-visible {
+  text-decoration: none;
+}
+
 .attestation-action-note {
   flex: 1 1 100%;
   margin: 0;

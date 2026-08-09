@@ -39,6 +39,11 @@ export default function AttestationsPage() {
                   <strong>{getGameDefinition(template.gameType)?.title ?? template.gameType}</strong>
                   <span>Создана: {formatDateTime(template.createdAt)}</span>
                   <span>Дилеров: {assignments.length}</span>
+                  <span>
+                    Завершили: {assignments.filter((assignment) => assignment.status === "COMPLETED").length}
+                    {" · "}В процессе: {assignments.filter((assignment) => assignment.status === "IN_PROGRESS").length}
+                    {" · "}Не начали: {assignments.filter((assignment) => assignment.status === "CREATED").length}
+                  </span>
                   <span>Состояние: {getTemplateStatus(assignments)}</span>
                 </div>
                 <Link className="review-edit-button" href={`/manager/attestations/${encodeURIComponent(template.id)}`}>

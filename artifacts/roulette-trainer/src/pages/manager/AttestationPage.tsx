@@ -15,6 +15,7 @@ import {
   getTrainingTemplateById,
 } from "@/data/attestationStorage";
 import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
+import { getTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
 
 export default function AttestationPage() {
   const [, params] = useRoute("/manager/attestations/:templateId");
@@ -94,12 +95,56 @@ export default function AttestationPage() {
           <div className="review-dealers-list">
             {assignments.map((assignment) => {
               const dealer = dealers.find((candidate) => candidate.id === assignment.dealerId);
+              const result = assignment.status === "COMPLETED"
+                ? getTrainingResultByAssignmentId(assignment.id)
+                : undefined;
               return (
                 <div className="review-dealer-name" key={assignment.id}>
                   <strong>{dealer?.fullName ?? "Дилер удалён"}</strong>
                   <span className="review-dealer-status">
                     Статус: {getAssignmentStatusLabel(assignment.status)}
                   </span>
+                  {assignment.status === "IN_PROGRESS" && assignment.startedAt && (
+                    <span className="review-dealer-status">
+                      Начал: {formatDateTime(assignment.startedAt)}
+                    </span>
+                  )}
+                  {assignment.status === "COMPLETED" && (
+                    <>
+                      {assignment.startedAt && (
+                        <span className="review-dealer-status">
+                          Начал: {formatDateTime(assignment.startedAt)}
+                        </span>
+                      )}
+                      {assignment.completedAt && (
+                        <span className="review-dealer-status">
+                          Завершил: {formatDateTime(assignment.completedAt)}
+                        </span>
+                      )}
+                      {result ? (
+                        <>
+                          <span className="review-dealer-result">
+                            Правильных ответов: {result.correctAnswers} из {result.totalQuestions}
+                          </span>
+                          <span className="review-dealer-result">
+                            Результат: {result.totalQuestions > 0
+                              ? Math.round((result.correctAnswers / result.totalQuestions) * 100)
+                              : 0}%
+                          </span>
+                          <Link
+                            className="review-edit-button review-dealer-result-button"
+                            href={`/manager/attestations/${encodeURIComponent(template.id)}/results/${encodeURIComponent(assignment.id)}`}
+                          >
+                            Посмотреть результат
+                          </Link>
+                        </>
+                      ) : (
+                        <span className="review-dealer-status review-dealer-status--warning">
+                          Результат: Недоступен
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               );
             })}
