@@ -1,18 +1,35 @@
-import { useMemo } from "react";
-import { Link, useRoute } from "wouter";
+import { useMemo, useState } from "react";
+import { Link, useLocation, useRoute } from "wouter";
 import RouletteSettingsSummary from "@/components/RouletteSettingsSummary";
 import { getDealers } from "@/data/dealerStorage";
-import { getAssignmentsByTemplateId, getTrainingTemplateById } from "@/data/attestationStorage";
+import {
+  deleteAssignmentsByTemplateId,
+  deleteTrainingTemplate,
+  getAssignmentsByTemplateId,
+  getTrainingTemplateById,
+} from "@/data/attestationStorage";
 
 export default function AttestationPage() {
   const [, params] = useRoute("/manager/attestations/:templateId");
+  const [, navigate] = useLocation();
   const templateId = params?.templateId;
   const template = templateId ? getTrainingTemplateById(templateId) : undefined;
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const assignments = useMemo(
     () => (templateId ? getAssignmentsByTemplateId(templateId) : []),
     [templateId],
   );
   const dealers = useMemo(() => getDealers(), []);
+
+  function confirmDelete() {
+    if (!templateId || isDeleting) return;
+
+    setIsDeleting(true);
+    deleteAssignmentsByTemplateId(templateId);
+    deleteTrainingTemplate(templateId);
+    navigate("/manager/attestations");
+  }
 
   if (!template) {
     return (
@@ -73,7 +90,12 @@ export default function AttestationPage() {
           <button className="review-edit-button" type="button" disabled title="Будет доступно на следующем этапе">
             Изменить дилеров
           </button>
-          <button className="review-edit-button review-edit-button--danger" type="button" disabled title="Будет доступно на следующем этапе">
+          <button
+            className="review-edit-button review-edit-button--danger"
+            type="button"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={isDeleting}
+          >
             Удалить аттестацию
           </button>
         </div>
@@ -84,6 +106,42 @@ export default function AttestationPage() {
           </Link>
         </div>
       </section>
+
+      {isDeleteDialogOpen && (
+        <div className="dealer-delete-overlay" role="presentation">
+          <div
+            className="dealer-delete-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-attestation-title"
+          >
+            <h2 id="delete-attestation-title">Удалить аттестацию?</h2>
+            <p>
+              Будут удалены сама аттестация и все назначения дилеров.
+              <br />
+              Это действие нельзя отменить.
+            </p>
+            <div className="dealer-form-actions">
+              <button
+                className="dealer-row-button dealer-row-button--danger"
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Удаление..." : "Удалить"}
+              </button>
+              <button
+                className="account-link dealer-cancel-button"
+                type="button"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isDeleting}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

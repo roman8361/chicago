@@ -153,6 +153,12 @@ export function getAssignmentsByTemplateId(templateId: string): TrainingAssignme
   return getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId === templateId);
 }
 
+export function deleteAssignmentsByTemplateId(templateId: string): void {
+  saveTrainingAssignments(
+    getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId !== templateId),
+  );
+}
+
 export function getAssignmentsByDealerId(dealerId: string): TrainingAssignment[] {
   return getTrainingAssignments().filter((assignment) => assignment.dealerId === dealerId);
 }
