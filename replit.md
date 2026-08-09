@@ -1,45 +1,37 @@
 # Roulette Dealer Trainer
 
-A browser-based roulette dealer training tool featuring a full European roulette table, racetrack, configurable chip denominations, and spin simulation.
-
-## Run & Operate
-
-- `pnpm --filter @workspace/roulette-trainer run dev` — run the trainer (port 5000, via the "Roulette Dealer Trainer" workflow)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
+A browser-based trainer for roulette dealers. Simulates a full European roulette table with betting layout, racetrack (French bets), chip selection, and payout logic.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- Frontend: React 19 + Vite, Tailwind CSS, shadcn/ui (Radix UI), Framer Motion, wouter (routing)
-- No backend or database — fully client-side app
+- **Frontend**: React 19 + Vite 7, TypeScript, Tailwind CSS v4, Radix UI, Framer Motion
+- **Routing**: Wouter
+- **Data fetching**: TanStack Query
+- **Package manager**: pnpm (workspace monorepo)
 
-## Where things live
+## How to run
 
-- `artifacts/roulette-trainer/src/` — all app source
-  - `pages/RouletteTable.tsx` — main game screen
-  - `pages/SettingsScreen.tsx` — chip/limit configuration
-  - `types/gameSettings.ts` — shared settings type & defaults
-  - `data/` — roulette number/color data
-  - `components/` — UI components (table, racetrack, chips, etc.)
+The workflow **"Roulette Dealer Trainer"** starts the dev server automatically:
 
-## Architecture decisions
+```
+cd artifacts/roulette-trainer && pnpm install && PORT=5000 BASE_PATH=/ pnpm run dev
+```
 
-- Pure frontend — no server or database needed; all state is in-component React state.
-- wouter used for routing (lightweight alternative to React Router).
+App is served at port 5000.
 
-## Product
+## Project structure
 
-A training aid for roulette dealers: spin the wheel, place bets on the table or racetrack, configure chip denominations and table limits.
+```
+artifacts/roulette-trainer/src/
+  App.tsx          # Root component and routing
+  pages/           # Page-level components
+  components/      # Reusable UI components (table, wheel, chips, bets…)
+  hooks/           # Custom React hooks
+  data/            # Static roulette data (number sequences, bet definitions)
+  types/           # TypeScript types
+  lib/             # Utility helpers
+```
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-- Run `pnpm install` from the workspace root if `node_modules` is missing before starting the workflow.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+<!-- Add user preferences here as they are stated -->
