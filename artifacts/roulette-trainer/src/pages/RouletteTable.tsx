@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import spinSoundUrl from "@assets/spin_2sec_1784187842896.mp4";
 import { GameSettings } from "@/types/gameSettings";
-import type { RouletteExercise, TrainingAnswer } from "@/types/attestation";
+import type { RouletteExercise, TrainingAnswer, TrainingProgress } from "@/types/attestation";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
@@ -729,12 +729,14 @@ function completeTouchesNumber(
 interface RouletteTableProps {
   mode?: RouletteMode;
   attestationExercise?: RouletteExercise;
+  restoredProgress?: TrainingProgress | null;
   startWithSpinAnimation?: boolean;
   autoGenerateRound?: boolean;
   onRoundGenerated?: (game: GameState) => void;
   onBackHome?: () => void;
   onBackToAttestation?: () => void;
   onCompleteAttestation?: (answers: TrainingAnswer[]) => string | null;
+  onAnswerRecorded?: (answers: TrainingAnswer[], currentQuestionIndex: number) => void;
   settings: GameSettings;
   onOpenSettings: () => void;
   onOpenDebug: () => void;
@@ -753,12 +755,14 @@ export type RouletteMode = "PRACTICE" | "ATTESTATION";
 export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
+  restoredProgress,
   startWithSpinAnimation = false,
   autoGenerateRound = false,
   onRoundGenerated,
   onBackHome,
   onBackToAttestation,
   onCompleteAttestation,
+  onAnswerRecorded,
   settings, onOpenSettings, onOpenDebug,
   showGrid, setShowGrid,
   showTrack, setShowTrack,
@@ -801,6 +805,7 @@ export default function RouletteTable({
   const [acceptedNeighboursAmounts, setAcceptedNeighboursAmounts] = useState<Map<number, number> | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [attestationCompletionError, setAttestationCompletionError] = useState<string | null>(null);
+  const progressAnswersRef = useRef<TrainingAnswer[]>([]);
 
   const isSpinningRef    = useRef(false);
   const spinTimeoutRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -816,6 +821,7 @@ export default function RouletteTable({
   const revealAttestationExercise = useCallback((savedGame: GameState) => {
     setGame(savedGame);
     setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
+    progressAnswersRef.current = (restoredProgress?.answers ?? []).map((answer) => ({ ...answer }));
     setActiveSeries(
       SERIES_QUIZ_ORDER
         .map((type) => savedGame.trackBets.find((bet) => bet.type === type))
@@ -824,7 +830,29 @@ export default function RouletteTable({
     setQuizPhase(getInitialAttestationQuizPhase(savedGame));
     setAttestationCompletionError(null);
     setEditMode(false);
-  }, [setEditMode]);
+  }, [restoredProgress, setEditMode]);
+
+  const recordAttestationAnswer = useCallback((
+    questionId: string,
+    question: string,
+    record: { userAnswer: number; correctAnswer: number; correct: boolean },
+  ) => {
+    if (!isAttestationMode || !onAnswerRecorded) return;
+    const answer: TrainingAnswer = {
+      questionId,
+      question,
+      answer: record.userAnswer,
+      correctAnswer: record.correctAnswer,
+      correct: record.correct,
+    };
+    const nextByQuestionId = new Map(
+      progressAnswersRef.current.map((savedAnswer) => [savedAnswer.questionId, savedAnswer]),
+    );
+    nextByQuestionId.set(questionId, answer);
+    const answers = [...nextByQuestionId.values()];
+    progressAnswersRef.current = answers;
+    onAnswerRecorded(answers, answers.length);
+  }, [isAttestationMode, onAnswerRecorded]);
 
   const playSpinAnimation = useCallback((onFinished: () => void) => {
     if (isSpinningRef.current) return;
@@ -873,6 +901,125 @@ export default function RouletteTable({
     startWithSpinAnimation,
     playSpinAnimation,
     revealAttestationExercise,
+  ]);
+
+  // A resumed attestation uses the immutable exercise already loaded above. It
+  // restores the answered question ids and the small amount of record state
+  // needed by the next calculation, but never generates or spins a new round.
+  useEffect(() => {
+    if (!isAttestationMode || !attestationExercise || !game || startWithSpinAnimation) return;
+
+    const savedAnswers = restoredProgress?.answers ?? [];
+    progressAnswersRef.current = savedAnswers.map((answer) => ({ ...answer }));
+    if (savedAnswers.length === 0) return;
+
+    const answerById = new Map(savedAnswers.map((answer) => [answer.questionId, answer]));
+    const basicRecord = (questionId: string) => {
+      const answer = answerById.get(questionId);
+      return answer
+        ? { userAnswer: Number(answer.answer) || 0, correctAnswer: Number(answer.correctAnswer) || 0, correct: answer.correct }
+        : null;
+    };
+
+    const completes = basicRecord("completes");
+    if (completes) setCompletesRecord({ ...completes, lines: [] });
+    const intersection = basicRecord("completes-intersection");
+    if (intersection) setIntersectionRecord({ ...intersection, lines: [] });
+    const series = basicRecord("series");
+    if (series) setSeriesRecord({ ...series, lines: [] });
+    const trackIntersection = basicRecord("track-intersection");
+    if (trackIntersection) setTrackIntersectionRecord({ ...trackIntersection, lines: [] });
+    const trackFieldIntersection = basicRecord("track-field-intersection");
+    if (trackFieldIntersection) setTrackFieldIntersectionRecord({ ...trackFieldIntersection, lines: [] });
+    const completeNumberPayout = basicRecord("complete-number-payout");
+    if (completeNumberPayout) {
+      setCompleteNumberPayoutRecord({
+        ...completeNumberPayout,
+        drawnNumber: game.drawnNumber,
+        winningPositions: [],
+      });
+    }
+    const seriesFieldPayout = basicRecord("series-field-payout");
+    if (seriesFieldPayout) setSeriesFieldPayoutRecord({ ...seriesFieldPayout, positions: [] });
+    const neighboursPayout = basicRecord("neighbours-payout");
+    if (neighboursPayout) {
+      setNeighboursPayoutRecord({
+        ...neighboursPayout,
+        winningNeighbours: [],
+        totalNeighboursAmount: 0,
+        cappedNeighboursAmount: 0,
+        colorContrib: 0,
+        cashContrib: 0,
+        completeContrib: 0,
+        seriesContrib: 0,
+        fieldTotal: 0,
+        positionLimit: Math.max(1, settings.maxBet),
+        effectiveOccupied: 0,
+        freeCapacity: Math.max(1, settings.maxBet),
+        winningNumber: game.drawnNumber,
+      });
+    }
+    const field = basicRecord("field-payout");
+    if (field) setFieldRecord({ ...field, entries: [] });
+    const color = basicRecord("color-payout");
+    if (color) {
+      setColorPayoutRecord({
+        ...color,
+        cashPayout: 0,
+        totalPayout: Number(answerById.get("field-payout")?.correctAnswer) || 0,
+        colorAmount: (Number(answerById.get("color-payout")?.correctAnswer) || 0) * (settings.chipValue ?? 10),
+        colorNominal: settings.chipValue ?? 10,
+      });
+    }
+
+    const hasAnswer = (questionId: string) => answerById.has(questionId);
+    const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
+    const hasFieldBets = game.chips.length > 0 || game.cashChipStacks.length > 0;
+    const hasTrackBets = activeSeries.length > 0 || game.neighboursBets.length > 0;
+    const hasTrackFieldBets = hasTrackBets && (
+      game.chips.length > 0
+      || game.cashChipStacks.length > 0
+      || !!game.dozenCompleteBet
+      || game.numberCompleteBets.length > 0
+    );
+    const anyComplete = !!game.dozenCompleteBet || game.numberCompleteBets.length > 0;
+    const rules = getAllRules();
+    const anySeriesWon = activeSeries.some((trackBet) => {
+      const rule = (rules.trackBets as Record<string, { bets: Record<string, Array<{ numbers: number[] }>> }>)[trackBet.type];
+      return !!rule && Object.values(rule.bets).some((entries) =>
+        Array.isArray(entries) && entries.some((entry) => entry.numbers.includes(game.drawnNumber)),
+      );
+    });
+
+    const nextPhase: QuizPhase =
+      (hasCompletesQuestion && !hasAnswer("completes")) ? { kind: "completes" } :
+      (hasFieldBets && !hasAnswer("completes-intersection")) ? { kind: "completesIntersection" } :
+      (activeSeries.length > 0 && !hasAnswer("series")) ? { kind: "series" } :
+      (hasTrackBets && !hasAnswer("track-intersection")) ? { kind: "trackIntersection" } :
+      (hasTrackFieldBets && !hasAnswer("track-field-intersection")) ? { kind: "trackFieldIntersection" } :
+      (anyComplete && !hasAnswer("complete-number-payout")) ? { kind: "completeNumberPayout" } :
+      (anySeriesWon && !hasAnswer("series-field-payout")) ? { kind: "seriesFieldPayout" } :
+      (game.neighboursBets.length > 0 && !hasAnswer("neighbours-payout")) ? { kind: "neighboursPayout" } :
+      !hasAnswer("field-payout") ? { kind: "field" } :
+      (!hasAnswer("color-payout") && generateColorPayout(
+        Number(answerById.get("field-payout")?.correctAnswer) || 0,
+        settings.chipValue ?? 10,
+      )) ? { kind: "colorPayout" } :
+      { kind: "report" };
+
+    setQuizPhase(nextPhase);
+  }, [
+    isAttestationMode,
+    attestationExercise,
+    game,
+    restoredProgress,
+    startWithSpinAnimation,
+    activeSeries,
+    settings.completeField,
+    settings.completeDozen,
+    settings.maxBet,
+    settings.chipValue,
+    getAllRules,
   ]);
 
   // Series divisors and payout map — re-derived whenever rules change
@@ -1685,10 +1832,13 @@ export default function RouletteTable({
     });
     const correctAnswer = lines.reduce((s, l) => s + l.change, 0);
     setSeriesRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, lines });
+    recordAttestationAnswer("series", "Посчитайте общую сдачу с кратности приема серий.", {
+      userAnswer, correctAnswer, correct: userAnswer === correctAnswer,
+    });
     setSeriesInput("");
     // trackIntersection only needs track bets — always show it after series.
     setQuizPhase({ kind: "trackIntersection" });
-  }, [game, quizPhase, activeSeries, seriesInput, settings.multiplicity, seriesDivisors]);
+  }, [game, quizPhase, activeSeries, seriesInput, settings.multiplicity, seriesDivisors, recordAttestationAnswer]);
 
   const handleCheckField = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "field") return;
@@ -1701,6 +1851,9 @@ export default function RouletteTable({
     const entries = computeWinningField(game, activeSeries, maxBet, mult, chipValue, completeMultiplicity, getAllRules(), payoutMap, completePayoutAmount);
     const correctAnswer = entries.reduce((sum, e) => sum + e.amount * e.payoutMultiplier, 0);
     setFieldRecord({ userAnswer, correctAnswer, correct: userAnswer === correctAnswer, entries });
+    recordAttestationAnswer("field-payout", "Посчитайте общую сумму выплаты.", {
+      userAnswer, correctAnswer, correct: userAnswer === correctAnswer,
+    });
     const generated = generateColorPayout(correctAnswer, chipValue);
     if (generated) {
       setColorPayoutData({ ...generated, totalPayout: correctAnswer, colorNominal: chipValue });
@@ -1710,7 +1863,7 @@ export default function RouletteTable({
       setColorPayoutData(null);
       setQuizPhase({ kind: "report" });
     }
-  }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap, completeNumberPayoutRecord]);
+  }, [game, quizPhase, fieldInput, activeSeries, settings.maxBet, settings.multiplicity, settings.chipValue, settings.completeMultiplicity, getAllRules, payoutMap, completeNumberPayoutRecord, recordAttestationAnswer]);
 
   const handleCheckColorPayout = useCallback(() => {
     if (!colorPayoutData || !quizPhase || quizPhase.kind !== "colorPayout") return;
@@ -1724,9 +1877,20 @@ export default function RouletteTable({
       colorAmount: colorPayoutData.colorAmount,
       colorNominal: colorPayoutData.colorNominal,
     });
+    recordAttestationAnswer(
+      "color-payout",
+      colorPayoutData.cashPayout
+        ? `Выплата через ${colorPayoutData.cashPayout}. Посчитайте остаток выплаты в «цвете».`
+        : "Посчитайте остаток выплаты в «цвете».",
+      {
+        userAnswer,
+        correctAnswer: colorPayoutData.colorChips,
+        correct: userAnswer === colorPayoutData.colorChips,
+      },
+    );
     setColorPayoutInput("");
     setQuizPhase({ kind: "report" });
-  }, [colorPayoutData, quizPhase, colorPayoutInput]);
+  }, [colorPayoutData, quizPhase, colorPayoutInput, recordAttestationAnswer]);
 
   const handleCheckCompletes = useCallback(() => {
     if (!game || !quizPhase || quizPhase.kind !== "completes") return;

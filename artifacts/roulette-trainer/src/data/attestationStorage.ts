@@ -6,6 +6,7 @@ import type {
 import type { GameSettings } from "@/types/gameSettings";
 import { deleteRouletteExerciseByAssignment } from "@/data/rouletteExerciseStorage";
 import { deleteTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
+import { deleteTrainingProgressByAssignmentId } from "@/data/trainingProgressStorage";
 
 export const TRAINING_TEMPLATES_STORAGE_KEY = "roulette-trainer-training-templates";
 export const TRAINING_ASSIGNMENTS_STORAGE_KEY = "roulette-trainer-training-assignments";
@@ -153,6 +154,7 @@ export function deleteTrainingTemplate(templateId: string): void {
   assignments.forEach((assignment) => {
     deleteRouletteExerciseByAssignment(assignment.id);
     deleteTrainingResultByAssignmentId(assignment.id);
+    deleteTrainingProgressByAssignmentId(assignment.id);
   });
   deleteAssignmentsByTemplateId(templateId);
   saveTrainingTemplates(getTrainingTemplates().filter((template) => template.id !== templateId));
@@ -178,6 +180,7 @@ export function deleteAssignmentsByTemplateId(templateId: string): void {
   assignments.forEach((assignment) => {
     deleteRouletteExerciseByAssignment(assignment.id);
     deleteTrainingResultByAssignmentId(assignment.id);
+    deleteTrainingProgressByAssignmentId(assignment.id);
   });
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId !== templateId));
 }
@@ -204,6 +207,7 @@ export function addTrainingAssignment(
 export function deleteTrainingAssignment(assignmentId: string): void {
   deleteRouletteExerciseByAssignment(assignmentId);
   deleteTrainingResultByAssignmentId(assignmentId);
+  deleteTrainingProgressByAssignmentId(assignmentId);
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.id !== assignmentId));
 }
 

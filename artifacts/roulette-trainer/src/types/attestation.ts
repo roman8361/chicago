@@ -45,6 +45,13 @@ export type TrainingAnswer = {
   correct: boolean;
 };
 
+export type TrainingProgress = {
+  assignmentId: string;
+  currentQuestionIndex: number;
+  answers: TrainingAnswer[];
+  updatedAt: string;
+};
+
 export type TrainingResult = {
   id: string;
   assignmentId: string;
