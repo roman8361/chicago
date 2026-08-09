@@ -1,4 +1,5 @@
 - [Roulette winning-number constraints](roulette-winning-number-constraints.md) — series, neighbours, and completes must be resolved through one strict candidate intersection.
 - [Workspace build ports](workspace-build-ports.md) — mockup-sandbox standalone builds require PORT; the Roulette Trainer build does not.
 - [Training wizard review](training-wizard-review.md) — review must read the live wizard settings and resolve dealer names from storage without creating training entities.
+- [Attestation settings editing](attestation-settings-editing.md) — edit existing templates through a local form draft; persist only cloned config and updatedAt, never assignments.
 - [Attestation persistence](attestation-persistence.md) — one localStorage template owns shared settings; assignments link selected dealers without duplicating config.

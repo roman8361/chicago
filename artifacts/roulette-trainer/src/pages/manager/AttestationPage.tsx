@@ -64,9 +64,12 @@ export default function AttestationPage() {
         </div>
 
         <div className="attestation-actions">
-          <button className="review-edit-button" type="button" disabled title="Будет доступно на следующем этапе">
+          <Link
+            className="review-edit-button"
+            href={`/manager/attestations/${encodeURIComponent(template.id)}/settings`}
+          >
             Изменить настройки
-          </button>
+          </Link>
           <button className="review-edit-button" type="button" disabled title="Будет доступно на следующем этапе">
             Изменить дилеров
           </button>
