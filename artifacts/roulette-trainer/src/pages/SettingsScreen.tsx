@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 interface Props {
   initialSettings: GameSettings;
   onStart: (settings: GameSettings) => void;
+  title?: string;
+  submitLabel?: string;
+  onCancel?: () => void;
+  header?: ReactNode;
 }
 
 function NumField({
@@ -86,7 +91,14 @@ function CountSelectField({
   );
 }
 
-export default function SettingsScreen({ initialSettings, onStart }: Props) {
+export default function SettingsScreen({
+  initialSettings,
+  onStart,
+  title = "Настройки игры",
+  submitLabel = "Применить",
+  onCancel,
+  header,
+}: Props) {
   const [minBet, setMinBet] = useState(String(initialSettings.minBet));
   const [maxBet, setMaxBet] = useState(String(initialSettings.maxBet));
   const [neighborsCount, setNeighborsCount] = useState(String(initialSettings.neighborsCount));
@@ -189,9 +201,10 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
       <div className="settings-card">
         <div className="settings-title">
           <span className="settings-title-ornament">✦</span>
-          Настройки игры
+          {title}
           <span className="settings-title-ornament">✦</span>
         </div>
+        {header}
         <div className="settings-divider" />
 
         <div className="settings-section-title">Лимиты рулетки</div>
@@ -390,8 +403,18 @@ export default function SettingsScreen({ initialSettings, onStart }: Props) {
         <div className="settings-divider" />
         <div className="settings-footer" style={{ display: "flex", gap: 12, justifyContent: "center" }}>
           <button className="settings-start-btn" onClick={handleStart}>
-            Применить
+            {submitLabel}
           </button>
+          {onCancel && (
+            <button
+              className="settings-start-btn"
+              type="button"
+              onClick={onCancel}
+              style={{ background: "transparent", border: "1px solid #5a4a2a", color: "#8a7a5a" }}
+            >
+              Отмена
+            </button>
+          )}
         </div>
       </div>
     </div>

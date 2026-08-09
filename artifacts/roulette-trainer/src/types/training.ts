@@ -1,15 +1,9 @@
+import type { GameSettings } from "@/types/gameSettings";
+
 export type GameType = "ROULETTE";
 export type TrainingStatus = "CREATED";
 
-export type RouletteTrainingConfig = {
-  neighborsCount: number;
-  completesCount: number;
-  seriesCount: number;
-  colorEnabled: boolean;
-  colorCount: number;
-  cashEnabled: boolean;
-  cashAmount: number;
-};
+export type RouletteTrainingConfig = GameSettings;
 
 export type Training = {
   id: string;

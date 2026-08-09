@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { getDealers } from "@/data/dealerStorage";
-import { getTrainingsByDealerId } from "@/data/trainingStorage";
+import { deleteTraining, getTrainingsByDealerId } from "@/data/trainingStorage";
+import type { Training } from "@/types/training";
 
 export default function DealerDetailsPage() {
   const [, params] = useRoute("/manager/dealers/:dealerId");
@@ -8,7 +10,10 @@ export default function DealerDetailsPage() {
   const dealer = dealerId
     ? getDealers().find((candidate) => candidate.id === dealerId)
     : undefined;
-  const trainings = dealerId ? getTrainingsByDealerId(dealerId) : [];
+  const [trainings, setTrainings] = useState<Training[]>(() =>
+    dealerId ? getTrainingsByDealerId(dealerId) : [],
+  );
+  const [trainingToDelete, setTrainingToDelete] = useState<string | null>(null);
 
   if (!dealer) {
     return (
@@ -21,6 +26,13 @@ export default function DealerDetailsPage() {
         </section>
       </main>
     );
+  }
+
+  function confirmDeleteTraining() {
+    if (!trainingToDelete) return;
+    deleteTraining(trainingToDelete);
+    setTrainings((current) => current.filter((training) => training.id !== trainingToDelete));
+    setTrainingToDelete(null);
   }
 
   return (
@@ -47,11 +59,35 @@ export default function DealerDetailsPage() {
             <h2 id="training-list-title">Тренировки</h2>
             {trainings.map((training) => (
               <div className="training-list-item" key={training.id}>
-                <strong>{training.gameType === "ROULETTE" ? "Roulette" : training.gameType}</strong>
-                <span>Статус: {training.status}</span>
-                <span>{new Date(training.createdAt).toLocaleDateString("ru-RU")}</span>
+                <div className="training-list-item-details">
+                  <strong>{training.gameType === "ROULETTE" ? "Roulette" : training.gameType}</strong>
+                  <span>Статус: {training.status === "CREATED" ? "Создана" : training.status}</span>
+                  <span>{new Date(training.createdAt).toLocaleDateString("ru-RU")}</span>
+                </div>
+                <button
+                  className="training-delete-button"
+                  type="button"
+                  onClick={() => setTrainingToDelete(training.id)}
+                >
+                  Удалить
+                </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {trainingToDelete && (
+          <div className="training-delete-confirmation" role="alertdialog" aria-modal="true">
+            <h2>Удалить тренировку?</h2>
+            <p>Это действие нельзя отменить.</p>
+            <div className="training-delete-actions">
+              <button className="training-delete-button training-delete-button--confirm" type="button" onClick={confirmDeleteTraining}>
+                Удалить
+              </button>
+              <button className="account-link dealer-cancel-button" type="button" onClick={() => setTrainingToDelete(null)}>
+                Отмена
+              </button>
+            </div>
           </div>
         )}
       </section>

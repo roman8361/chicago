@@ -1,4 +1,5 @@
 import type { Training } from "@/types/training";
+import type { GameSettings } from "@/types/gameSettings";
 
 export const TRAININGS_STORAGE_KEY = "roulette-trainer-trainings";
 
@@ -11,8 +12,33 @@ function isTraining(value: unknown): value is Training {
     candidate.gameType === "ROULETTE" &&
     candidate.status === "CREATED" &&
     typeof candidate.createdAt === "string" &&
-    !!candidate.config &&
-    typeof candidate.config === "object"
+    isGameSettings(candidate.config)
+  );
+}
+
+function isGameSettings(value: unknown): value is GameSettings {
+  if (!value || typeof value !== "object") return false;
+  const settings = value as Partial<GameSettings>;
+  return (
+    typeof settings.minBet === "number" &&
+    typeof settings.maxBet === "number" &&
+    typeof settings.neighborsCount === "number" &&
+    (settings.bet58 === "yes" || settings.bet58 === "no") &&
+    (settings.betOrphelins === "yes" || settings.betOrphelins === "no") &&
+    (settings.betSeria023 === "yes" || settings.betSeria023 === "no") &&
+    (settings.betZeroSpiel === "yes" || settings.betZeroSpiel === "no") &&
+    typeof settings.chipValue === "number" &&
+    typeof settings.chipsInField === "number" &&
+    typeof settings.cashOnField === "number" &&
+    typeof settings.multiplicity === "number" &&
+    (settings.completeDozen === "yes" || settings.completeDozen === "no") &&
+    (settings.completeField === "yes" || settings.completeField === "no") &&
+    typeof settings.completeCount === "number" &&
+    typeof settings.completeMultiplicity === "number" &&
+    typeof settings.neighboursMultiplicity === "number" &&
+    typeof settings.colorNumbersCount === "number" &&
+    Array.isArray(settings.cashChipValues) &&
+    typeof settings.showBetBeforeChange === "boolean"
   );
 }
 
@@ -45,14 +71,17 @@ function createTrainingId(): string {
 
 export function addTraining(
   dealerId: string,
-  config: Training["config"],
+  config: GameSettings,
 ): Training {
   const training: Training = {
     id: createTrainingId(),
     dealerId,
     gameType: "ROULETTE",
     status: "CREATED",
-    config,
+    config: {
+      ...config,
+      cashChipValues: [...config.cashChipValues],
+    },
     createdAt: new Date().toISOString(),
   };
 
@@ -62,4 +91,12 @@ export function addTraining(
 
 export function getTrainingsByDealerId(dealerId: string): Training[] {
   return getTrainings().filter((training) => training.dealerId === dealerId);
+}
+
+export function getTrainingById(trainingId: string): Training | undefined {
+  return getTrainings().find((training) => training.id === trainingId);
+}
+
+export function deleteTraining(trainingId: string): void {
+  saveTrainings(getTrainings().filter((training) => training.id !== trainingId));
 }
