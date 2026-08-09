@@ -1,10 +1,17 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import { getAssignmentsByTemplateId, getTrainingTemplates } from "@/data/attestationStorage";
+import { getGameDefinition } from "@/data/gameRegistry";
 import { formatDateTime } from "@/lib/dateFormatting";
 
 export default function AttestationsPage() {
-  const templates = useMemo(() => getTrainingTemplates().reverse(), []);
+  const templates = useMemo(
+    () =>
+      [...getTrainingTemplates()].sort(
+        (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+      ),
+    [],
+  );
 
   return (
     <main className="account-page">
@@ -13,15 +20,20 @@ export default function AttestationsPage() {
         <h1 id="attestations-title">Аттестации</h1>
 
         {templates.length === 0 ? (
-          <p className="account-description">Созданных аттестаций пока нет.</p>
+          <div className="account-actions">
+            <p className="account-description">Аттестаций пока нет.</p>
+            <Link className="account-button account-button--inline" href="/manager/training/new/game">
+              Создать аттестацию
+            </Link>
+          </div>
         ) : (
           <div className="attestation-list">
             {templates.map((template) => (
               <div className="attestation-list-item" key={template.id}>
                 <div>
-                  <strong>{template.gameType === "ROULETTE" ? "Roulette" : template.gameType}</strong>
-                  <span>{getAssignmentsByTemplateId(template.id).length} дилеров</span>
-                  <span>{formatDateTime(template.createdAt)}</span>
+                  <strong>{getGameDefinition(template.gameType)?.title ?? template.gameType}</strong>
+                  <span>Создана: {formatDateTime(template.createdAt)}</span>
+                  <span>Дилеров: {getAssignmentsByTemplateId(template.id).length}</span>
                 </div>
                 <Link className="review-edit-button" href={`/manager/attestations/${encodeURIComponent(template.id)}`}>
                   Открыть
