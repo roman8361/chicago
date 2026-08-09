@@ -1,5 +1,10 @@
-import type { TrainingAssignment, TrainingAssignmentStatus, TrainingTemplate } from "@/types/attestation";
+import type {
+  TrainingAssignment,
+  TrainingAssignmentStatus,
+  TrainingTemplate,
+} from "@/types/attestation";
 import type { GameSettings } from "@/types/gameSettings";
+import { deleteRouletteExerciseByAssignment } from "@/data/rouletteExerciseStorage";
 
 export const TRAINING_TEMPLATES_STORAGE_KEY = "roulette-trainer-training-templates";
 export const TRAINING_ASSIGNMENTS_STORAGE_KEY = "roulette-trainer-training-assignments";
@@ -141,6 +146,9 @@ export function updateTrainingTemplate(
 }
 
 export function deleteTrainingTemplate(templateId: string): void {
+  const assignments = getAssignmentsByTemplateId(templateId);
+  assignments.forEach((assignment) => deleteRouletteExerciseByAssignment(assignment.id));
+  deleteAssignmentsByTemplateId(templateId);
   saveTrainingTemplates(getTrainingTemplates().filter((template) => template.id !== templateId));
 }
 
@@ -160,9 +168,9 @@ export function getAssignmentsByTemplateId(templateId: string): TrainingAssignme
 }
 
 export function deleteAssignmentsByTemplateId(templateId: string): void {
-  saveTrainingAssignments(
-    getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId !== templateId),
-  );
+  const assignments = getAssignmentsByTemplateId(templateId);
+  assignments.forEach((assignment) => deleteRouletteExerciseByAssignment(assignment.id));
+  saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId !== templateId));
 }
 
 export function getAssignmentsByDealerId(dealerId: string): TrainingAssignment[] {
@@ -185,6 +193,7 @@ export function addTrainingAssignment(
 }
 
 export function deleteTrainingAssignment(assignmentId: string): void {
+  deleteRouletteExerciseByAssignment(assignmentId);
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.id !== assignmentId));
 }
 
