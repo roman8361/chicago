@@ -89,9 +89,9 @@ export default function DealerAssignmentPage() {
       ? "Начать аттестацию"
       : assignment.status === "IN_PROGRESS"
         ? "Продолжить аттестацию"
-        : "Аттестация завершена";
+        : "Посмотреть результат";
 
-  function openPlay() {
+  function openAssignment() {
     setActionError(null);
 
     // Re-read the records at click time so the checks are not based only on
@@ -99,6 +99,11 @@ export default function DealerAssignmentPage() {
     const latestAssignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentRecordId);
     if (!latestAssignment || latestAssignment.dealerId !== currentDealerId) {
       setActionError("Аттестация недоступна");
+      return;
+    }
+
+    if (latestAssignment.status === "COMPLETED") {
+      navigate(`/dealer/attestations/${encodeURIComponent(latestAssignment.id)}/result`);
       return;
     }
 
@@ -145,6 +150,9 @@ export default function DealerAssignmentPage() {
           <p><strong>Игра:</strong> {gameTitle}</p>
           <p><strong>Назначена:</strong> {formatDateTime(assignment.createdAt)}</p>
           <p><strong>Статус:</strong> {getAssignmentStatusLabel(assignment.status)}</p>
+          {assignment.completedAt && (
+            <p><strong>Завершена:</strong> {formatDateTime(assignment.completedAt)}</p>
+          )}
         </div>
 
         <div className="dealer-assignment-exercise">
@@ -158,8 +166,7 @@ export default function DealerAssignmentPage() {
           <button
             className="account-button"
             type="button"
-            onClick={openPlay}
-            disabled={assignment.status === "COMPLETED"}
+            onClick={openAssignment}
           >
             {actionLabel}
           </button>

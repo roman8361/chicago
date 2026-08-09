@@ -91,9 +91,11 @@ export default function DealerPage() {
                     </div>
                     <Link
                       className="account-button dealer-attestation-card__action"
-                      href={`/dealer/attestations/${encodeURIComponent(assignment.id)}`}
+                      href={assignment.status === "COMPLETED"
+                        ? `/dealer/attestations/${encodeURIComponent(assignment.id)}/result`
+                        : `/dealer/attestations/${encodeURIComponent(assignment.id)}`}
                     >
-                      Открыть
+                      {assignment.status === "COMPLETED" ? "Посмотреть результат" : "Открыть"}
                     </Link>
                   </article>
                 );

@@ -777,6 +777,94 @@
   flex: 1;
 }
 
+.dealer-result-page {
+  text-align: left;
+}
+
+.dealer-result-page > .account-eyebrow,
+.dealer-result-page > h1 {
+  text-align: center;
+}
+
+.dealer-result-summary {
+  display: grid;
+  gap: 8px;
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid #c8a84b88;
+  border-radius: 7px;
+  background: rgba(200, 168, 75, 0.1);
+  color: #f0d080;
+  font-size: 17px;
+  text-align: center;
+}
+
+.dealer-result-summary p {
+  margin: 0;
+}
+
+.dealer-result-answers {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.dealer-result-answers h2 {
+  margin: 0 0 4px;
+  color: #ffe87a;
+  font-size: 18px;
+}
+
+.dealer-result-answer {
+  padding: 14px;
+  border: 1px solid #c8a84b55;
+  border-radius: 7px;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.dealer-result-answer--correct {
+  border-color: #6aa878aa;
+}
+
+.dealer-result-answer--incorrect {
+  border-color: #c96b6baa;
+}
+
+.dealer-result-answer h3 {
+  margin: 0 0 10px;
+  color: #f0d080;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.dealer-result-answer p {
+  margin: 5px 0 0;
+  color: #c4b57d;
+  font-size: 13px;
+}
+
+.dealer-result-answer__verdict {
+  font-weight: 700;
+}
+
+.dealer-result-answer--correct .dealer-result-answer__verdict {
+  color: #a9e3b2;
+}
+
+.dealer-result-answer--incorrect .dealer-result-answer__verdict {
+  color: #fca5a5;
+}
+
+.attestation-completion-action {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.attestation-completion-action .game-check-btn {
+  width: 100%;
+}
+
 @media (max-width: 560px) {
   .dealer-attestation-card {
     align-items: stretch;

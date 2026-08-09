@@ -5,6 +5,7 @@ import type {
 } from "@/types/attestation";
 import type { GameSettings } from "@/types/gameSettings";
 import { deleteRouletteExerciseByAssignment } from "@/data/rouletteExerciseStorage";
+import { deleteTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
 
 export const TRAINING_TEMPLATES_STORAGE_KEY = "roulette-trainer-training-templates";
 export const TRAINING_ASSIGNMENTS_STORAGE_KEY = "roulette-trainer-training-assignments";
@@ -60,7 +61,8 @@ function isTrainingAssignment(value: unknown): value is TrainingAssignment {
       candidate.status === "IN_PROGRESS" ||
       candidate.status === "COMPLETED") &&
     typeof candidate.createdAt === "string" &&
-    (candidate.startedAt === undefined || typeof candidate.startedAt === "string")
+    (candidate.startedAt === undefined || typeof candidate.startedAt === "string") &&
+    (candidate.completedAt === undefined || typeof candidate.completedAt === "string")
   );
 }
 
@@ -148,7 +150,10 @@ export function updateTrainingTemplate(
 
 export function deleteTrainingTemplate(templateId: string): void {
   const assignments = getAssignmentsByTemplateId(templateId);
-  assignments.forEach((assignment) => deleteRouletteExerciseByAssignment(assignment.id));
+  assignments.forEach((assignment) => {
+    deleteRouletteExerciseByAssignment(assignment.id);
+    deleteTrainingResultByAssignmentId(assignment.id);
+  });
   deleteAssignmentsByTemplateId(templateId);
   saveTrainingTemplates(getTrainingTemplates().filter((template) => template.id !== templateId));
 }
@@ -170,7 +175,10 @@ export function getAssignmentsByTemplateId(templateId: string): TrainingAssignme
 
 export function deleteAssignmentsByTemplateId(templateId: string): void {
   const assignments = getAssignmentsByTemplateId(templateId);
-  assignments.forEach((assignment) => deleteRouletteExerciseByAssignment(assignment.id));
+  assignments.forEach((assignment) => {
+    deleteRouletteExerciseByAssignment(assignment.id);
+    deleteTrainingResultByAssignmentId(assignment.id);
+  });
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.trainingTemplateId !== templateId));
 }
 
@@ -195,6 +203,7 @@ export function addTrainingAssignment(
 
 export function deleteTrainingAssignment(assignmentId: string): void {
   deleteRouletteExerciseByAssignment(assignmentId);
+  deleteTrainingResultByAssignmentId(assignmentId);
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.id !== assignmentId));
 }
 
@@ -211,6 +220,28 @@ export function updateTrainingAssignmentStatus(
     ...assignments[index],
     status,
     ...(startedAt ? { startedAt } : {}),
+  };
+  const next = [...assignments];
+  next[index] = updated;
+  saveTrainingAssignments(next);
+  return updated;
+}
+
+export function completeTrainingAssignment(
+  assignmentId: string,
+  completedAt: string,
+): TrainingAssignment | null {
+  const assignments = getTrainingAssignments();
+  const index = assignments.findIndex((assignment) => assignment.id === assignmentId);
+  if (index === -1) return null;
+
+  const current = assignments[index];
+  if (current.status === "COMPLETED") return current;
+
+  const updated: TrainingAssignment = {
+    ...current,
+    status: "COMPLETED",
+    completedAt: current.completedAt ?? completedAt,
   };
   const next = [...assignments];
   next[index] = updated;

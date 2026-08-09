@@ -20,6 +20,7 @@ export type TrainingAssignment = {
   status: TrainingAssignmentStatus;
   createdAt: string;
   startedAt?: string;
+  completedAt?: string;
 };
 
 /**
@@ -34,4 +35,21 @@ export type RouletteExercise = {
   assignmentId: string;
   createdAt: string;
   data: GameState;
+};
+
+export type TrainingAnswer = {
+  questionId: string;
+  question: string;
+  answer: string | number;
+  correctAnswer: string | number;
+  correct: boolean;
+};
+
+export type TrainingResult = {
+  id: string;
+  assignmentId: string;
+  answers: TrainingAnswer[];
+  totalQuestions: number;
+  correctAnswers: number;
+  completedAt: string;
 };

@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import spinSoundUrl from "@assets/spin_2sec_1784187842896.mp4";
 import { GameSettings } from "@/types/gameSettings";
-import type { RouletteExercise } from "@/types/attestation";
+import type { RouletteExercise, TrainingAnswer } from "@/types/attestation";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
@@ -720,6 +720,7 @@ interface RouletteTableProps {
   mode?: RouletteMode;
   attestationExercise?: RouletteExercise;
   onBackToAttestation?: () => void;
+  onCompleteAttestation?: (answers: TrainingAnswer[]) => string | null;
   settings: GameSettings;
   onOpenSettings: () => void;
   onOpenDebug: () => void;
@@ -739,6 +740,7 @@ export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
   onBackToAttestation,
+  onCompleteAttestation,
   settings, onOpenSettings, onOpenDebug,
   showGrid, setShowGrid,
   showTrack, setShowTrack,
@@ -780,6 +782,7 @@ export default function RouletteTable({
   // acceptedNeighboursAmounts: set after trackIntersection question; maps nb.number → accepted display amount
   const [acceptedNeighboursAmounts, setAcceptedNeighboursAmounts] = useState<Map<number, number> | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [attestationCompletionError, setAttestationCompletionError] = useState<string | null>(null);
 
   const isSpinningRef    = useRef(false);
   const spinTimeoutRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -817,6 +820,7 @@ export default function RouletteTable({
     );
     setIsSpinning(false);
     isSpinningRef.current = false;
+    setAttestationCompletionError(null);
     setEditMode(false);
   }, [isAttestationMode, attestationExercise, setEditMode]);
 
@@ -2632,6 +2636,91 @@ export default function RouletteTable({
     setQuizPhase({ kind: "field" });
   }, [game, quizPhase, neighboursPayoutInput, seriesFieldPayoutRecord, settings.maxBet, settings.chipValue, settings.completeMultiplicity, getAllRules]);
 
+  function buildAttestationAnswers(): TrainingAnswer[] {
+    const answers: TrainingAnswer[] = [];
+    const add = (
+      questionId: string,
+      question: string,
+      record: { userAnswer: number; correctAnswer: number; correct: boolean } | null,
+    ) => {
+      if (!record) return;
+      answers.push({
+        questionId,
+        question,
+        answer: record.userAnswer,
+        correctAnswer: record.correctAnswer,
+        correct: record.correct,
+      });
+    };
+
+    add("completes", "Посчитайте сдачу с кратности приема ставок «комплит».", completesRecord);
+    add("completes-intersection", "Посчитайте общую сдачу с поля, без учета трека.", intersectionRecord);
+    add("series", "Посчитайте общую сдачу с кратности приема серий.", seriesRecord);
+    add(
+      "track-intersection",
+      "Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.",
+      trackIntersectionRecord,
+    );
+    add(
+      "track-field-intersection",
+      "Посчитайте сдачу с пересечений ставок на треке со ставками на поле.",
+      trackFieldIntersectionRecord,
+    );
+    add(
+      "complete-number-payout",
+      "Какую общую сумму нужно поставить в номер с выигрышных ставок «комплит»?",
+      completeNumberPayoutRecord,
+    );
+    add(
+      "series-field-payout",
+      "Какую общую сумму нужно выставить в поле с выигрышных серий?",
+      seriesFieldPayoutRecord,
+    );
+    add(
+      "neighbours-payout",
+      "Какую общую сумму нужно выставить в поле со ставок «соседи номера»?",
+      neighboursPayoutRecord,
+    );
+    add("field-payout", "Посчитайте общую сумму выплаты.", fieldRecord);
+    add(
+      "color-payout",
+      colorPayoutRecord
+        ? `Выплата через ${colorPayoutRecord.cashPayout}. Посчитайте остаток выплаты в «цвете».`
+        : "Посчитайте остаток выплаты в «цвете».",
+      colorPayoutRecord,
+    );
+    return answers;
+  }
+
+  function getMissingAttestationQuestionIds(): string[] {
+    if (!game) return ["game"];
+    const expected = new Set<string>();
+    if (hasCompletesQuestion) expected.add("completes");
+    if (game.chips.length > 0 || game.cashChipStacks.length > 0) expected.add("completes-intersection");
+    if (activeSeries.length > 0) expected.add("series");
+    if (hasTrackIntersectionQuestion) expected.add("track-intersection");
+    if (hasTrackFieldIntersectionQuestion) expected.add("track-field-intersection");
+    if (anyCompletePositionWon) expected.add("complete-number-payout");
+    if (anySeriesWon) expected.add("series-field-payout");
+    if (game.neighboursBets.length > 0) expected.add("neighbours-payout");
+    expected.add("field-payout");
+    if (colorPayoutData) expected.add("color-payout");
+
+    const answered = new Set(buildAttestationAnswers().map((answer) => answer.questionId));
+    return [...expected].filter((questionId) => !answered.has(questionId));
+  }
+
+  function handleCompleteAttestation() {
+    if (!isAttestationMode || quizPhase?.kind !== "report" || !onCompleteAttestation) return;
+    const missing = getMissingAttestationQuestionIds();
+    if (missing.length > 0) {
+      setAttestationCompletionError("Не все обязательные вопросы имеют ответы.");
+      return;
+    }
+    const error = onCompleteAttestation(buildAttestationAnswers());
+    setAttestationCompletionError(error);
+  }
+
   // ── Export ──────────────────────────────────────────────────────────────────
   const exportCode = () => {
     const g = gridParams, t = trackParams, d = dozensParams;
@@ -4189,6 +4278,16 @@ export default function RouletteTable({
                         <div className="quiz-report-total">Правильный ответ: {colorPayoutRecord.correctAnswer} фишек</div>
                       </div>
                     </>
+                  )}
+                </div>
+              )}
+              {isAttestationMode && (
+                <div className="attestation-completion-action">
+                  <button className="game-check-btn" type="button" onClick={handleCompleteAttestation}>
+                    Завершить аттестацию
+                  </button>
+                  {attestationCompletionError && (
+                    <p className="dealer-action-error" role="alert">{attestationCompletionError}</p>
                   )}
                 </div>
               )}
