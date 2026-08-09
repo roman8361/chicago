@@ -17,6 +17,9 @@ function isTrainingAnswer(value: unknown): value is TrainingAnswer {
 function isTrainingResult(value: unknown): value is TrainingResult {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<TrainingResult>;
+  const reportSnapshot = candidate.reportSnapshot;
+  const hasValidReportSnapshot = reportSnapshot === undefined
+    || (!!reportSnapshot && typeof reportSnapshot === "object" && !Array.isArray(reportSnapshot));
   return (
     typeof candidate.id === "string" &&
     typeof candidate.assignmentId === "string" &&
@@ -25,7 +28,8 @@ function isTrainingResult(value: unknown): value is TrainingResult {
     typeof candidate.totalQuestions === "number" &&
     typeof candidate.correctAnswers === "number" &&
     typeof candidate.createdAt === "string" &&
-    typeof candidate.completedAt === "string"
+    typeof candidate.completedAt === "string" &&
+    hasValidReportSnapshot
   );
 }
 

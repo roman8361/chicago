@@ -1,10 +1,14 @@
-import { Link, useRoute } from "wouter";
+import { useMemo } from "react";
+import { Link, useLocation, useRoute } from "wouter";
 import { getDealers } from "@/data/dealerStorage";
 import { getTrainingAssignments, getTrainingTemplateById } from "@/data/attestationStorage";
 import { getTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
+import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
 import { getGameDefinition } from "@/data/gameRegistry";
 import { getCurrentDealerId } from "@/lib/dealerSession";
 import { formatDateTime } from "@/lib/dateFormatting";
+import RouletteTable from "@/pages/RouletteTable";
+import { DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 function ReturnToDealerButton() {
   return (
@@ -16,12 +20,25 @@ function ReturnToDealerButton() {
 
 export default function DealerAttestationResultPage() {
   const [, params] = useRoute("/dealer/attestations/:assignmentId/result");
+  const [, navigate] = useLocation();
   const assignmentId = params?.assignmentId;
   const currentDealerId = getCurrentDealerId();
   const dealer = getDealers().find((candidate) => candidate.id === currentDealerId);
   const assignment = assignmentId
     ? getTrainingAssignments().find((candidate) => candidate.id === assignmentId)
     : undefined;
+  const result = useMemo(
+    () => (assignment ? getTrainingResultByAssignmentId(assignment.id) : undefined),
+    [assignment?.id],
+  );
+  const exercise = useMemo(
+    () => (assignment ? getRouletteExerciseByAssignmentId(assignment.id) : undefined),
+    [assignment?.id],
+  );
+  const template = useMemo(
+    () => (assignment ? getTrainingTemplateById(assignment.trainingTemplateId) : undefined),
+    [assignment?.trainingTemplateId],
+  );
 
   if (!dealer) {
     return (
@@ -47,9 +64,19 @@ export default function DealerAttestationResultPage() {
     );
   }
 
-  const result = getTrainingResultByAssignmentId(assignment.id);
-  const template = getTrainingTemplateById(assignment.trainingTemplateId);
   const gameTitle = template ? getGameDefinition(template.gameType)?.title ?? "Игра" : "Игра";
+
+  if (!exercise) {
+    return (
+      <main className="account-page">
+        <section className="account-card account-card--wide dealer-result-page" aria-labelledby="result-exercise-unavailable-title">
+          <p className="account-eyebrow">Личный кабинет дилера</p>
+          <h1 id="result-exercise-unavailable-title">Исходное игровое поле недоступно.</h1>
+          <ReturnToDealerButton />
+        </section>
+      </main>
+    );
+  }
 
   if (assignment.status !== "COMPLETED" || !result) {
     return (
@@ -60,6 +87,19 @@ export default function DealerAttestationResultPage() {
           <p className="account-description">
             Сохранённый результат этого прохождения не найден.
           </p>
+          <ReturnToDealerButton />
+        </section>
+      </main>
+    );
+  }
+
+  if (!result.reportSnapshot) {
+    return (
+      <main className="account-page">
+        <section className="account-card account-card--wide dealer-result-page" aria-labelledby="result-report-unavailable-title">
+          <p className="account-eyebrow">Личный кабинет дилера</p>
+          <h1 id="result-report-unavailable-title">Результат аттестации недоступен.</h1>
+          <p className="account-description">В сохранённом результате отсутствуют данные полного отчёта.</p>
           <ReturnToDealerButton />
         </section>
       </main>
@@ -87,22 +127,24 @@ export default function DealerAttestationResultPage() {
           <p><strong>Результат:</strong> {percentage}%</p>
         </div>
 
-        <div className="dealer-result-answers">
-          <h2>Ответы</h2>
-          {result.answers.map((answer, index) => (
-            <article
-              className={`dealer-result-answer ${answer.correct ? "dealer-result-answer--correct" : "dealer-result-answer--incorrect"}`}
-              key={answer.questionId}
-            >
-              <h3>{index + 1}. {answer.question}</h3>
-              <p>Ответ дилера: <strong>{answer.answer}</strong></p>
-              <p>Правильный ответ: <strong>{answer.correctAnswer}</strong></p>
-              <p className="dealer-result-answer__verdict">
-                {answer.correct ? "✅ Верно" : "❌ Неверно"}
-              </p>
-            </article>
-          ))}
-        </div>
+        <RouletteTable
+          mode="ATTESTATION"
+          attestationExercise={exercise}
+          readOnlyReport
+          savedReport={result.reportSnapshot}
+          settings={template?.config ?? DEFAULT_SETTINGS}
+          onOpenSettings={() => undefined}
+          onOpenDebug={() => undefined}
+          onBackToAttestation={() => navigate("/dealer")}
+          showGrid={false}
+          setShowGrid={() => undefined}
+          showTrack={false}
+          setShowTrack={() => undefined}
+          showDozens={false}
+          setShowDozens={() => undefined}
+          editMode={false}
+          setEditMode={() => undefined}
+        />
 
         <div className="account-actions">
           <ReturnToDealerButton />

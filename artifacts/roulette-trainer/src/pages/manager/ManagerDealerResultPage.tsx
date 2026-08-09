@@ -1,4 +1,5 @@
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
+import { useMemo } from "react";
 import { getDealers } from "@/data/dealerStorage";
 import {
   getTrainingAssignments,
@@ -7,6 +8,8 @@ import {
 import { getTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
 import { getGameDefinition } from "@/data/gameRegistry";
 import { formatDateTime } from "@/lib/dateFormatting";
+import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
+import RouletteTable from "@/pages/RouletteTable";
 
 function BackToAttestation({ templateId }: { templateId: string }) {
   return (
@@ -21,6 +24,7 @@ function BackToAttestation({ templateId }: { templateId: string }) {
 
 export default function ManagerDealerResultPage() {
   const [, params] = useRoute("/manager/attestations/:templateId/results/:assignmentId");
+  const [, navigate] = useLocation();
   const templateId = params?.templateId;
   const assignmentId = params?.assignmentId;
   const template = templateId ? getTrainingTemplateById(templateId) : undefined;
@@ -34,9 +38,14 @@ export default function ManagerDealerResultPage() {
   const dealer = assignment
     ? getDealers().find((candidate) => candidate.id === assignment.dealerId)
     : undefined;
-  const result = assignment
-    ? getTrainingResultByAssignmentId(assignment.id)
-    : undefined;
+  const result = useMemo(
+    () => (assignment ? getTrainingResultByAssignmentId(assignment.id) : undefined),
+    [assignment?.id],
+  );
+  const exercise = useMemo(
+    () => (assignment ? getRouletteExerciseByAssignmentId(assignment.id) : undefined),
+    [assignment?.id],
+  );
 
   if (!templateId || !assignment) {
     return (
@@ -49,14 +58,59 @@ export default function ManagerDealerResultPage() {
     );
   }
 
-  if (!template || assignment.status !== "COMPLETED" || !result) {
+  if (!template) {
     return (
       <main className="account-page">
         <section className="account-card account-card--wide dealer-result-page" aria-labelledby="manager-result-unavailable-title">
           <p className="account-eyebrow">Руководитель</p>
           <h1 id="manager-result-unavailable-title">Результат аттестации недоступен</h1>
           <p className="account-description">
+            Шаблон аттестации не найден.
+          </p>
+          <BackToAttestation templateId={templateId} />
+        </section>
+      </main>
+    );
+  }
+
+  if (!exercise) {
+    return (
+      <main className="account-page">
+        <section className="account-card account-card--wide dealer-result-page" aria-labelledby="manager-exercise-unavailable-title">
+          <p className="account-eyebrow">Руководитель</p>
+          <h1 id="manager-exercise-unavailable-title">Исходное игровое поле недоступно.</h1>
+          <p className="account-description">
+            Сохранённое упражнение Roulette для этого назначения не найдено.
+          </p>
+          <BackToAttestation templateId={templateId} />
+        </section>
+      </main>
+    );
+  }
+
+  if (assignment.status !== "COMPLETED" || !result) {
+    return (
+      <main className="account-page">
+        <section className="account-card account-card--wide dealer-result-page" aria-labelledby="manager-result-unavailable-title">
+          <p className="account-eyebrow">Руководитель</p>
+          <h1 id="manager-result-unavailable-title">Результат аттестации недоступен.</h1>
+          <p className="account-description">
             Сохранённый результат этого прохождения не найден.
+          </p>
+          <BackToAttestation templateId={templateId} />
+        </section>
+      </main>
+    );
+  }
+
+  if (!result.reportSnapshot) {
+    return (
+      <main className="account-page">
+        <section className="account-card account-card--wide dealer-result-page" aria-labelledby="manager-report-unavailable-title">
+          <p className="account-eyebrow">Руководитель</p>
+          <h1 id="manager-report-unavailable-title">Результат аттестации недоступен.</h1>
+          <p className="account-description">
+            В сохранённом результате отсутствуют данные полного отчёта.
           </p>
           <BackToAttestation templateId={templateId} />
         </section>
@@ -87,22 +141,24 @@ export default function ManagerDealerResultPage() {
           <p><strong>Результат:</strong> {percentage}%</p>
         </div>
 
-        <div className="dealer-result-answers">
-          <h2>Ответы</h2>
-          {result.answers.map((answer, index) => (
-            <article
-              className={`dealer-result-answer ${answer.correct ? "dealer-result-answer--correct" : "dealer-result-answer--incorrect"}`}
-              key={`${answer.questionId}-${index}`}
-            >
-              <h3>{index + 1}. {answer.question}</h3>
-              <p>Ответ дилера: <strong>{answer.answer}</strong></p>
-              <p>Правильный ответ: <strong>{answer.correctAnswer}</strong></p>
-              <p className="dealer-result-answer__verdict">
-                {answer.correct ? "✅ Верно" : "❌ Ошибка"}
-              </p>
-            </article>
-          ))}
-        </div>
+        <RouletteTable
+          mode="ATTESTATION"
+          attestationExercise={exercise}
+          readOnlyReport
+          savedReport={result.reportSnapshot}
+          settings={template.config}
+          onOpenSettings={() => undefined}
+          onOpenDebug={() => undefined}
+          onBackToAttestation={() => navigate(`/manager/attestations/${encodeURIComponent(templateId)}`)}
+          showGrid={false}
+          setShowGrid={() => undefined}
+          showTrack={false}
+          setShowTrack={() => undefined}
+          showDozens={false}
+          setShowDozens={() => undefined}
+          editMode={false}
+          setEditMode={() => undefined}
+        />
 
         <div className="account-actions">
           <BackToAttestation templateId={templateId} />

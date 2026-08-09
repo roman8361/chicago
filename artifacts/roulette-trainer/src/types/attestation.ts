@@ -45,6 +45,24 @@ export type TrainingAnswer = {
   correct: boolean;
 };
 
+/**
+ * Serializable business data used to render the completed Roulette report.
+ * This intentionally contains report data, not JSX/DOM or React state.
+ */
+export type RouletteReportSnapshot = {
+  completesRecord?: unknown;
+  intersectionRecord?: unknown;
+  seriesRecord?: unknown;
+  trackIntersectionRecord?: unknown;
+  trackFieldIntersectionRecord?: unknown;
+  completeTrackIntersectionRecord?: unknown;
+  completeNumberPayoutRecord?: unknown;
+  seriesFieldPayoutRecord?: unknown;
+  neighboursPayoutRecord?: unknown;
+  fieldRecord?: unknown;
+  colorPayoutRecord?: unknown;
+};
+
 export type TrainingProgress = {
   assignmentId: string;
   currentQuestionIndex: number;
@@ -60,4 +78,5 @@ export type TrainingResult = {
   correctAnswers: number;
   createdAt: string;
   completedAt: string;
+  reportSnapshot?: RouletteReportSnapshot;
 };

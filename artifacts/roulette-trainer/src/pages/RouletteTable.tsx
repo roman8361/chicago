@@ -4,7 +4,7 @@ import { DEFAULT_TRACK_PARAMS, buildTrackZones, buildSectorBands, sectorFor, typ
 import ruletImage from "@assets/rul_final_1782983519184.png";
 import spinSoundUrl from "@assets/spin_2sec_1784187842896.mp4";
 import { GameSettings } from "@/types/gameSettings";
-import type { RouletteExercise, TrainingAnswer, TrainingProgress } from "@/types/attestation";
+import type { RouletteExercise, RouletteReportSnapshot, TrainingAnswer, TrainingProgress } from "@/types/attestation";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
 import { useRouletteRules } from "@/lib/rulesContext";
@@ -729,13 +729,15 @@ function completeTouchesNumber(
 interface RouletteTableProps {
   mode?: RouletteMode;
   attestationExercise?: RouletteExercise;
+  readOnlyReport?: boolean;
+  savedReport?: RouletteReportSnapshot;
   restoredProgress?: TrainingProgress | null;
   startWithSpinAnimation?: boolean;
   autoGenerateRound?: boolean;
   onRoundGenerated?: (game: GameState) => void;
   onBackHome?: () => void;
   onBackToAttestation?: () => void;
-  onCompleteAttestation?: (answers: TrainingAnswer[]) => string | null;
+  onCompleteAttestation?: (answers: TrainingAnswer[], reportSnapshot: RouletteReportSnapshot) => string | null;
   onAnswerRecorded?: (answers: TrainingAnswer[], currentQuestionIndex: number) => void;
   settings: GameSettings;
   onOpenSettings: () => void;
@@ -755,6 +757,8 @@ export type RouletteMode = "PRACTICE" | "ATTESTATION";
 export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
+  readOnlyReport = false,
+  savedReport,
   restoredProgress,
   startWithSpinAnimation = false,
   autoGenerateRound = false,
@@ -832,6 +836,34 @@ export default function RouletteTable({
     setEditMode(false);
   }, [restoredProgress, setEditMode]);
 
+  const revealSavedReport = useCallback((savedGame: GameState, snapshot: RouletteReportSnapshot) => {
+    setGame(savedGame);
+    setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
+    setActiveSeries(
+      SERIES_QUIZ_ORDER
+        .map((type) => savedGame.trackBets.find((bet) => bet.type === type))
+        .filter((bet): bet is TrackBet => bet !== undefined),
+    );
+    const saved = snapshot as Record<string, unknown>;
+    const restore = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T | null>>) => {
+      const value = saved[key];
+      if (value !== undefined && value !== null) setter(value as T);
+    };
+    restore<CompleteQuizRecord>("completesRecord", setCompletesRecord);
+    restore<IntersectionQuizRecord>("intersectionRecord", setIntersectionRecord);
+    restore<SeriesQuizRecord>("seriesRecord", setSeriesRecord);
+    restore<TrackIntersectionQuizRecord>("trackIntersectionRecord", setTrackIntersectionRecord);
+    restore<TrackFieldIntersectionQuizRecord>("trackFieldIntersectionRecord", setTrackFieldIntersectionRecord);
+    restore<CompleteTrackIntersectionQuizRecord>("completeTrackIntersectionRecord", setCompleteTrackIntersectionRecord);
+    restore<CompleteNumberPayoutQuizRecord>("completeNumberPayoutRecord", setCompleteNumberPayoutRecord);
+    restore<SeriesFieldPayoutQuizRecord>("seriesFieldPayoutRecord", setSeriesFieldPayoutRecord);
+    restore<NeighboursPayoutQuizRecord>("neighboursPayoutRecord", setNeighboursPayoutRecord);
+    restore<FieldQuizRecord>("fieldRecord", setFieldRecord);
+    restore<ColorPayoutQuizRecord>("colorPayoutRecord", setColorPayoutRecord);
+    setQuizPhase({ kind: "report" });
+    setEditMode(false);
+  }, [setEditMode]);
+
   const recordAttestationAnswer = useCallback((
     questionId: string,
     question: string,
@@ -883,6 +915,12 @@ export default function RouletteTable({
     if (!isAttestationMode || !attestationExercise) return;
 
     const savedGame = attestationExercise.data;
+    if (readOnlyReport && savedReport) {
+      isSpinningRef.current = false;
+      setIsSpinning(false);
+      revealSavedReport(savedGame, savedReport);
+      return;
+    }
     if (startWithSpinAnimation) {
       setGame(null);
       setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
@@ -901,6 +939,9 @@ export default function RouletteTable({
     startWithSpinAnimation,
     playSpinAnimation,
     revealAttestationExercise,
+    readOnlyReport,
+    savedReport,
+    revealSavedReport,
   ]);
 
   // A resumed attestation uses the immutable exercise already loaded above. It
@@ -1783,6 +1824,7 @@ export default function RouletteTable({
 
   // Preload spin audio on mount so it's ready on first click
   useEffect(() => {
+    if (readOnlyReport) return;
     if (!audioRef.current) {
       const audio = new Audio(spinSoundUrl);
       audio.preload = "auto";
@@ -1793,7 +1835,7 @@ export default function RouletteTable({
       audioRef.current?.pause();
       audioRef.current = null;
     };
-  }, []);
+  }, [readOnlyReport]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -2918,6 +2960,22 @@ export default function RouletteTable({
     return [...expected].filter((questionId) => !answered.has(questionId));
   }
 
+  function buildReportSnapshot(): RouletteReportSnapshot {
+    return {
+      completesRecord: completesRecord ?? undefined,
+      intersectionRecord: intersectionRecord ?? undefined,
+      seriesRecord: seriesRecord ?? undefined,
+      trackIntersectionRecord: trackIntersectionRecord ?? undefined,
+      trackFieldIntersectionRecord: trackFieldIntersectionRecord ?? undefined,
+      completeTrackIntersectionRecord: completeTrackIntersectionRecord ?? undefined,
+      completeNumberPayoutRecord: completeNumberPayoutRecord ?? undefined,
+      seriesFieldPayoutRecord: seriesFieldPayoutRecord ?? undefined,
+      neighboursPayoutRecord: neighboursPayoutRecord ?? undefined,
+      fieldRecord: fieldRecord ?? undefined,
+      colorPayoutRecord: colorPayoutRecord ?? undefined,
+    };
+  }
+
   function handleCompleteAttestation() {
     if (!isAttestationMode || quizPhase?.kind !== "report" || !onCompleteAttestation) return;
     const missing = getMissingAttestationQuestionIds();
@@ -2925,7 +2983,7 @@ export default function RouletteTable({
       setAttestationCompletionError("Не все обязательные вопросы имеют ответы.");
       return;
     }
-    const error = onCompleteAttestation(buildAttestationAnswers());
+    const error = onCompleteAttestation(buildAttestationAnswers(), buildReportSnapshot());
     setAttestationCompletionError(error);
   }
 
@@ -2961,7 +3019,7 @@ export default function RouletteTable({
   };
 
   const showWinningField = quizPhase?.kind === "field" || quizPhase?.kind === "colorPayout";
-  const showReportField  = quizPhase?.kind === "report";
+  const showReportField  = quizPhase?.kind === "report" || readOnlyReport;
 
   // ── Focus Mode ───────────────────────────────────────────────────────────────
   // "complete-multiplicity"       : dims the whole field+track; complete bets
@@ -4494,7 +4552,7 @@ export default function RouletteTable({
                   )}
                 </div>
               )}
-              {isAttestationMode && (
+              {isAttestationMode && !readOnlyReport && (
                 <div className="attestation-completion-action">
                   <button className="game-check-btn" type="button" onClick={handleCompleteAttestation}>
                     Завершить аттестацию

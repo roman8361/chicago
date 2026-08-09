@@ -13,7 +13,7 @@ import {
   getTrainingResultByAssignmentId,
 } from "@/data/trainingResultStorage";
 import { getCurrentDealerId } from "@/lib/dealerSession";
-import type { TrainingAnswer } from "@/types/attestation";
+import type { RouletteReportSnapshot, TrainingAnswer } from "@/types/attestation";
 import RouletteTable, { type RouletteMode } from "@/pages/RouletteTable";
 
 function ErrorPage({ title, children }: { title: string; children?: React.ReactNode }) {
@@ -59,7 +59,10 @@ export default function DealerAttestationPlayPage() {
     navigate(`/dealer/attestations/${encodeURIComponent(assignmentId)}/play`, { replace: true });
   }, [assignmentId, navigate, startWithSpinAnimation]);
 
-  function completeAttestation(answers: TrainingAnswer[]): string | null {
+  function completeAttestation(
+    answers: TrainingAnswer[],
+    reportSnapshot: RouletteReportSnapshot,
+  ): string | null {
     const latestAssignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentId);
     if (!latestAssignment || latestAssignment.dealerId !== currentDealerId) {
       return "Аттестация недоступна.";
@@ -86,6 +89,7 @@ export default function DealerAttestationPlayPage() {
       correctAnswers: answers.filter((answer) => answer.correct).length,
       createdAt,
       completedAt,
+      reportSnapshot,
     });
     const updated = completeTrainingAssignment(latestAssignment.id, completedAt);
     if (!updated) {
