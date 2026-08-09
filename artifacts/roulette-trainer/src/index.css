@@ -863,6 +863,34 @@
   text-align: left;
 }
 
+.manager-result-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24px 16px 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(33, 83, 38, 0.42), transparent 42%),
+    #0e2110;
+  color: #f0d080;
+}
+
+.manager-result-header {
+  width: min(100%, 760px);
+  box-sizing: border-box;
+  margin: 0 auto 4px;
+  padding: 30px 36px 28px;
+  background: rgba(10, 28, 14, 0.94);
+  border: 1px solid #c8a84b;
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+}
+
+.manager-result-page > .roulette-page {
+  min-height: auto;
+  padding-right: 0;
+  padding-left: 0;
+  background: transparent;
+}
+
 .dealer-result-page > .account-eyebrow,
 .dealer-result-page > h1 {
   text-align: center;

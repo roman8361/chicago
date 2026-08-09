@@ -124,8 +124,8 @@ export default function ManagerDealerResultPage() {
     : 0;
 
   return (
-    <main className="account-page">
-      <section className="account-card account-card--wide dealer-result-page" aria-labelledby="manager-result-title">
+    <main className="manager-result-page">
+      <section className="manager-result-header dealer-result-page" aria-labelledby="manager-result-title">
         <p className="account-eyebrow">Руководитель</p>
         <h1 id="manager-result-title">Результат аттестации</h1>
 
@@ -140,30 +140,26 @@ export default function ManagerDealerResultPage() {
           <p><strong>Правильных ответов:</strong> {result.correctAnswers} из {result.totalQuestions}</p>
           <p><strong>Результат:</strong> {percentage}%</p>
         </div>
-
-        <RouletteTable
-          mode="ATTESTATION"
-          attestationExercise={exercise}
-          readOnlyReport
-          savedReport={result.reportSnapshot}
-          settings={template.config}
-          onOpenSettings={() => undefined}
-          onOpenDebug={() => undefined}
-          onBackToAttestation={() => navigate(`/manager/attestations/${encodeURIComponent(templateId)}`)}
-          showGrid={false}
-          setShowGrid={() => undefined}
-          showTrack={false}
-          setShowTrack={() => undefined}
-          showDozens={false}
-          setShowDozens={() => undefined}
-          editMode={false}
-          setEditMode={() => undefined}
-        />
-
-        <div className="account-actions">
-          <BackToAttestation templateId={templateId} />
-        </div>
       </section>
+
+      <RouletteTable
+        mode="ATTESTATION"
+        attestationExercise={exercise}
+        readOnlyReport
+        savedReport={result.reportSnapshot}
+        settings={template.config}
+        onOpenSettings={() => undefined}
+        onOpenDebug={() => undefined}
+        onBackToAttestation={() => navigate(`/manager/attestations/${encodeURIComponent(templateId)}`)}
+        showGrid={false}
+        setShowGrid={() => undefined}
+        showTrack={false}
+        setShowTrack={() => undefined}
+        showDozens={false}
+        setShowDozens={() => undefined}
+        editMode={false}
+        setEditMode={() => undefined}
+      />
     </main>
   );
 }
