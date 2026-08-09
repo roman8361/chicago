@@ -31,6 +31,67 @@
   width: min(100%, 680px);
 }
 
+.home-card {
+  width: min(100%, 760px);
+}
+
+.home-description {
+  max-width: 580px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 30px;
+}
+
+.home-action-card {
+  display: grid;
+  gap: 9px;
+  min-height: 132px;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid #c8a84b88;
+  border-radius: 8px;
+  background: rgba(200, 168, 75, 0.09);
+  color: #f0d080;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.home-action-card:hover,
+.home-action-card:focus-visible {
+  border-color: #ffe87a;
+  background: rgba(200, 168, 75, 0.18);
+  color: #fff3b0;
+  transform: translateY(-2px);
+}
+
+.home-action-card strong {
+  font-size: 17px;
+}
+
+.home-action-card span {
+  color: #c4b57d;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.home-action-card--secondary {
+  border-color: #6aa878;
+  background: rgba(61, 128, 75, 0.1);
+}
+
+.home-action-card--secondary:hover,
+.home-action-card--secondary:focus-visible {
+  border-color: #a9e3b2;
+  background: rgba(61, 128, 75, 0.2);
+}
+
 .account-eyebrow {
   margin: 0 0 12px;
   color: #c8a84b;

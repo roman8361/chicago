@@ -732,6 +732,7 @@ interface RouletteTableProps {
   startWithSpinAnimation?: boolean;
   autoGenerateRound?: boolean;
   onRoundGenerated?: (game: GameState) => void;
+  onBackHome?: () => void;
   onBackToAttestation?: () => void;
   onCompleteAttestation?: (answers: TrainingAnswer[]) => string | null;
   settings: GameSettings;
@@ -755,6 +756,7 @@ export default function RouletteTable({
   startWithSpinAnimation = false,
   autoGenerateRound = false,
   onRoundGenerated,
+  onBackHome,
   onBackToAttestation,
   onCompleteAttestation,
   settings, onOpenSettings, onOpenDebug,
@@ -2881,6 +2883,11 @@ export default function RouletteTable({
             <button className="grid-toggle-btn spin-btn" onClick={handleSpin} disabled={isSpinning}>
               {isSpinning ? "⏳ Spin…" : "▶ Spin"}
             </button>
+            {onBackHome && (
+              <button className="grid-toggle-btn" onClick={onBackHome}>
+                ← На главную
+              </button>
+            )}
             <button className="grid-toggle-btn settings-open-btn" onClick={onOpenSettings}>
               ⚙ Настройки
             </button>
