@@ -2,9 +2,11 @@ import { useMemo } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { RouletteSettingsForm } from "@/pages/SettingsScreen";
 import {
+  getAssignmentsByTemplateId,
   getTrainingTemplateById,
   updateTrainingTemplate,
 } from "@/data/attestationStorage";
+import { hasStartedAssignment } from "@/lib/attestationStatus";
 
 export default function AttestationSettingsPage() {
   const [, params] = useRoute("/manager/attestations/:templateId/settings");
@@ -45,6 +47,23 @@ export default function AttestationSettingsPage() {
   }
 
   const attestationPath = `/manager/attestations/${encodeURIComponent(template.id)}`;
+  const hasStarted = hasStartedAssignment(getAssignmentsByTemplateId(template.id));
+
+  if (hasStarted) {
+    return (
+      <main className="account-page">
+        <section className="account-card" aria-labelledby="attestation-settings-locked-title">
+          <h1 id="attestation-settings-locked-title">Настройки недоступны</h1>
+          <p className="account-description">
+            Настройки нельзя изменить после начала аттестации.
+          </p>
+          <Link className="account-button account-button--inline" href={attestationPath}>
+            Вернуться к аттестации
+          </Link>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <RouletteSettingsForm

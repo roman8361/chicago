@@ -497,11 +497,29 @@
 }
 
 .review-dealer-name {
+  display: grid;
+  gap: 4px;
   padding: 9px 11px;
   border: 1px solid #c8a84b44;
   border-radius: 5px;
   color: #f0d080;
   background: rgba(200, 168, 75, 0.06);
+}
+
+.review-dealer-status {
+  color: #c4b57d;
+  font-size: 12px;
+}
+
+.attestation-action-note {
+  flex: 1 1 100%;
+  margin: 0;
+  color: #c4b57d;
+  font-size: 12px;
+}
+
+.attestation-action-note--danger {
+  color: #fca5a5;
 }
 
 .review-count {
@@ -751,6 +769,21 @@
   width: 17px;
   height: 17px;
   accent-color: #c8a84b;
+}
+
+.dealer-selection-item:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.dealer-selection-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.dealer-selection-copy small {
+  color: #c4b57d;
+  font-size: 12px;
 }
 
 /* ── Roulette Trainer ─────────────────────────────────────────── */

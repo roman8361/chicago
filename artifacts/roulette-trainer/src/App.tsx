@@ -18,6 +18,7 @@ import GameSettingsPlaceholderPage from "@/pages/manager/GameSettingsPlaceholder
 import SelectDealersPlaceholderPage from "@/pages/manager/SelectDealersPlaceholderPage";
 import TrainingReviewPage from "@/pages/manager/TrainingReviewPage";
 import AttestationPage from "@/pages/manager/AttestationPage";
+import AttestationDealersPage from "@/pages/manager/AttestationDealersPage";
 import AttestationSettingsPage from "@/pages/manager/AttestationSettingsPage";
 import AttestationsPage from "@/pages/manager/AttestationsPage";
 import DealerPage from "@/pages/dealer/DealerPage";
@@ -62,6 +63,7 @@ function AppContent() {
       <Route path="/manager/training/new/review" component={TrainingReviewPage} />
       <Route path="/manager/dealers/:dealerId/training/new" component={CreateTrainingPage} />
       <Route path="/manager/dealers" component={DealersPage} />
+      <Route path="/manager/attestations/:templateId/dealers" component={AttestationDealersPage} />
       <Route path="/manager/attestations/:templateId/settings" component={AttestationSettingsPage} />
       <Route path="/manager/attestations/:templateId" component={AttestationPage} />
       <Route path="/manager/attestations" component={AttestationsPage} />

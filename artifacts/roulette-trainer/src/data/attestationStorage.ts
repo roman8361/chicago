@@ -1,4 +1,4 @@
-import type { TrainingAssignment, TrainingTemplate } from "@/types/attestation";
+import type { TrainingAssignment, TrainingAssignmentStatus, TrainingTemplate } from "@/types/attestation";
 import type { GameSettings } from "@/types/gameSettings";
 
 export const TRAINING_TEMPLATES_STORAGE_KEY = "roulette-trainer-training-templates";
@@ -50,7 +50,10 @@ function isTrainingAssignment(value: unknown): value is TrainingAssignment {
     typeof candidate.id === "string" &&
     typeof candidate.trainingTemplateId === "string" &&
     typeof candidate.dealerId === "string" &&
-    candidate.status === "CREATED" &&
+    (candidate.status === undefined ||
+      candidate.status === "CREATED" ||
+      candidate.status === "IN_PROGRESS" ||
+      candidate.status === "COMPLETED") &&
     typeof candidate.createdAt === "string"
   );
 }
@@ -142,7 +145,10 @@ export function deleteTrainingTemplate(templateId: string): void {
 }
 
 export function getTrainingAssignments(): TrainingAssignment[] {
-  return readArray(TRAINING_ASSIGNMENTS_STORAGE_KEY, isTrainingAssignment);
+  return readArray(TRAINING_ASSIGNMENTS_STORAGE_KEY, isTrainingAssignment).map((assignment) => ({
+    ...assignment,
+    status: assignment.status ?? "CREATED",
+  }));
 }
 
 export function saveTrainingAssignments(assignments: TrainingAssignment[]): void {
@@ -180,4 +186,19 @@ export function addTrainingAssignment(
 
 export function deleteTrainingAssignment(assignmentId: string): void {
   saveTrainingAssignments(getTrainingAssignments().filter((assignment) => assignment.id !== assignmentId));
+}
+
+export function updateTrainingAssignmentStatus(
+  assignmentId: string,
+  status: TrainingAssignmentStatus,
+): TrainingAssignment | null {
+  const assignments = getTrainingAssignments();
+  const index = assignments.findIndex((assignment) => assignment.id === assignmentId);
+  if (index === -1) return null;
+
+  const updated = { ...assignments[index], status };
+  const next = [...assignments];
+  next[index] = updated;
+  saveTrainingAssignments(next);
+  return updated;
 }

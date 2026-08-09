@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { getAssignmentsByTemplateId, getTrainingTemplates } from "@/data/attestationStorage";
 import { getGameDefinition } from "@/data/gameRegistry";
 import { formatDateTime } from "@/lib/dateFormatting";
+import { getTemplateStatus } from "@/lib/attestationStatus";
 
 export default function AttestationsPage() {
   const templates = useMemo(
@@ -12,6 +13,10 @@ export default function AttestationsPage() {
       ),
     [],
   );
+  const templateRows = templates.map((template) => ({
+    template,
+    assignments: getAssignmentsByTemplateId(template.id),
+  }));
 
   return (
     <main className="account-page">
@@ -28,12 +33,13 @@ export default function AttestationsPage() {
           </div>
         ) : (
           <div className="attestation-list">
-            {templates.map((template) => (
+            {templateRows.map(({ template, assignments }) => (
               <div className="attestation-list-item" key={template.id}>
                 <div>
                   <strong>{getGameDefinition(template.gameType)?.title ?? template.gameType}</strong>
                   <span>Создана: {formatDateTime(template.createdAt)}</span>
-                  <span>Дилеров: {getAssignmentsByTemplateId(template.id).length}</span>
+                  <span>Дилеров: {assignments.length}</span>
+                  <span>Состояние: {getTemplateStatus(assignments)}</span>
                 </div>
                 <Link className="review-edit-button" href={`/manager/attestations/${encodeURIComponent(template.id)}`}>
                   Открыть

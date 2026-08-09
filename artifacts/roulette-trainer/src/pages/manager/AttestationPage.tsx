@@ -4,6 +4,11 @@ import RouletteSettingsSummary from "@/components/RouletteSettingsSummary";
 import { getDealers } from "@/data/dealerStorage";
 import { formatDateTime } from "@/lib/dateFormatting";
 import {
+  getAssignmentStatusLabel,
+  getTemplateStatus,
+  hasStartedAssignment,
+} from "@/lib/attestationStatus";
+import {
   deleteAssignmentsByTemplateId,
   deleteTrainingTemplate,
   getAssignmentsByTemplateId,
@@ -22,6 +27,7 @@ export default function AttestationPage() {
     [templateId],
   );
   const dealers = useMemo(() => getDealers(), []);
+  const hasStarted = hasStartedAssignment(assignments);
 
   function confirmDelete() {
     if (!templateId || isDeleting) return;
@@ -54,7 +60,7 @@ export default function AttestationPage() {
         <div className="attestation-meta">
           <p><strong>Игра:</strong> Roulette</p>
           <p><strong>Создана:</strong> {formatDateTime(template.createdAt)}</p>
-          <p><strong>Статус:</strong> Создана</p>
+          <p><strong>Состояние:</strong> {getTemplateStatus(assignments)}</p>
         </div>
 
         <div className="review-section">
@@ -66,7 +72,10 @@ export default function AttestationPage() {
               const dealer = dealers.find((candidate) => candidate.id === assignment.dealerId);
               return (
                 <div className="review-dealer-name" key={assignment.id}>
-                  {dealer?.fullName ?? "Дилер удалён"}
+                  <strong>{dealer?.fullName ?? "Дилер удалён"}</strong>
+                  <span className="review-dealer-status">
+                    Статус: {getAssignmentStatusLabel(assignment.status)}
+                  </span>
                 </div>
               );
             })}
@@ -82,23 +91,48 @@ export default function AttestationPage() {
         </div>
 
         <div className="attestation-actions">
+          {hasStarted ? (
+            <button
+              className="review-edit-button"
+              type="button"
+              disabled
+              title="Настройки нельзя изменить после начала аттестации."
+            >
+              Изменить настройки
+            </button>
+          ) : (
+            <Link
+              className="review-edit-button"
+              href={`/manager/attestations/${encodeURIComponent(template.id)}/settings`}
+            >
+              Изменить настройки
+            </Link>
+          )}
           <Link
             className="review-edit-button"
-            href={`/manager/attestations/${encodeURIComponent(template.id)}/settings`}
+            href={`/manager/attestations/${encodeURIComponent(template.id)}/dealers`}
           >
-            Изменить настройки
-          </Link>
-          <button className="review-edit-button" type="button" disabled title="Будет доступно на следующем этапе">
             Изменить дилеров
-          </button>
+          </Link>
+          {hasStarted && (
+            <p className="attestation-action-note">
+              Настройки нельзя изменить после начала аттестации.
+            </p>
+          )}
           <button
             className="review-edit-button review-edit-button--danger"
             type="button"
             onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
+            disabled={isDeleting || hasStarted}
+            title={hasStarted ? "Аттестацию нельзя удалить после начала прохождения." : undefined}
           >
             Удалить аттестацию
           </button>
+          {hasStarted && (
+            <p className="attestation-action-note attestation-action-note--danger">
+              Аттестацию нельзя удалить после начала прохождения.
+            </p>
+          )}
         </div>
 
         <div className="account-actions">

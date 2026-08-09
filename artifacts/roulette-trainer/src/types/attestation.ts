@@ -1,7 +1,7 @@
 import type { GameType } from "@/data/gameRegistry";
 import type { GameSettings } from "@/types/gameSettings";
 
-export type TrainingAssignmentStatus = "CREATED";
+export type TrainingAssignmentStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED";
 export type RouletteTrainingConfig = GameSettings;
 
 export type TrainingTemplate = {
