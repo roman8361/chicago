@@ -55,3 +55,19 @@ export function addDealer(fullName: string): Dealer {
   saveDealers(dealers);
   return dealer;
 }
+
+export function updateDealer(id: string, fullName: string): Dealer | null {
+  const dealers = getDealers();
+  const index = dealers.findIndex((dealer) => dealer.id === id);
+  if (index === -1) return null;
+
+  const updatedDealer = { ...dealers[index], fullName };
+  const updatedDealers = [...dealers];
+  updatedDealers[index] = updatedDealer;
+  saveDealers(updatedDealers);
+  return updatedDealer;
+}
+
+export function deleteDealer(id: string): void {
+  saveDealers(getDealers().filter((dealer) => dealer.id !== id));
+}

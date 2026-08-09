@@ -27,6 +27,10 @@
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
 }
 
+.account-card--wide {
+  width: min(100%, 680px);
+}
+
 .account-eyebrow {
   margin: 0 0 12px;
   color: #c8a84b;
@@ -48,6 +52,19 @@
   color: #c4b57d;
   font-size: 15px;
   line-height: 1.5;
+}
+
+.manager-primary-actions {
+  display: grid;
+  gap: 12px;
+  margin: 32px 0 18px;
+}
+
+.manager-primary-action {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .dealer-section {
@@ -124,6 +141,97 @@
   border: 1px solid #c8a84b55;
   border-radius: 6px;
   background: rgba(200, 168, 75, 0.05);
+}
+
+.dealer-form-title {
+  margin: 0 0 4px;
+  color: #ffe87a;
+  font-size: 17px;
+}
+
+.dealer-management-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.dealer-management-name {
+  min-width: 0;
+}
+
+.dealer-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.dealer-row-button {
+  padding: 8px 10px;
+  border: 1px solid #c8a84b88;
+  border-radius: 5px;
+  background: rgba(200, 168, 75, 0.08);
+  color: #f0d080;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dealer-row-button:hover,
+.dealer-row-button:focus-visible {
+  border-color: #ffe87a;
+  background: rgba(200, 168, 75, 0.18);
+}
+
+.dealer-row-button--danger {
+  border-color: rgba(190, 72, 72, 0.65);
+  color: #fca5a5;
+}
+
+.dealer-row-button--danger:hover,
+.dealer-row-button--danger:focus-visible {
+  border-color: #f87171;
+  background: rgba(190, 72, 72, 0.18);
+}
+
+.dealer-empty-state {
+  margin: 14px 0 0;
+  color: #c4b57d;
+  font-size: 14px;
+}
+
+.dealer-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.dealer-delete-dialog {
+  width: min(100%, 360px);
+  box-sizing: border-box;
+  padding: 26px;
+  border: 1px solid #c8a84b;
+  border-radius: 10px;
+  background: #0a1c0e;
+  color: #f0d080;
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+
+.dealer-delete-dialog h2 {
+  margin: 0;
+  color: #ffe87a;
+  font-size: 22px;
+}
+
+.dealer-delete-dialog p {
+  margin: 12px 0 20px;
 }
 
 .dealer-form-label {

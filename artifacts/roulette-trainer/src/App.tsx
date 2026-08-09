@@ -10,6 +10,7 @@ import DebugScreen from "@/pages/DebugScreen";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
 import ManagerPage from "@/pages/manager/ManagerPage";
+import DealersPage from "@/pages/manager/DealersPage";
 import DealerDetailsPage from "@/pages/manager/DealerDetailsPage";
 import CreateTrainingPage from "@/pages/manager/CreateTrainingPage";
 import SelectGamePage from "@/pages/manager/SelectGamePage";
@@ -57,6 +58,7 @@ function AppContent() {
       <Route path="/manager/training/new/dealers" component={SelectDealersPlaceholderPage} />
       <Route path="/manager/training/new/review" component={TrainingReviewPage} />
       <Route path="/manager/dealers/:dealerId/training/new" component={CreateTrainingPage} />
+      <Route path="/manager/dealers" component={DealersPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />
       <Route path="/manager" component={ManagerPage} />
       <Route path="/dealer" component={DealerPage} />
