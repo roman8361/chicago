@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { getGameDefinition, type GameType } from "@/data/gameRegistry";
+import { RouletteSettingsForm } from "@/pages/SettingsScreen";
+import { useTrainingWizard } from "@/lib/trainingWizardContext";
 
 function getWizardParams() {
   if (typeof window === "undefined") {
@@ -13,16 +16,25 @@ function getWizardParams() {
   };
 }
 
-export default function GameSettingsPlaceholderPage() {
+function getSelectGamePath(dealerId: string | null) {
+  return dealerId
+    ? `/manager/training/new/game?dealerId=${encodeURIComponent(dealerId)}&resume=1`
+    : "/manager/training/new/game?resume=1";
+}
+
+export default function GameSettingsPage() {
   const [, navigate] = useLocation();
-  const { gameType, dealerId } = getWizardParams();
+  const { gameType: urlGameType, dealerId } = getWizardParams();
+  const { gameType: storedGameType, gameConfig, setGameType, setGameConfig } = useTrainingWizard();
+  const gameType = urlGameType ?? storedGameType;
   const game = gameType ? getGameDefinition(gameType) : undefined;
 
-  if (!game) {
-    const selectGamePath = dealerId
-      ? `/manager/training/new/game?dealerId=${encodeURIComponent(dealerId)}`
-      : "/manager/training/new/game";
+  useEffect(() => {
+    if (urlGameType && game) setGameType(urlGameType);
+  }, [urlGameType, game, setGameType]);
 
+  if (!game || game.type !== "ROULETTE") {
+    const selectGamePath = getSelectGamePath(dealerId);
     return (
       <main className="account-page">
         <section className="account-card" aria-labelledby="invalid-game-title">
@@ -39,33 +51,32 @@ export default function GameSettingsPlaceholderPage() {
     );
   }
 
-  const selectGamePath = dealerId
-    ? `/manager/training/new/game?dealerId=${encodeURIComponent(dealerId)}`
-    : "/manager/training/new/game";
-
+  const selectGamePath = getSelectGamePath(dealerId);
   const cancelPath = dealerId
     ? `/manager/dealers/${encodeURIComponent(dealerId)}`
     : "/manager";
+  const dealersPath = new URLSearchParams({
+    gameType: game.type,
+    ...(dealerId ? { dealerId } : {}),
+  }).toString();
 
   return (
-    <main className="account-page">
-      <section className="account-card training-wizard-card" aria-labelledby="game-settings-title">
-        <p className="account-eyebrow">Новая тренировка</p>
-        <h1 id="game-settings-title">Настройки {game.title}</h1>
+    <RouletteSettingsForm
+      initialSettings={gameConfig}
+      onChange={setGameConfig}
+      title="Настройки Roulette"
+      submitLabel="Далее"
+      onStart={(settings) => {
+        setGameConfig(settings);
+        navigate(`/manager/training/new/dealers?${dealersPath}`);
+      }}
+      onBack={() => navigate(selectGamePath)}
+      onCancel={() => navigate(cancelPath)}
+      header={
         <div className="training-summary">
           <p><strong>Игра:</strong> {game.title}</p>
-          <p>Настройки будут добавлены следующим этапом.</p>
         </div>
-
-        <div className="account-actions training-wizard-actions">
-          <button className="account-button" type="button" onClick={() => navigate(selectGamePath)}>
-            Назад
-          </button>
-          <Link className="account-link" href={cancelPath}>
-            Отмена
-          </Link>
-        </div>
-      </section>
-    </main>
+      }
+    />
   );
 }

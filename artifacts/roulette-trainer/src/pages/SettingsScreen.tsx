@@ -6,8 +6,10 @@ import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 interface Props {
   initialSettings: GameSettings;
   onStart: (settings: GameSettings) => void;
+  onChange?: (settings: GameSettings) => void;
   title?: string;
   submitLabel?: string;
+  onBack?: () => void;
   onCancel?: () => void;
   header?: ReactNode;
 }
@@ -94,8 +96,10 @@ function CountSelectField({
 export default function SettingsScreen({
   initialSettings,
   onStart,
+  onChange,
   title = "Настройки игры",
   submitLabel = "Применить",
+  onBack,
   onCancel,
   header,
 }: Props) {
@@ -169,10 +173,15 @@ export default function SettingsScreen({
   }, [minBet, maxBet]);
 
   function handleStart() {
+    const settings = getSettings();
+    setMultiplicityError(null);
+    onStart(settings);
+  }
+
+  function getSettings(): GameSettings {
     const raw = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
     const parsedMultiplicity = raw < 10 ? 10 : raw > 1000 ? 1000 : raw;
-    setMultiplicityError(null);
-    const settings: GameSettings = {
+    return {
       minBet: parseNum(minBet, DEFAULT_SETTINGS.minBet),
       maxBet: parseNum(maxBet, DEFAULT_SETTINGS.maxBet),
       neighborsCount: parseNum(neighborsCount, DEFAULT_SETTINGS.neighborsCount),
@@ -193,8 +202,32 @@ export default function SettingsScreen({
       cashChipValues: cashChipValues.length ? cashChipValues : DEFAULT_SETTINGS.cashChipValues,
       showBetBeforeChange,
     };
-    onStart(settings);
   }
+
+  useEffect(() => {
+    if (onChange) onChange(getSettings());
+  }, [
+    onChange,
+    minBet,
+    maxBet,
+    neighborsCount,
+    bet58,
+    betOrphelins,
+    betSeria023,
+    betZeroSpiel,
+    chipValue,
+    chipsInField,
+    cashOnField,
+    multiplicity,
+    completeDozen,
+    completeField,
+    completeCount,
+    completeMultiplicity,
+    neighboursMultiplicity,
+    colorNumbersCount,
+    cashChipValues,
+    showBetBeforeChange,
+  ]);
 
   return (
     <div className="settings-page">
@@ -402,6 +435,16 @@ export default function SettingsScreen({
 
         <div className="settings-divider" />
         <div className="settings-footer" style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          {onBack && (
+            <button
+              className="settings-start-btn"
+              type="button"
+              onClick={onBack}
+              style={{ background: "transparent", border: "1px solid #5a4a2a", color: "#8a7a5a" }}
+            >
+              Назад
+            </button>
+          )}
           <button className="settings-start-btn" onClick={handleStart}>
             {submitLabel}
           </button>
@@ -420,3 +463,5 @@ export default function SettingsScreen({
     </div>
   );
 }
+
+export { SettingsScreen as RouletteSettingsForm };

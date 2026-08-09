@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { GAME_REGISTRY, type GameType } from "@/data/gameRegistry";
+import { useTrainingWizard } from "@/lib/trainingWizardContext";
 
 function getContext() {
   if (typeof window === "undefined") {
@@ -9,18 +10,18 @@ function getContext() {
 
   return {
     dealerId: new URLSearchParams(window.location.search).get("dealerId"),
+    isResume: new URLSearchParams(window.location.search).get("resume") === "1",
   };
-}
-
-function withContext(path: string, dealerId: string | null) {
-  if (!dealerId) return path;
-  return `${path}?dealerId=${encodeURIComponent(dealerId)}`;
 }
 
 export default function SelectGamePage() {
   const [, navigate] = useLocation();
-  const { dealerId } = useMemo(getContext, []);
-  const [selectedGame, setSelectedGame] = useState<GameType | null>(null);
+  const { dealerId, isResume } = useMemo(getContext, []);
+  const { gameType: selectedGame, setGameType, reset } = useTrainingWizard();
+
+  useEffect(() => {
+    if (!isResume) reset();
+  }, [isResume, reset]);
 
   function handleNext() {
     if (!selectedGame) return;
@@ -55,7 +56,7 @@ export default function SelectGamePage() {
                   name="gameType"
                   value={game.type}
                   checked={isSelected}
-                  onChange={() => setSelectedGame(game.type)}
+                  onChange={() => setGameType(game.type as GameType)}
                 />
                 <span className="game-selection-radio" aria-hidden="true">
                   {isSelected ? "●" : "○"}
