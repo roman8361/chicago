@@ -17,6 +17,8 @@ import SelectGamePage from "@/pages/manager/SelectGamePage";
 import GameSettingsPlaceholderPage from "@/pages/manager/GameSettingsPlaceholderPage";
 import SelectDealersPlaceholderPage from "@/pages/manager/SelectDealersPlaceholderPage";
 import TrainingReviewPage from "@/pages/manager/TrainingReviewPage";
+import AttestationPage from "@/pages/manager/AttestationPage";
+import AttestationsPage from "@/pages/manager/AttestationsPage";
 import DealerPage from "@/pages/dealer/DealerPage";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 import { TrainingWizardProvider } from "@/lib/trainingWizardContext";
@@ -59,6 +61,8 @@ function AppContent() {
       <Route path="/manager/training/new/review" component={TrainingReviewPage} />
       <Route path="/manager/dealers/:dealerId/training/new" component={CreateTrainingPage} />
       <Route path="/manager/dealers" component={DealersPage} />
+      <Route path="/manager/attestations/:templateId" component={AttestationPage} />
+      <Route path="/manager/attestations" component={AttestationsPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />
       <Route path="/manager" component={ManagerPage} />
       <Route path="/dealer" component={DealerPage} />

@@ -519,6 +519,83 @@
   font-size: 13px;
 }
 
+.review-error-message {
+  margin: 20px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #f87171;
+  border-radius: 5px;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.attestation-meta {
+  margin-top: 22px;
+  color: #c4b57d;
+  font-size: 14px;
+  text-align: left;
+}
+
+.attestation-meta p {
+  margin: 6px 0;
+}
+
+.attestation-meta strong {
+  color: #f0d080;
+}
+
+.attestation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.attestation-actions .review-edit-button {
+  flex: 1 1 150px;
+}
+
+.review-edit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.review-edit-button--danger {
+  border-color: rgba(190, 72, 72, 0.65);
+  color: #fca5a5;
+}
+
+.attestation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.attestation-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid #c8a84b55;
+  border-radius: 6px;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.attestation-list-item > div {
+  display: grid;
+  gap: 4px;
+}
+
+.attestation-list-item strong {
+  color: #f0d080;
+}
+
+.attestation-list-item span {
+  color: #c4b57d;
+  font-size: 13px;
+}
+
 .account-actions {
   display: grid;
   gap: 12px;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { getDealers } from "@/data/dealerStorage";
+import { addTrainingAssignment, addTrainingTemplate } from "@/data/attestationStorage";
 import RouletteSettingsSummary from "@/components/RouletteSettingsSummary";
 import { getGameDefinition, type GameType } from "@/data/gameRegistry";
 import { useTrainingWizard } from "@/lib/trainingWizardContext";
@@ -26,7 +27,8 @@ export default function TrainingReviewPage() {
     dealerIds,
     reset,
   } = useTrainingWizard();
-  const [creationMessage, setCreationMessage] = useState<string | null>(null);
+  const [creationError, setCreationError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const gameType = urlGameType ?? storedGameType;
   const game = gameType ? getGameDefinition(gameType) : undefined;
   const dealers = useMemo(() => {
@@ -44,7 +46,7 @@ export default function TrainingReviewPage() {
   }).toString();
 
   useEffect(() => {
-    if (!gameType) {
+    if (!gameType || !game) {
       navigate(selectGamePath, { replace: true });
     } else if (!gameConfig) {
       navigate(settingsPath, { replace: true });
@@ -56,6 +58,7 @@ export default function TrainingReviewPage() {
     dealerIds.length,
     dealersPath,
     gameConfig,
+    game,
     gameType,
     navigate,
     settingsPath,
@@ -70,6 +73,26 @@ export default function TrainingReviewPage() {
         </section>
       </main>
     );
+  }
+
+  function handleCreateAttestation() {
+    if (isCreating) return;
+    if (!gameType || !gameConfig || dealerIds.length === 0) {
+      setCreationError("Не удалось создать аттестацию: заполните игру, настройки и выберите дилеров.");
+      return;
+    }
+
+    setIsCreating(true);
+    setCreationError(null);
+    try {
+      const template = addTrainingTemplate(gameType, gameConfig);
+      dealerIds.forEach((dealerId) => addTrainingAssignment(template.id, dealerId));
+      reset();
+      navigate(`/manager/attestations/${encodeURIComponent(template.id)}`);
+    } catch {
+      setCreationError("Не удалось сохранить аттестацию. Попробуйте ещё раз.");
+      setIsCreating(false);
+    }
   }
 
   return (
@@ -113,15 +136,16 @@ export default function TrainingReviewPage() {
           <p className="review-count">Выбрано: {dealerIds.length}</p>
         </div>
 
-        {creationMessage && <p className="review-success-message" role="status">{creationMessage}</p>}
+        {creationError && <p className="review-error-message" role="alert">{creationError}</p>}
 
         <div className="account-actions training-wizard-actions">
           <button
             className="account-button"
             type="button"
-            onClick={() => setCreationMessage("Проверка завершена. Финальное создание будет доступно на следующем этапе.")}
+            disabled={isCreating}
+            onClick={handleCreateAttestation}
           >
-            Создать аттестацию
+            {isCreating ? "Сохранение..." : "Создать аттестацию"}
           </button>
           <button
             className="account-button account-button--secondary"

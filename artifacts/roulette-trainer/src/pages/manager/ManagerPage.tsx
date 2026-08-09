@@ -14,6 +14,9 @@ export default function ManagerPage() {
           <Link className="account-button manager-primary-action" href="/manager/training/new/game">
             Создать аттестацию
           </Link>
+          <Link className="account-button manager-primary-action account-button--secondary" href="/manager/attestations">
+            Аттестации
+          </Link>
         </div>
 
         <div className="account-actions">
