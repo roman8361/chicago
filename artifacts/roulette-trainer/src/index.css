@@ -424,6 +424,101 @@
   line-height: 1.3;
 }
 
+.review-section {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #c8a84b55;
+  border-radius: 8px;
+  background: rgba(200, 168, 75, 0.05);
+  text-align: left;
+}
+
+.review-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.review-section h2 {
+  margin: 0;
+  color: #ffe87a;
+  font-size: 19px;
+}
+
+.review-edit-button {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border: 1px solid #c8a84b88;
+  border-radius: 5px;
+  background: rgba(200, 168, 75, 0.08);
+  color: #f0d080;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-edit-button:hover,
+.review-edit-button:focus-visible {
+  border-color: #ffe87a;
+  background: rgba(200, 168, 75, 0.2);
+}
+
+.review-section-value {
+  color: #f0d080;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.roulette-settings-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.roulette-settings-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  color: #c4b57d;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.roulette-settings-summary-row strong {
+  color: #f0d080;
+  text-align: right;
+}
+
+.review-dealers-list {
+  display: grid;
+  gap: 8px;
+}
+
+.review-dealer-name {
+  padding: 9px 11px;
+  border: 1px solid #c8a84b44;
+  border-radius: 5px;
+  color: #f0d080;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.review-count {
+  margin: 12px 0 0;
+  color: #c4b57d;
+  font-size: 13px;
+}
+
+.review-success-message {
+  margin: 20px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #6aa878;
+  border-radius: 5px;
+  color: #a9e3b2;
+  font-size: 13px;
+}
+
 .account-actions {
   display: grid;
   gap: 12px;

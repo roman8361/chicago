@@ -30,6 +30,14 @@ export function TrainingWizardProvider({ children }: { children: ReactNode }) {
   const [dealerIds, setDealerIds] = useState<string[]>([]);
   const [sourceDealerId, setSourceDealerId] = useState<string | null>(null);
   const dealerSelectionInitialized = useRef(false);
+  const setWizardGameType = useCallback((nextGameType: GameType | null) => {
+    setGameType((currentGameType) => {
+      if (currentGameType !== nextGameType) {
+        setGameConfig(createDefaultSettings());
+      }
+      return nextGameType;
+    });
+  }, []);
   const reset = useCallback(() => {
     setGameType(null);
     setGameConfig(createDefaultSettings());
@@ -55,7 +63,7 @@ export function TrainingWizardProvider({ children }: { children: ReactNode }) {
     gameConfig,
     dealerIds,
     sourceDealerId,
-    setGameType,
+    setGameType: setWizardGameType,
     setGameConfig,
     setDealerIds,
     startNew,
@@ -67,6 +75,7 @@ export function TrainingWizardProvider({ children }: { children: ReactNode }) {
     dealerIds,
     sourceDealerId,
     startNew,
+    setWizardGameType,
     initializeDealerSelection,
     reset,
   ]);
