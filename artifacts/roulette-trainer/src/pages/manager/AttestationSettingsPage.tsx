@@ -6,6 +6,7 @@ import {
   getTrainingTemplateById,
   updateTrainingTemplate,
 } from "@/data/attestationStorage";
+import { deleteRouletteExerciseByAssignment } from "@/data/rouletteExerciseStorage";
 import { hasStartedAssignment } from "@/lib/attestationStatus";
 
 export default function AttestationSettingsPage() {
@@ -72,7 +73,10 @@ export default function AttestationSettingsPage() {
       submitLabel="Сохранить"
       onStart={(settings) => {
         updateTrainingTemplate(template.id, { config: settings });
-        navigate(attestationPath);
+        getAssignmentsByTemplateId(template.id)
+          .filter((assignment) => assignment.status === "CREATED")
+          .forEach((assignment) => deleteRouletteExerciseByAssignment(assignment.id));
+        navigate(`${attestationPath}/prepare`);
       }}
       onCancel={() => navigate(attestationPath)}
       header={

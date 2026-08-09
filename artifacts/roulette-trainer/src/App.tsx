@@ -20,6 +20,7 @@ import TrainingReviewPage from "@/pages/manager/TrainingReviewPage";
 import AttestationPage from "@/pages/manager/AttestationPage";
 import AttestationDealersPage from "@/pages/manager/AttestationDealersPage";
 import AttestationSettingsPage from "@/pages/manager/AttestationSettingsPage";
+import RouletteExercisePreparationPage from "@/pages/manager/RouletteExercisePreparationPage";
 import AttestationsPage from "@/pages/manager/AttestationsPage";
 import DealerPage from "@/pages/dealer/DealerPage";
 import DealerAssignmentPage from "@/pages/dealer/DealerAssignmentPage";
@@ -68,6 +69,7 @@ function AppContent() {
       <Route path="/manager/dealers" component={DealersPage} />
       <Route path="/manager/attestations/:templateId/dealers" component={AttestationDealersPage} />
       <Route path="/manager/attestations/:templateId/settings" component={AttestationSettingsPage} />
+      <Route path="/manager/attestations/:templateId/prepare" component={RouletteExercisePreparationPage} />
       <Route path="/manager/attestations/:templateId" component={AttestationPage} />
       <Route path="/manager/attestations" component={AttestationsPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />

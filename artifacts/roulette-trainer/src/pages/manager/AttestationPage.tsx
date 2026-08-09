@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import RouletteSettingsSummary from "@/components/RouletteSettingsSummary";
 import { getDealers } from "@/data/dealerStorage";
@@ -14,6 +14,7 @@ import {
   getAssignmentsByTemplateId,
   getTrainingTemplateById,
 } from "@/data/attestationStorage";
+import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
 
 export default function AttestationPage() {
   const [, params] = useRoute("/manager/attestations/:templateId");
@@ -28,6 +29,23 @@ export default function AttestationPage() {
   );
   const dealers = useMemo(() => getDealers(), []);
   const hasStarted = hasStartedAssignment(assignments);
+  const missingRouletteExercises = useMemo(
+    () =>
+      template?.gameType === "ROULETTE"
+        ? assignments.filter(
+            (assignment) =>
+              assignment.status === "CREATED" &&
+              !getRouletteExerciseByAssignmentId(assignment.id),
+          )
+        : [],
+    [assignments, template?.gameType],
+  );
+
+  useEffect(() => {
+    if (template && missingRouletteExercises.length > 0) {
+      navigate(`/manager/attestations/${encodeURIComponent(template.id)}/prepare`, { replace: true });
+    }
+  }, [missingRouletteExercises.length, navigate, template]);
 
   function confirmDelete() {
     if (!templateId || isDeleting) return;
@@ -38,14 +56,20 @@ export default function AttestationPage() {
     navigate("/manager/attestations");
   }
 
-  if (!template) {
+  if (!template || missingRouletteExercises.length > 0) {
     return (
       <main className="account-page">
         <section className="account-card" aria-labelledby="attestation-not-found-title">
-          <h1 id="attestation-not-found-title">Аттестация не найдена</h1>
-          <Link className="account-button account-button--inline" href="/manager">
-            Вернуться в кабинет
-          </Link>
+          <h1 id="attestation-not-found-title">
+            {template ? "Подготовка аттестации" : "Аттестация не найдена"}
+          </h1>
+          {template && missingRouletteExercises.length > 0 ? (
+            <p className="account-description">Подготавливаем задания Roulette для дилеров.</p>
+          ) : (
+            <Link className="account-button account-button--inline" href="/manager">
+              Вернуться в кабинет
+            </Link>
+          )}
         </section>
       </main>
     );

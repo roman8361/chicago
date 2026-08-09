@@ -16,6 +16,7 @@ export function getOrCreateRouletteExercise(assignmentId: string): RouletteExerc
 
   const assignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentId);
   if (!assignment) return undefined;
+  if (assignment.status !== "CREATED") return undefined;
   const template = getTrainingTemplateById(assignment.trainingTemplateId);
   if (!template || template.gameType !== "ROULETTE") return undefined;
 

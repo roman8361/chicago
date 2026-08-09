@@ -1,0 +1,423 @@
+Сейчас обнаружена ошибка в кабинете дилера.
+
+Сценарий:
+
+1. Руководитель создаёт аттестацию Roulette.
+2. Дилер видит её в своём кабинете.
+3. Нажимает `Начать аттестацию`.
+4. Вместо запуска Roulette появляется:
+
+`Задание не подготовлено. Обратитесь к руководителю.`
+
+Нужно найти и исправить причину.
+
+## 1. Не убирать существующую проверку
+
+Сейчас при запуске аттестации правильно проверяется наличие `RouletteExercise`.
+
+Не нужно просто удалять эту проверку или автоматически генерировать случайный Spin на странице дилера.
+
+Нужно исправить процесс подготовки Exercise.
+
+## 2. Сначала найти реальную причину
+
+Проверь полный путь:
+
+```text
+Создание TrainingTemplate
+        ↓
+Создание TrainingAssignment
+        ↓
+Создание RouletteExercise
+        ↓
+Сохранение RouletteExercise
+        ↓
+Поиск Exercise по assignmentId
+        ↓
+Начать аттестацию
+```
+
+Нужно определить, на каком шаге связь теряется.
+
+Проверь:
+
+* действительно ли после создания аттестации создаётся RouletteExercise;
+* создаётся ли по одному Exercise на каждый Assignment;
+* корректно ли записывается `assignmentId`;
+* сохраняется ли Exercise в localStorage;
+* совпадает ли localStorage key при записи и чтении;
+* корректно ли работает `getRouletteExerciseByAssignmentId`;
+* не используется ли где-то `trainingTemplateId` вместо `assignmentId`;
+* не генерируется ли Exercise до того, как Assignment получил окончательный id.
+
+## 3. Правильная связь
+
+Должно быть:
+
+```text
+TrainingTemplate #T1
+
+Assignment #A1 → Иванов
+Assignment #A2 → Петров
+
+RouletteExercise #E1
+assignmentId = A1
+
+RouletteExercise #E2
+assignmentId = A2
+```
+
+При запуске Ивановым:
+
+```ts
+getRouletteExerciseByAssignmentId("A1")
+```
+
+должен возвращаться:
+
+```text
+Exercise #E1
+```
+
+## 4. Проверить создание новой аттестации
+
+При нажатии:
+
+`Создать аттестацию`
+
+для Roulette должен выполняться порядок:
+
+```text
+1. создать TrainingTemplate
+2. сохранить TrainingTemplate
+
+3. создать TrainingAssignment для каждого дилера
+4. сохранить TrainingAssignment
+
+5. получить реальные id созданных Assignment
+
+6. для каждого Assignment:
+   generateRouletteExercise(template.config)
+
+7. присвоить:
+   exercise.assignmentId = assignment.id
+
+8. сохранить RouletteExercise
+```
+
+Особенно проверь, что Exercise создаётся ПОСЛЕ получения id Assignment.
+
+## 5. Не использовать dealerId как связь Exercise
+
+RouletteExercise должен связываться через:
+
+```ts
+assignmentId
+```
+
+а не только через:
+
+```ts
+dealerId
+```
+
+и не только через:
+
+```ts
+trainingTemplateId
+```
+
+Правильная модель:
+
+```ts
+type RouletteExercise = {
+  id: string;
+  assignmentId: string;
+  createdAt: string;
+  ...
+}
+```
+
+## 6. Новые Assignment при редактировании дилеров
+
+Проверь также экран:
+
+`Изменить дилеров`.
+
+Если руководитель добавляет нового дилера:
+
+```text
+создать TrainingAssignment
+↓
+получить его id
+↓
+создать RouletteExercise
+↓
+exercise.assignmentId = новый Assignment.id
+```
+
+Иначе новые дилеры снова будут получать:
+
+`Задание не подготовлено`.
+
+## 7. Важный случай — старые существующие аттестации
+
+В localStorage могут уже находиться аттестации и Assignment, созданные ДО внедрения RouletteExercise.
+
+Для них Exercise действительно может отсутствовать.
+
+Нужно добавить безопасную миграцию/подготовку существующих данных.
+
+При загрузке приложения или при открытии аттестации руководителем можно проверить:
+
+```text
+Assignment gameType=ROULETTE
++
+Exercise отсутствует
++
+Assignment.status = CREATED
+```
+
+Для такого Assignment можно один раз создать RouletteExercise по сохранённому:
+
+`TrainingTemplate.config`.
+
+ВАЖНО:
+
+это допустимо только для:
+
+`CREATED`
+
+потому что дилер ещё не начал прохождение.
+
+## 8. Не генерировать missing Exercise на стороне дилера
+
+Не делать такую логику:
+
+```text
+дилер нажал Начать
+↓
+Exercise отсутствует
+↓
+сгенерировать новый
+```
+
+Это плохо, потому что дилер сам фактически инициирует изменение задания.
+
+Подготовка должна происходить на стороне процесса создания/управления аттестацией.
+
+На странице дилера по-прежнему только:
+
+```text
+найти Exercise
+→ открыть
+```
+
+## 9. Можно добавить helper подготовки
+
+Например концептуально:
+
+```ts
+ensureRouletteExerciseForAssignment(
+  assignment,
+  template
+)
+```
+
+Логика:
+
+```text
+если Exercise существует
+→ вернуть существующий
+
+если отсутствует
+и Assignment.status === CREATED
+и template.gameType === ROULETTE
+→ создать один Exercise
+
+если IN_PROGRESS / COMPLETED
+→ ничего автоматически не создавать
+```
+
+Использовать этот helper только в manager-side creation/migration flow.
+
+Не вызывай его при открытии dealer play page.
+
+## 10. Не создавать Exercise повторно
+
+Если Exercise уже существует:
+
+```text
+Assignment A1
+→ Exercise E1
+```
+
+повторное открытие страницы или аттестации не должно создать:
+
+```text
+Exercise E2
+```
+
+Для одного Assignment должен существовать один Exercise.
+
+Проверять:
+
+```ts
+getRouletteExerciseByAssignmentId(
+  assignment.id
+)
+```
+
+перед созданием.
+
+## 11. Проверить storage
+
+Проверь существующий RouletteExercise storage.
+
+При записи:
+
+```ts
+localStorage.setItem(...)
+```
+
+и чтении:
+
+```ts
+localStorage.getItem(...)
+```
+
+должен использоваться один и тот же key.
+
+Также убедись, что после `JSON.parse` сохраняется поле:
+
+`assignmentId`.
+
+## 12. Добавить временную диагностику
+
+На время исправления можно вывести в console при создании аттестации:
+
+```text
+Created assignment: A1
+Created exercise for assignment: A1
+```
+
+и при запуске дилером:
+
+```text
+Looking for exercise: A1
+Found exercise: E1
+```
+
+После нахождения проблемы убрать лишние debug logs.
+
+## 13. Проверка новой аттестации
+
+Создать НОВУЮ аттестацию Roulette для двух дилеров.
+
+После создания проверить данные:
+
+```text
+1 TrainingTemplate
+2 TrainingAssignment
+2 RouletteExercise
+```
+
+У каждого Exercise должен быть корректный assignmentId.
+
+Затем:
+
+1. войти Ивановым;
+2. нажать `Начать аттестацию`;
+3. Exercise должен быть найден;
+4. Assignment → IN_PROGRESS;
+5. открывается Roulette.
+
+Сообщение:
+
+`Задание не подготовлено`
+
+появляться не должно.
+
+## 14. Проверка старой аттестации
+
+Взять существующий:
+
+```text
+Assignment = CREATED
+Exercise отсутствует
+```
+
+После manager-side миграции/подготовки должен появиться один RouletteExercise.
+
+Затем дилер должен суметь начать эту аттестацию.
+
+## 15. Проверка IN_PROGRESS
+
+Если Assignment уже:
+
+`IN_PROGRESS`
+
+а Exercise отсутствует из-за повреждения данных:
+
+НЕ генерировать новый Exercise.
+
+Оставить сообщение об ошибке.
+
+Мы не можем безопасно менять уже начатое задание.
+
+## 16. Проверка refresh
+
+После успешного запуска:
+
+```text
+Assignment A1
+Exercise E1
+```
+
+обновить браузер.
+
+Должен снова использоваться:
+
+`Exercise E1`.
+
+Новый Exercise не создавать.
+
+## 17. Не менять генерацию Roulette
+
+Не переписывать:
+
+* генерацию winning number;
+* соседей;
+* серий;
+* комплитов;
+* цвета;
+* cash;
+* вопросы.
+
+Исправляется только создание, сохранение и поиск RouletteExercise.
+
+## 18. Не менять игровой экран
+
+Не менять:
+
+* дизайн Roulette;
+* racetrack;
+* ставки;
+* звуки;
+* Settings;
+* визуальное поведение.
+
+## 19. После исправления сообщи
+
+Кратко укажи:
+
+1. в чём конкретно была причина ошибки;
+2. создавался ли RouletteExercise вообще;
+3. корректным ли был assignmentId;
+4. какой localStorage key используется;
+5. где теперь создаётся Exercise;
+6. как исправлены существующие CREATED Assignment без Exercise;
+7. что происходит с IN_PROGRESS/COMPLETED без Exercise;
+8. подтверждение, что один Assignment имеет только один Exercise;
+9. подтверждение, что Exercise не генерируется на стороне дилера;
+10. подтверждение, что Roulette и алгоритмы ставок не изменялись.

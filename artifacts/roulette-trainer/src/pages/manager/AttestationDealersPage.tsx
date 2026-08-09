@@ -77,7 +77,7 @@ export default function AttestationDealersPage() {
       }
     });
 
-    navigate(`/manager/attestations/${encodeURIComponent(attestationId)}`);
+    navigate(`/manager/attestations/${encodeURIComponent(attestationId)}/prepare`);
   }
 
   return (

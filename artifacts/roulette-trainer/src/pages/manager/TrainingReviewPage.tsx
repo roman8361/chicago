@@ -88,7 +88,7 @@ export default function TrainingReviewPage() {
       const template = addTrainingTemplate(gameType, gameConfig);
       dealerIds.forEach((dealerId) => addTrainingAssignment(template.id, dealerId));
       reset();
-      navigate(`/manager/attestations/${encodeURIComponent(template.id)}`);
+      navigate(`/manager/attestations/${encodeURIComponent(template.id)}/prepare`);
     } catch {
       setCreationError("Не удалось сохранить аттестацию. Попробуйте ещё раз.");
       setIsCreating(false);

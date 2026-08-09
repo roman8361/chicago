@@ -719,6 +719,8 @@ function completeTouchesNumber(
 interface RouletteTableProps {
   mode?: RouletteMode;
   attestationExercise?: RouletteExercise;
+  autoGenerateRound?: boolean;
+  onRoundGenerated?: (game: GameState) => void;
   onBackToAttestation?: () => void;
   onCompleteAttestation?: (answers: TrainingAnswer[]) => string | null;
   settings: GameSettings;
@@ -739,6 +741,8 @@ export type RouletteMode = "PRACTICE" | "ATTESTATION";
 export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
+  autoGenerateRound = false,
+  onRoundGenerated,
   onBackToAttestation,
   onCompleteAttestation,
   settings, onOpenSettings, onOpenDebug,
@@ -1497,6 +1501,7 @@ export default function RouletteTable({
         ? { ...newGameState.dozenCompleteBet, position: { ...newGameState.dozenCompleteBet.position } }
         : undefined,
     });
+    onRoundGenerated?.(newGameState);
 
     // Build quiz queue from active series in fixed order
     const ordered = SERIES_QUIZ_ORDER
@@ -1570,10 +1575,17 @@ export default function RouletteTable({
     getAllRules,
     getNeighboursRule,
     getCompleteBetRule,
+    onRoundGenerated,
   ]);
 
   // Keep ref always pointing to latest generateRound
   useEffect(() => { generateRoundRef.current = generateRound; }, [generateRound]);
+
+  useEffect(() => {
+    if (!isAttestationMode && autoGenerateRound) {
+      generateRoundRef.current();
+    }
+  }, [autoGenerateRound, isAttestationMode]);
 
   // Preload spin audio on mount so it's ready on first click
   useEffect(() => {
