@@ -7,7 +7,7 @@ import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorag
 import { getGameDefinition } from "@/data/gameRegistry";
 import { getCurrentDealerId } from "@/lib/dealerSession";
 import { formatDateTime } from "@/lib/dateFormatting";
-import RouletteTable from "@/pages/RouletteTable";
+import SpinReport from "@/components/SpinReport";
 import { DEFAULT_SETTINGS } from "@/types/gameSettings";
 
 function ReturnToDealerButton() {
@@ -111,8 +111,8 @@ export default function DealerAttestationResultPage() {
     : 0;
 
   return (
-    <main className="account-page">
-      <section className="account-card account-card--wide dealer-result-page" aria-labelledby="result-title">
+    <main className="manager-result-page">
+      <section className="manager-result-header dealer-result-page" aria-labelledby="result-title">
         <p className="account-eyebrow">Личный кабинет дилера</p>
         <h1 id="result-title">Аттестация завершена</h1>
 
@@ -126,30 +126,14 @@ export default function DealerAttestationResultPage() {
           <p><strong>Правильных ответов:</strong> {result.correctAnswers} из {result.totalQuestions}</p>
           <p><strong>Результат:</strong> {percentage}%</p>
         </div>
-
-        <RouletteTable
-          mode="ATTESTATION"
-          attestationExercise={exercise}
-          readOnlyReport
-          savedReport={result.reportSnapshot}
-          settings={template?.config ?? DEFAULT_SETTINGS}
-          onOpenSettings={() => undefined}
-          onOpenDebug={() => undefined}
-          onBackToAttestation={() => navigate("/dealer")}
-          showGrid={false}
-          setShowGrid={() => undefined}
-          showTrack={false}
-          setShowTrack={() => undefined}
-          showDozens={false}
-          setShowDozens={() => undefined}
-          editMode={false}
-          setEditMode={() => undefined}
-        />
-
-        <div className="account-actions">
-          <ReturnToDealerButton />
-        </div>
       </section>
+
+      <SpinReport
+        exercise={exercise}
+        reportSnapshot={result.reportSnapshot}
+        settings={template?.config ?? DEFAULT_SETTINGS}
+        onBack={() => navigate("/dealer")}
+      />
     </main>
   );
 }

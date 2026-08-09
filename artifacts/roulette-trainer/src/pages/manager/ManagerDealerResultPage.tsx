@@ -9,7 +9,7 @@ import { getTrainingResultByAssignmentId } from "@/data/trainingResultStorage";
 import { getGameDefinition } from "@/data/gameRegistry";
 import { formatDateTime } from "@/lib/dateFormatting";
 import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
-import RouletteTable from "@/pages/RouletteTable";
+import SpinReport from "@/components/SpinReport";
 
 function BackToAttestation({ templateId }: { templateId: string }) {
   return (
@@ -142,23 +142,11 @@ export default function ManagerDealerResultPage() {
         </div>
       </section>
 
-      <RouletteTable
-        mode="ATTESTATION"
-        attestationExercise={exercise}
-        readOnlyReport
-        savedReport={result.reportSnapshot}
+      <SpinReport
+        exercise={exercise}
+        reportSnapshot={result.reportSnapshot}
         settings={template.config}
-        onOpenSettings={() => undefined}
-        onOpenDebug={() => undefined}
-        onBackToAttestation={() => navigate(`/manager/attestations/${encodeURIComponent(templateId)}`)}
-        showGrid={false}
-        setShowGrid={() => undefined}
-        showTrack={false}
-        setShowTrack={() => undefined}
-        showDozens={false}
-        setShowDozens={() => undefined}
-        editMode={false}
-        setEditMode={() => undefined}
+        onBack={() => navigate(`/manager/attestations/${encodeURIComponent(templateId)}`)}
       />
     </main>
   );
