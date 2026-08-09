@@ -619,6 +619,169 @@
   gap: 12px;
 }
 
+.dealer-login-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+  text-align: left;
+}
+
+.dealer-login-label {
+  color: #c8a84b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dealer-login-form .account-button {
+  width: 100%;
+}
+
+.dealer-dashboard {
+  text-align: left;
+}
+
+.dealer-dashboard > .account-eyebrow,
+.dealer-dashboard > h1,
+.dealer-current-name {
+  text-align: center;
+}
+
+.dealer-current-name {
+  margin: 12px 0 28px;
+  color: #c4b57d;
+  font-size: 17px;
+}
+
+.dealer-dashboard-section {
+  margin-top: 8px;
+}
+
+.dealer-dashboard-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #c8a84b55;
+}
+
+.dealer-dashboard-heading h2,
+.dealer-assignment-exercise h2 {
+  margin: 0;
+  color: #ffe87a;
+  font-size: 18px;
+}
+
+.dealer-empty-state {
+  margin: 22px 0;
+  color: #c4b57d;
+  text-align: center;
+}
+
+.dealer-attestation-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.dealer-attestation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #c8a84b55;
+  border-radius: 7px;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.dealer-attestation-card__details {
+  display: grid;
+  gap: 5px;
+}
+
+.dealer-attestation-card__details h3 {
+  margin: 0 0 2px;
+  color: #f0d080;
+  font-size: 18px;
+}
+
+.dealer-attestation-card__details p {
+  margin: 0;
+  color: #c4b57d;
+  font-size: 13px;
+}
+
+.dealer-attestation-card__action {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.dealer-dashboard-actions {
+  margin-top: 24px;
+}
+
+.dealer-logout-button {
+  border: 0;
+  background: transparent;
+  color: #c4b57d;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dealer-assignment-page {
+  text-align: left;
+}
+
+.dealer-assignment-page > .account-eyebrow,
+.dealer-assignment-page > h1 {
+  text-align: center;
+}
+
+.dealer-assignment-exercise {
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid #c8a84b55;
+  border-radius: 7px;
+  background: rgba(200, 168, 75, 0.06);
+}
+
+.dealer-assignment-exercise p {
+  margin: 10px 0 0;
+  font-size: 15px;
+}
+
+.dealer-exercise-ready {
+  color: #a9e3b2;
+}
+
+.dealer-exercise-missing {
+  color: #fca5a5;
+}
+
+.dealer-assignment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.dealer-assignment-actions .account-button {
+  flex: 1;
+}
+
+@media (max-width: 560px) {
+  .dealer-attestation-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dealer-attestation-card__action {
+    width: 100%;
+  }
+}
+
 .account-button {
   display: inline-flex;
   min-height: 46px;

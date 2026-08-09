@@ -22,6 +22,7 @@ import AttestationDealersPage from "@/pages/manager/AttestationDealersPage";
 import AttestationSettingsPage from "@/pages/manager/AttestationSettingsPage";
 import AttestationsPage from "@/pages/manager/AttestationsPage";
 import DealerPage from "@/pages/dealer/DealerPage";
+import DealerAssignmentPage from "@/pages/dealer/DealerAssignmentPage";
 import { GameSettings, DEFAULT_SETTINGS } from "@/types/gameSettings";
 import { TrainingWizardProvider } from "@/lib/trainingWizardContext";
 
@@ -69,6 +70,7 @@ function AppContent() {
       <Route path="/manager/attestations" component={AttestationsPage} />
       <Route path="/manager/dealers/:dealerId" component={DealerDetailsPage} />
       <Route path="/manager" component={ManagerPage} />
+      <Route path="/dealer/attestations/:assignmentId" component={DealerAssignmentPage} />
       <Route path="/dealer" component={DealerPage} />
       <Route path="/">
         <>
