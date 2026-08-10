@@ -1,37 +1,27 @@
 # Roulette Dealer Trainer
 
-A browser-based trainer for roulette dealers. Simulates a full European roulette table with betting layout, racetrack (French bets), chip selection, and payout logic.
+A React/Vite app that simulates a European roulette table for dealer training. Features include a full betting layout, racetrack (announced bets), configurable limits, and a debug screen.
 
 ## Stack
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui
+- **Routing:** Wouter
+- **State:** React context + local state
+- **Monorepo:** pnpm workspaces
 
-- **Frontend**: React 19 + Vite 7, TypeScript, Tailwind CSS v4, Radix UI, Framer Motion
-- **Routing**: Wouter
-- **Data fetching**: TanStack Query
-- **Package manager**: pnpm (workspace monorepo)
+## Project structure
+```
+artifacts/
+  roulette-trainer/   ← main web app (served on port 5000)
+  api-server/         ← Express API server (optional)
+  mockup-sandbox/     ← design/component preview sandbox
+```
 
 ## How to run
-
-The workflow **"Roulette Dealer Trainer"** starts the dev server automatically:
-
+The **Roulette Dealer Trainer** workflow starts the app:
 ```
 cd artifacts/roulette-trainer && pnpm install && PORT=5000 BASE_PATH=/ pnpm run dev
 ```
-
-App is served at port 5000.
-
-## Project structure
-
-```
-artifacts/roulette-trainer/src/
-  App.tsx          # Root component and routing
-  pages/           # Page-level components
-  components/      # Reusable UI components (table, wheel, chips, bets…)
-  hooks/           # Custom React hooks
-  data/            # Static roulette data (number sequences, bet definitions)
-  types/           # TypeScript types
-  lib/             # Utility helpers
-```
+App is served at `http://localhost:5000`.
 
 ## User preferences
-
-<!-- Add user preferences here as they are stated -->
+- UI language: Russian (interface labels in Russian)
