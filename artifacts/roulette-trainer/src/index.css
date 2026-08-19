@@ -1785,11 +1785,46 @@ input[type="number"] {
 .game-answer-area {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-rows: 88px auto;
+  grid-template-rows: 88px 34px auto;
   align-items: start;
   gap: 10px;
   flex: 1;
   min-width: 0;
+}
+
+.numeric-keypad {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.numeric-keypad-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  max-height: 34px;
+  padding: 0;
+  border: 1px solid #c8a84b77;
+  border-radius: 5px;
+  background: rgba(200,168,75,0.12);
+  color: #ffe87a;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.numeric-keypad-btn:hover {
+  background: rgba(200,168,75,0.3);
+}
+
+.numeric-keypad-btn--backspace {
+  border-color: #c8a84b;
+  background: rgba(200,168,75,0.2);
+  font-size: 17px;
 }
 
 .game-answer-label {
@@ -1800,6 +1835,7 @@ input[type="number"] {
 }
 
 .game-answer-input {
+  grid-row: 3;
   padding: 8px 12px;
   width: 130px;
   background: rgba(0, 0, 0, 0.45);
@@ -1823,6 +1859,7 @@ input[type="number"] {
 }
 
 .game-check-btn {
+  grid-row: 3;
   padding: 8px 22px;
   font-size: 14px;
   font-weight: 700;

@@ -20,6 +20,35 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
+function NumericKeypad({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const appendDigit = (digit: string) => onChange(`${value}${digit}`);
+  const removeLastDigit = () => onChange(value.slice(0, -1));
+
+  return (
+    <div className="numeric-keypad" aria-label="Цифровая панель">
+      {["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map(digit => (
+        <button
+          key={digit}
+          type="button"
+          className="numeric-keypad-btn"
+          onClick={() => appendDigit(digit)}
+          aria-label={`Добавить ${digit}`}
+        >
+          {digit}
+        </button>
+      ))}
+      <button
+        type="button"
+        className="numeric-keypad-btn numeric-keypad-btn--backspace"
+        onClick={removeLastDigit}
+        aria-label="Удалить последнюю цифру"
+      >
+        ⌫
+      </button>
+    </div>
+  );
+}
+
 type QuizPhase = { kind: "completes" } | { kind: "completesIntersection" } | { kind: "series" } | { kind: "trackIntersection" } | { kind: "trackFieldIntersection" } | { kind: "completeTrackIntersection" } | { kind: "completeNumberPayout" } | { kind: "seriesFieldPayout" } | { kind: "neighboursPayout" } | { kind: "field" } | { kind: "colorPayout" } | { kind: "report" };
 
 interface SeriesLineSummary {
@@ -3851,6 +3880,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">1. Посчитайте сдачу с кратности приема ставок «комплит».</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
+                <NumericKeypad value={completesInput} onChange={setCompletesInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3872,6 +3902,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">2. Посчитайте общую сдачу с поля, без учета трека.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
+                <NumericKeypad value={intersectionInput} onChange={setIntersectionInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3893,6 +3924,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{seriesBaseNum}. Посчитайте общую сдачу с кратности приема серий.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
+                <NumericKeypad value={seriesInput} onChange={setSeriesInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3914,6 +3946,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте общую сдачу с трека, без учета ставок на поле</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
+                <NumericKeypad value={trackIntersectionInput} onChange={setTrackIntersectionInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3935,6 +3968,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
+                <NumericKeypad value={trackFieldIntersectionInput} onChange={setTrackFieldIntersectionInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3956,6 +3990,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{completeNumberPayoutQuestionNum}. Какую общую сумму нужно поставить в номер с выигрышных ставок «комплит»?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
+                <NumericKeypad value={completeNumberPayoutInput} onChange={setCompleteNumberPayoutInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3977,6 +4012,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно выставить в поле с выигрышных серий?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
+                <NumericKeypad value={seriesFieldPayoutInput} onChange={setSeriesFieldPayoutInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -3998,6 +4034,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{neighboursPayoutQuestionNum}. Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
+                <NumericKeypad value={neighboursPayoutInput} onChange={setNeighboursPayoutInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4019,6 +4056,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{fieldQuestionNum}. Посчитайте общую сумму выплаты.</span>
                   <span className="quiz-series-sub">Сумма выплаты</span>
                 </div>
+                <NumericKeypad value={fieldInput} onChange={setFieldInput} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4042,6 +4080,7 @@ export default function RouletteTable({
                   </span>
                   <span className="quiz-series-sub">Количество фишек</span>
                 </div>
+                <NumericKeypad value={colorPayoutInput} onChange={setColorPayoutInput} />
                 <input
                   type="number"
                   className="game-answer-input"
