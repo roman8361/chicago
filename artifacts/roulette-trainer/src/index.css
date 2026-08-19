@@ -1785,7 +1785,7 @@ input[type="number"] {
 .game-answer-area {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-rows: 88px 34px auto;
+  grid-template-rows: 48px 34px auto;
   align-items: start;
   gap: 10px;
   flex: 1;
