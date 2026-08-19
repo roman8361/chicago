@@ -2908,7 +2908,7 @@ export default function RouletteTable({
     add("series", "Посчитайте общую сдачу с кратности приема серий.", seriesRecord);
     add(
       "track-intersection",
-      "Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.",
+      "Посчитайте общую сдачу с трека, без учета ставок на поле",
       trackIntersectionRecord,
     );
     add(
@@ -3911,7 +3911,7 @@ export default function RouletteTable({
             {quizPhase.kind === "trackIntersection" && (
               <div className="game-answer-area">
                 <div className="quiz-series-header">
-                  <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.</span>
+                  <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте общую сдачу с трека, без учета ставок на поле</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
                 <input
@@ -4174,7 +4174,7 @@ export default function RouletteTable({
               )}
               {trackIntersectionRecord && (
                 <div className={`quiz-report-item ${trackIntersectionRecord.correct ? "quiz-report-item--ok" : "quiz-report-item--err"}`}>
-                  <div className="quiz-report-name">{trackIntQuestionNum}. Посчитайте сдачу с пересечений на треке серий и ставок «соседи номера», без учета ставок на поле.</div>
+                  <div className="quiz-report-name">{trackIntQuestionNum}. Посчитайте общую сдачу с трека, без учета ставок на поле</div>
                   {trackIntersectionRecord.correct ? (
                     <>
                       <div className="quiz-report-verdict quiz-ok">✅ Верно</div>
