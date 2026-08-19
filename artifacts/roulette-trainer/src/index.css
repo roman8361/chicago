@@ -1743,7 +1743,7 @@ input[type="number"] {
 
 .game-result-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 20px;
 }
@@ -1783,11 +1783,13 @@ input[type="number"] {
 
 /* Answer area */
 .game-answer-area {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-rows: 88px auto;
+  align-items: start;
   gap: 10px;
-  flex-wrap: wrap;
   flex: 1;
+  min-width: 0;
 }
 
 .game-answer-label {
@@ -1861,6 +1863,10 @@ input[type="number"] {
 /* ── Quiz series question ──────────────────────────────────────── */
 
 .quiz-series-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1871,7 +1877,7 @@ input[type="number"] {
   font-size: 15px;
   font-weight: 700;
   color: #ffe87a;
-  white-space: nowrap;
+  line-height: 1.35;
 }
 
 .quiz-series-sub {
