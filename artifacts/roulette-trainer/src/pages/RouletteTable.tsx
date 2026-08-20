@@ -1968,6 +1968,8 @@ export default function RouletteTable({
     // generated afterwards and excludes those positions.
     const cashOnField = settings.cashOnField ?? 0;
     const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
+    const colorNumbersCount = Math.max(0, Math.floor(settings.colorNumbersCount ?? 1));
+    const colorEnabled = chipCount > 0 && colorNumbersCount > 0;
     const cashChipStacks = generateCashChips(
       drawnNumber,
       cashOnField,
@@ -1975,13 +1977,13 @@ export default function RouletteTable({
       settings.minBet,
       settings.maxBet,
       settings.colorNumbersCount,
+      colorEnabled,
     );
     const cashPositionIds = new Set(cashChipStacks.map(c => c.positionId));
 
     // Generate color chips using the existing number-center algorithm.
     // Only the already occupied cash positions are excluded; other positions
     // for the same center number remain available.
-    const colorNumbersCount = Math.max(0, Math.floor(settings.colorNumbersCount ?? 1));
     const colorChips = generateColorChips(
       drawnNumber,
       colorNumbersCount,

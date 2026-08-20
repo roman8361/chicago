@@ -243,6 +243,7 @@ export function generateCashChips(
   minBet = 1,
   maxBet = 100,
   centerNumbersCount = 1,
+  colorEnabled = true,
 ): CashChipStack[] {
   if (cashOnField <= 0 || !Number.isFinite(cashOnField)) return [];
 
@@ -288,7 +289,9 @@ export function generateCashChips(
     ...winningCombined,
     ...winningCandidates.filter(p => !canCombine(p)),
   ]);
-  const winningCount = winningCandidates.length === 0
+  const winningCount = !colorEnabled
+    ? winningOrdered.length
+    : winningCandidates.length === 0
     ? 0
     : Math.min(winningOrdered.length, 1 + Math.floor(Math.random() * Math.min(3, winningOrdered.length)));
   const winningPositions = winningOrdered.slice(0, winningCount);
@@ -298,8 +301,8 @@ export function generateCashChips(
   for (const center of centers.slice(1)) {
     for (const p of (POSITIONS_BY_NUMBER.get(center) ?? [])) {
       // A position containing the winning number may only be selected from
-      // winningCandidates, so the winning-number occupancy stays at 1–3.
-      if (!p.numbers.includes(drawnNumber) && positionLimit(p) >= denoms[0]) {
+      // winningCandidates in cash+color mode, so occupancy stays at 1–3.
+      if ((!colorEnabled || !p.numbers.includes(drawnNumber)) && positionLimit(p) >= denoms[0]) {
         positionMap.set(p.id, p);
       }
     }
