@@ -1310,9 +1310,9 @@ export default function RouletteTable({
     const completeNumberPool = Array.from({ length: 37 }, (_, i) => i)
       .filter((num) => !!getCompleteBetRule(num) && currentChipPosMap.has(`su-${num}`));
 
-    if (count === 2) {
-      // The two-number case is deliberately additive. One-complete and
-      // dozen-complete selection below remains unchanged.
+    if (count === 2 || count === 3) {
+      // The first two completes keep the existing pair constraints. For three
+      // completes the third is selected after the winning number is known.
       const dozenForNumber = (num: number): "1ST_12" | "2ND_12" | "3RD_12" =>
         num <= 12 ? "1ST_12" : num <= 24 ? "2ND_12" : "3RD_12";
       const allowedFirst = settings.completeDozen === "yes" && dozenCompleteBet
@@ -1337,6 +1337,26 @@ export default function RouletteTable({
       if (pairs.length === 0) return { bets: [], excludedIds };
       const [firstNumber, secondNumber] = pairs[Math.floor(Math.random() * pairs.length)];
       selectedNumbers = [firstNumber, secondNumber];
+
+      if (count === 3) {
+        const remainingPool = completeNumberPool.filter(
+          (num) => num !== firstNumber && num !== secondNumber,
+        );
+        let thirdPool = remainingPool;
+        if (settings.completeDozen === "yes" && dozenCompleteBet) {
+          const usedDozens = new Set([dozenForNumber(firstNumber), dozenForNumber(secondNumber)]);
+          const remainingDozen = (["1ST_12", "2ND_12", "3RD_12"] as const)
+            .find((dozen) => !usedDozens.has(dozen));
+          if (remainingDozen) {
+            const inRemainingDozen = remainingPool.filter(
+              (num) => dozenForNumber(num) === remainingDozen,
+            );
+            if (inRemainingDozen.length > 0) thirdPool = inRemainingDozen;
+          }
+        }
+        if (thirdPool.length === 0) return { bets: [], excludedIds };
+        selectedNumbers.push(thirdPool[Math.floor(Math.random() * thirdPool.length)]);
+      }
     } else if (settings.completeDozen === "yes" && dozenCompleteBet) {
       const primaryDozen = dozenCompleteBet.dozen;
       const allDozens = ["1ST_12", "2ND_12", "3RD_12"] as const;
@@ -1397,7 +1417,7 @@ export default function RouletteTable({
     };
 
     const selectedPlayUnits = new Map<number, number>();
-    if (count === 2 && selectedNumbers.length === 2) {
+    if ((count === 2 || count === 3) && selectedNumbers.length >= 2) {
       const firstRule = getCompleteBetRule(selectedNumbers[0]);
       const secondRule = getCompleteBetRule(selectedNumbers[1]);
       if (!firstRule || !secondRule) return { bets: [], excludedIds };
@@ -1416,6 +1436,21 @@ export default function RouletteTable({
       const [firstValue, secondValue] = valuePairs[Math.floor(Math.random() * valuePairs.length)];
       selectedPlayUnits.set(selectedNumbers[0], firstValue);
       selectedPlayUnits.set(selectedNumbers[1], secondValue);
+
+      if (count === 3) {
+        const thirdRule = getCompleteBetRule(selectedNumbers[2]);
+        if (!thirdRule) return { bets: [], excludedIds };
+        const thirdValues = allowedPlayUnits(thirdRule);
+        if (thirdValues.length === 0) return { bets: [], excludedIds };
+        const distinctThirdValues = thirdValues.filter(
+          (value) => value !== firstValue && value !== secondValue,
+        );
+        const values = distinctThirdValues.length > 0 ? distinctThirdValues : thirdValues;
+        selectedPlayUnits.set(
+          selectedNumbers[2],
+          values[Math.floor(Math.random() * values.length)],
+        );
+      }
     }
 
     for (const num of selectedNumbers) {
@@ -1629,8 +1664,11 @@ export default function RouletteTable({
       );
       numberCompleteBets = generated.bets;
       excludedIds = generated.excludedIds;
-      numberCoveredSetForWin = numberCompleteBets.length > 0
-        ? numberCompleteBets.length === 2
+       numberCoveredSetForWin = numberCompleteBets.length > 0
+         ? (numberCompleteBets.length === 2 || (
+             Math.min(3, Math.max(1, settings.completeCount ?? 1)) === 3
+             && numberCompleteBets.length >= 2
+           ))
           ? new Set(
               [...buildNumberCoverage([numberCompleteBets[0]])]
                 .filter((number) => buildNumberCoverage([numberCompleteBets[1]]).has(number)),
@@ -1845,6 +1883,85 @@ export default function RouletteTable({
       drawnNumber = candidates[Math.floor(Math.random() * candidates.length)];
     } else {
       drawnNumber = Math.floor(Math.random() * 37);
+    }
+
+    // With three completes, the first two remain the winning pair. Replace
+    // the third after the draw so it can never contain a winning physical
+    // position. Prefer a complete belonging to an active losing series when
+    // there is more than one active series and such a candidate exists.
+    if (
+      Math.min(3, Math.max(1, settings.completeCount ?? 1)) === 3
+      && numberCompleteBets.length === 3
+    ) {
+      const firstTwo = numberCompleteBets.slice(0, 2);
+      const currentThird = numberCompleteBets[2];
+      const coverageOf = (num: number) =>
+        getNumbersCoveredByComplete(num, allCompleteBetsPrecheck);
+      const safeCandidates = allCompleteBetsPrecheck
+        .map((rule) => rule.number)
+        .filter((num) =>
+          !firstTwo.some((bet) => bet.number === num)
+          && !coverageOf(num).includes(drawnNumber)
+          && currentChipPosMap.has(`su-${num}`),
+        );
+
+      const activeSeries = trackBets.length > 1 ? trackBets : [];
+      const trackRulesForSelection = getAllRules().trackBets as Record<string, { numbers: number[] }>;
+      const losingSeriesNumbers = new Set<number>();
+      if (activeSeries.length > 1) {
+        for (const series of activeSeries) {
+          const seriesNumbers = trackRulesForSelection[series.type]?.numbers ?? [];
+          if (!seriesNumbers.includes(drawnNumber)) {
+            for (const number of seriesNumbers) losingSeriesNumbers.add(number);
+          }
+        }
+      }
+      const losingCandidates = safeCandidates.filter((num) => losingSeriesNumbers.has(num));
+      const thirdPool = losingCandidates.length > 0 ? losingCandidates : safeCandidates;
+
+      if (thirdPool.length === 0) {
+        if (retryAttempt < 20) generateRound(retryAttempt + 1);
+        return;
+      }
+
+      {
+        const thirdNumber = thirdPool[Math.floor(Math.random() * thirdPool.length)];
+        const thirdRule = getCompleteBetRule(thirdNumber);
+        if (!thirdRule) {
+          if (retryAttempt < 20) generateRound(retryAttempt + 1);
+          return;
+        }
+        const multiplicity = Math.max(1, settings.completeMultiplicity);
+        const minPlayUnit = Math.ceil(Math.max(1, settings.minBet) / multiplicity) * multiplicity;
+        const maxPlayUnit = Math.floor(
+          Math.max(Math.max(1, settings.minBet), settings.maxBet) / multiplicity,
+        ) * multiplicity;
+        const allowedValues: number[] = [];
+        for (let value = minPlayUnit; value <= maxPlayUnit; value += multiplicity) {
+          allowedValues.push(value);
+        }
+        const firstValues = firstTwo.map((bet) => {
+          const rule = getCompleteBetRule(bet.number);
+          return rule ? bet.amount / rule.chipsRequired : undefined;
+        });
+        const distinctValues = allowedValues.filter((value) => !firstValues.includes(value));
+        const valuePool = distinctValues.length > 0 ? distinctValues : allowedValues;
+        const playUnit = valuePool.length > 0
+          ? valuePool[Math.floor(Math.random() * valuePool.length)]
+          : Math.max(multiplicity, minPlayUnit);
+
+        excludedIds.delete(`su-${currentThird.number}`);
+        excludedIds.add(`su-${thirdNumber}`);
+        numberCompleteBets = [
+          ...firstTwo,
+          {
+            number: thirdNumber,
+            chipsRequired: thirdRule.chipsRequired,
+            amount: playUnit * thirdRule.chipsRequired,
+            position: currentChipPosMap.get(`su-${thirdNumber}`)!,
+          },
+        ];
+      }
     }
 
     // Generate color chips using the new number-center algorithm

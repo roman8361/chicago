@@ -4,3 +4,4 @@
 - [Attestation settings editing](attestation-settings-editing.md) — edit existing templates through a local form draft; persist only cloned config and updatedAt, never assignments.
 - [Attestation deletion](attestation-deletion.md) — delete assignments by templateId before deleting the template; dealers and assignments for other templates remain untouched.
 - [Attestation persistence](attestation-persistence.md) — one localStorage template owns shared settings; assignments link selected dealers without duplicating config.
+- [Three-complete generation](three-complete-generation.md) — first two completes define the winning intersection; the third is selected after the draw and must be physically losing.
