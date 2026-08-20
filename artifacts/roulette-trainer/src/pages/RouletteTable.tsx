@@ -3323,6 +3323,16 @@ export default function RouletteTable({
   const fieldSource = showReportField
     ? initialRoundSnapshot
     : (showWinningField ? null : game);
+  // The generator keeps individual denominations for payout/report logic, but
+  // the initial field shows one cash chip per physical position with the
+  // summed amount.
+  const cashDisplayStacks = (() => {
+    const totals = new Map<string, number>();
+    for (const stack of fieldSource?.cashChipStacks ?? []) {
+      totals.set(stack.positionId, (totals.get(stack.positionId) ?? 0) + stack.denomination);
+    }
+    return [...totals.entries()].map(([positionId, denomination]) => ({ positionId, denomination }));
+  })();
 
   const hasCompletesQuestion = settings.completeField === "yes" || settings.completeDozen === "yes";
   // trackIntersection: shown when ANY track bet present (series or neighbours), regardless of field bets.
@@ -3620,9 +3630,9 @@ export default function RouletteTable({
           })}
 
           {/* Cash chips — skip positions covered by winningFieldChips when winning field is active */}
-          {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.filter(stack =>
+          {cashDisplayStacks.filter(stack =>
             !showWinningField || !(winningFieldChips?.some(e => e.positionId === stack.positionId))
-           ).map((stack, stackIndex) => {
+           ).map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.denomination);
@@ -3630,7 +3640,7 @@ export default function RouletteTable({
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
             return (
-               <g key={`cash-${stack.positionId}-${stackIndex}`} style={{ pointerEvents: "none" }}>
+                <g key={`cash-${stack.positionId}`} style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
                 {/* Main body */}
