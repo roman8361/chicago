@@ -311,6 +311,41 @@ function findPositionId(betType: "straight" | "split" | "street" | "corner" | "s
   return found?.id;
 }
 
+/**
+ * Return only the physical field positions that win inside active series for
+ * the drawn number. A series contributes its exact configured bet position,
+ * not every position containing the winning number.
+ */
+function getWinningSeriesPositionIds(
+  activeSeries: TrackBet[],
+  drawnNumber: number,
+  rules: Record<string, unknown>,
+): Set<string> {
+  type TrackRuleT = {
+    bets: Record<string, Array<{ numbers: number[]; chips: number }>>;
+  };
+  const blocked = new Set<string>();
+  const trackRules = rules.trackBets as Record<string, TrackRuleT> | undefined;
+
+  for (const trackBet of activeSeries) {
+    const trackRule = trackRules?.[trackBet.type];
+    if (!trackRule) continue;
+
+    for (const [categoryKey, entries] of Object.entries(trackRule.bets)) {
+      const category = DOZEN_COMPLETE_CATEGORY_MAP[categoryKey];
+      if (!category || !Array.isArray(entries)) continue;
+
+      for (const entry of entries) {
+        if (!Array.isArray(entry.numbers) || !entry.numbers.includes(drawnNumber)) continue;
+        const positionId = findPositionId(category.betType, entry.numbers);
+        if (positionId) blocked.add(positionId);
+      }
+    }
+  }
+
+  return blocked;
+}
+
 function calcOneCompleteChange(
   amount: number,
   chipsRequired: number,
@@ -1980,15 +2015,25 @@ export default function RouletteTable({
       colorEnabled,
     );
     const cashPositionIds = new Set(cashChipStacks.map(c => c.positionId));
+    const winningSeriesPositionIds = getWinningSeriesPositionIds(
+      trackBets,
+      drawnNumber,
+      getAllRules(),
+    );
+    const blockedColorPositions = new Set([
+      ...excludedIds,
+      ...cashPositionIds,
+      ...winningSeriesPositionIds,
+    ]);
 
     // Generate color chips using the existing number-center algorithm.
-    // Only the already occupied cash positions are excluded; other positions
-    // for the same center number remain available.
+    // Only the combined blocked physical positions are excluded; other
+    // positions for the same center number remain available.
     const colorChips = generateColorChips(
       drawnNumber,
       colorNumbersCount,
       chipCount,
-      new Set([...excludedIds, ...cashPositionIds]),
+      blockedColorPositions,
     );
 
     const base = spinGame(
