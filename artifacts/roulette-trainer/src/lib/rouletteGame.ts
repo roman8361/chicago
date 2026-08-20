@@ -240,7 +240,6 @@ export function generateCashChips(
   drawnNumber: number,
   cashOnField: number,
   cashChipValues: string[],
-  _colorPositionIds: Set<string>,
   minBet = 1,
   maxBet = 100,
   centerNumbersCount = 1,

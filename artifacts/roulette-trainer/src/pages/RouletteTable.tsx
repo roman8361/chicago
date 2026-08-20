@@ -1972,7 +1972,6 @@ export default function RouletteTable({
       drawnNumber,
       cashOnField,
       cashChipValues,
-      new Set<string>(),
       settings.minBet,
       settings.maxBet,
       settings.colorNumbersCount,
