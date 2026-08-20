@@ -3602,7 +3602,7 @@ export default function RouletteTable({
           {/* Chips — skip positions covered by winningFieldChips when winning field is active */}
           {fieldSource && fieldSource.chips.filter(stack =>
             !showWinningField || !(winningFieldChips?.some(e => e.positionId === stack.positionId))
-          ).map(stack => {
+           ).map(stack => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const count = stack.count;
@@ -3622,7 +3622,7 @@ export default function RouletteTable({
           {/* Cash chips — skip positions covered by winningFieldChips when winning field is active */}
           {fieldSource && fieldSource.cashChipStacks && fieldSource.cashChipStacks.filter(stack =>
             !showWinningField || !(winningFieldChips?.some(e => e.positionId === stack.positionId))
-          ).map(stack => {
+           ).map((stack, stackIndex) => {
             const pos = chipPosMap.get(stack.positionId);
             if (!pos) return null;
             const amt = String(stack.denomination);
@@ -3630,7 +3630,7 @@ export default function RouletteTable({
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
             return (
-              <g key={`cash-${stack.positionId}`} style={{ pointerEvents: "none" }}>
+               <g key={`cash-${stack.positionId}-${stackIndex}`} style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
                 {/* Main body */}

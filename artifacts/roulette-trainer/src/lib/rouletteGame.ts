@@ -282,10 +282,17 @@ export function generateCashChips(
     (POSITIONS_BY_NUMBER.get(drawnNumber) ?? [])
       .filter(p => positionLimit(p) >= denoms[0]),
   );
+  const combinedValue = denoms.length === 2 ? denoms[0] + denoms[1] : 0;
+  const canCombine = (p: BetPosition) => positionLimit(p) >= combinedValue;
+  const winningCombined = winningCandidates.filter(canCombine);
+  const winningOrdered = shuffle([
+    ...winningCombined,
+    ...winningCandidates.filter(p => !canCombine(p)),
+  ]);
   const winningCount = winningCandidates.length === 0
     ? 0
-    : Math.min(winningCandidates.length, 1 + Math.floor(Math.random() * Math.min(3, winningCandidates.length)));
-  const winningPositions = winningCandidates.slice(0, winningCount);
+    : Math.min(winningOrdered.length, 1 + Math.floor(Math.random() * Math.min(3, winningOrdered.length)));
+  const winningPositions = winningOrdered.slice(0, winningCount);
 
   const positionMap = new Map<string, BetPosition>();
   for (const p of winningPositions) positionMap.set(p.id, p);
@@ -307,6 +314,49 @@ export function generateCashChips(
 
   let remaining = cashOnField;
   const amountByPosition = new Map<string, number>();
+  const addChip = (position: BetPosition, denomination: number) => {
+    const current = amountByPosition.get(position.id) ?? 0;
+    if (
+      denomination > remaining
+      || current + denomination > positionLimit(position)
+    ) return false;
+    result.push({ positionId: position.id, denomination });
+    amountByPosition.set(position.id, current + denomination);
+    remaining -= denomination;
+    return true;
+  };
+  const addCombinedStack = (position: BetPosition) => {
+    if (denoms.length !== 2 || !canCombine(position) || remaining < combinedValue) return false;
+    // Add both denominations before any ordinary distribution. Extra chips
+    // may be added later by the normal stack logic.
+    const first = Math.random() < 0.5 ? denoms[0] : denoms[1];
+    const second = first === denoms[0] ? denoms[1] : denoms[0];
+    return addChip(position, first) && addChip(position, second);
+  };
+
+  // With two denominations, guarantee a mixed winning stack whenever the
+  // target and the position limit make it physically possible.
+  const winningCombinedPositions = shuffle(winningPositions.filter(canCombine));
+  if (winningCombinedPositions.length > 0) {
+    addCombinedStack(winningCombinedPositions[0]);
+    for (const position of winningCombinedPositions.slice(1)) {
+      if (Math.random() < 0.4) addCombinedStack(position);
+    }
+  }
+
+  const nonWinningPositions = positions.filter(
+    position => !winningPositions.some(winning => winning.id === position.id),
+  );
+  const nonWinningCombined = shuffle(nonWinningPositions.filter(canCombine));
+  // A non-winning mixed stack is required only when at least one eligible
+  // non-winning position exists and the remaining target can fund both chips.
+  if (nonWinningCombined.length > 0 && remaining >= combinedValue) {
+    addCombinedStack(nonWinningCombined[0]);
+    for (const position of nonWinningCombined.slice(1)) {
+      if (Math.random() < 0.4) addCombinedStack(position);
+    }
+  }
+
   for (const position of positions) {
     if (remaining < denoms[0]) break;
     const limit = positionLimit(position);
@@ -319,10 +369,8 @@ export function generateCashChips(
       const denomination = Math.random() < 0.35
         ? fitting[Math.floor(Math.random() * fitting.length)]
         : fitting[fitting.length - 1];
-      result.push({ positionId: position.id, denomination });
-      current += denomination;
-      remaining -= denomination;
-      amountByPosition.set(position.id, current);
+      if (!addChip(position, denomination)) break;
+      current = amountByPosition.get(position.id) ?? current + denomination;
       if (Math.random() < 0.28) break;
     }
   }
@@ -334,9 +382,7 @@ export function generateCashChips(
     const fitting = denoms.filter(d => d <= remaining && current + d <= positionLimit(position));
     if (fitting.length === 0) continue;
     const denomination = fitting[fitting.length - 1];
-    result.push({ positionId: position.id, denomination });
-    amountByPosition.set(position.id, current + denomination);
-    remaining -= denomination;
+    addChip(position, denomination);
   }
   return result;
 }
