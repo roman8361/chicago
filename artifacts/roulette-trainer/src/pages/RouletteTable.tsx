@@ -1290,7 +1290,54 @@ export default function RouletteTable({
 
     let selectedNumbers: number[] = [];
 
-    if (settings.completeDozen === "yes" && dozenCompleteBet) {
+    const getCompletePhysicalPositions = (num: number): Set<string> => {
+      const positions = new Set<string>();
+      const rule = getCompleteBetRule(num);
+      if (!rule) return positions;
+      for (const [category, entries] of Object.entries(rule.bets)) {
+        if (!Array.isArray(entries)) continue;
+        for (const entry of entries) {
+          const positionId = findPositionId(
+            DOZEN_COMPLETE_CATEGORY_MAP[category]?.betType ?? "straight",
+            entry.numbers,
+          );
+          if (positionId) positions.add(positionId);
+        }
+      }
+      return positions;
+    };
+
+    const completeNumberPool = Array.from({ length: 37 }, (_, i) => i)
+      .filter((num) => !!getCompleteBetRule(num) && currentChipPosMap.has(`su-${num}`));
+
+    if (count === 2) {
+      // The two-number case is deliberately additive. One-complete and
+      // dozen-complete selection below remains unchanged.
+      const dozenForNumber = (num: number): "1ST_12" | "2ND_12" | "3RD_12" =>
+        num <= 12 ? "1ST_12" : num <= 24 ? "2ND_12" : "3RD_12";
+      const allowedFirst = settings.completeDozen === "yes" && dozenCompleteBet
+        ? completeNumberPool.filter((num) => dozenForNumber(num) === dozenCompleteBet.dozen)
+        : completeNumberPool;
+      const allowedSecond = settings.completeDozen === "yes" && dozenCompleteBet
+        ? completeNumberPool.filter((num) => dozenForNumber(num) !== dozenCompleteBet.dozen)
+        : completeNumberPool;
+
+      const pairs: Array<[number, number]> = [];
+      for (const first of allowedFirst) {
+        const firstPositions = getCompletePhysicalPositions(first);
+        for (const second of allowedSecond) {
+          if (first === second) continue;
+          const secondPositions = getCompletePhysicalPositions(second);
+          if ([...firstPositions].some((positionId) => secondPositions.has(positionId))) {
+            pairs.push([first, second]);
+          }
+        }
+      }
+
+      if (pairs.length === 0) return { bets: [], excludedIds };
+      const [firstNumber, secondNumber] = pairs[Math.floor(Math.random() * pairs.length)];
+      selectedNumbers = [firstNumber, secondNumber];
+    } else if (settings.completeDozen === "yes" && dozenCompleteBet) {
       const primaryDozen = dozenCompleteBet.dozen;
       const allDozens = ["1ST_12", "2ND_12", "3RD_12"] as const;
       const otherDozens = allDozens.filter(d => d !== primaryDozen);
@@ -1334,11 +1381,55 @@ export default function RouletteTable({
     }
 
     const multiplicity = Math.max(1, settings.completeMultiplicity);
+    const allowedPlayUnits = (rule: { chipsRequired: number }): number[] => {
+      const minPlayUnit = Math.ceil(minBet / multiplicity) * multiplicity;
+      const maxPlayUnit = Math.floor(maxBet / multiplicity) * multiplicity;
+      const values: number[] = [];
+      for (let value = minPlayUnit; value <= maxPlayUnit; value += multiplicity) {
+        // A value is represented by an amount inside the same range used by
+        // the existing generator, after its multiplicity rounding.
+        if (value * rule.chipsRequired >= minPlayUnit * rule.chipsRequired
+          && value * rule.chipsRequired <= maxBet * rule.chipsRequired) {
+          values.push(value);
+        }
+      }
+      return values;
+    };
+
+    const selectedPlayUnits = new Map<number, number>();
+    if (count === 2 && selectedNumbers.length === 2) {
+      const firstRule = getCompleteBetRule(selectedNumbers[0]);
+      const secondRule = getCompleteBetRule(selectedNumbers[1]);
+      if (!firstRule || !secondRule) return { bets: [], excludedIds };
+      const firstValues = allowedPlayUnits(firstRule);
+      const secondValues = allowedPlayUnits(secondRule);
+      const distinctPairs: Array<[number, number]> = [];
+      const allPairs: Array<[number, number]> = [];
+      for (const firstValue of firstValues) {
+        for (const secondValue of secondValues) {
+          allPairs.push([firstValue, secondValue]);
+          if (firstValue !== secondValue) distinctPairs.push([firstValue, secondValue]);
+        }
+      }
+      const valuePairs = distinctPairs.length > 0 ? distinctPairs : allPairs;
+      if (valuePairs.length === 0) return { bets: [], excludedIds };
+      const [firstValue, secondValue] = valuePairs[Math.floor(Math.random() * valuePairs.length)];
+      selectedPlayUnits.set(selectedNumbers[0], firstValue);
+      selectedPlayUnits.set(selectedNumbers[1], secondValue);
+    }
+
     for (const num of selectedNumbers) {
       const rule = getCompleteBetRule(num);
       if (!rule) continue;
       const pos = currentChipPosMap.get(`su-${num}`);
       if (!pos) continue;
+      const selectedPlayUnit = selectedPlayUnits.get(num);
+      if (selectedPlayUnit !== undefined) {
+        const amount = selectedPlayUnit * rule.chipsRequired;
+        bets.push({ number: num, chipsRequired: rule.chipsRequired, amount, position: pos });
+        excludedIds.add(`su-${num}`);
+        continue;
+      }
       // Clamp minPlayUnit to maxBet so minAmount ≤ maxAmount even if multiplicity > maxBet
       const minPlayUnit = Math.min(Math.max(minBet, multiplicity), maxBet);
       const minAmount = minPlayUnit * rule.chipsRequired;
@@ -1539,7 +1630,12 @@ export default function RouletteTable({
       numberCompleteBets = generated.bets;
       excludedIds = generated.excludedIds;
       numberCoveredSetForWin = numberCompleteBets.length > 0
-        ? buildNumberCoverage(numberCompleteBets)
+        ? numberCompleteBets.length === 2
+          ? new Set(
+              [...buildNumberCoverage([numberCompleteBets[0]])]
+                .filter((number) => buildNumberCoverage([numberCompleteBets[1]]).has(number)),
+            )
+          : buildNumberCoverage(numberCompleteBets)
         : null;
       completeCandidateSet = buildCompleteCandidate(numberCoveredSetForWin);
 
@@ -1549,6 +1645,21 @@ export default function RouletteTable({
       if (!seriesCoveredSet || !completeCandidateSet || (commonWithSeries && commonWithSeries.length > 0)) {
         break;
       }
+    }
+
+    // With two number completes, silently continuing with fewer than two
+    // would violate the settings and the mandatory pair constraints. Retry
+    // the whole round a finite number of times for custom rulesets where a
+    // compatible pair may be available only for another generated setup.
+    if (
+      settings.completeField === "yes"
+      && Math.min(3, Math.max(1, settings.completeCount ?? 1)) === 2
+      && numberCompleteBets.length !== 2
+    ) {
+      if (retryAttempt < 20) {
+        generateRound(retryAttempt + 1);
+      }
+      return;
     }
 
     // ── Neighbours bets ("Соседи номера") ───────────────────────────────────────
