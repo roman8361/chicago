@@ -236,151 +236,109 @@ export function generateColorChips(
 
 // ── CASH chip generation ──────────────────────────────────────────────────────
 //
-// Rules:
-//  - One physical chip = one unique field position (never stacked).
-//  - Only user-selected denominations are used.
-//  - Single denom: chipCount = round(cashOnField / denom), capped by available positions.
-//  - Multi-denom: balanced chip counts (floor/ceil per denom), minimise |sum - target|.
-//  - At least one chip covers the drawn number.
-//  - Cash never shares a position with a color chip.
-
-/**
- * Among all size-`count` subsets of `arr`, return every subset whose sum is
- * closest to `target`. Returns [[]] when count === 0.
- */
-function findBestSubsets(arr: number[], count: number, target: number): number[][] {
-  if (count === 0) return [[]];
-  if (count >= arr.length) return [[...arr]];
-
-  const best: number[][] = [];
-  let bestDev = Infinity;
-
-  function enumerate(start: number, chosen: number[]) {
-    if (chosen.length === count) {
-      const sum = chosen.reduce((a, b) => a + b, 0);
-      const dev = Math.abs(sum - target);
-      if (dev < bestDev) { bestDev = dev; best.length = 0; best.push([...chosen]); }
-      else if (dev === bestDev) { best.push([...chosen]); }
-      return;
-    }
-    const need = count - chosen.length;
-    for (let i = start; i <= arr.length - need; i++) {
-      enumerate(i + 1, [...chosen, arr[i]]);
-    }
-  }
-
-  enumerate(0, []);
-  return best;
-}
-
-/**
- * Build the optimal set of physical cash chips from `denoms` (sorted ascending),
- * subject to a maximum of `maxChips` chips (= number of free field positions).
- *
- * Single denom  → chipCount = round(cashOnField / denom), capped at maxChips.
- * Multi-denom   → iterate total chip counts n..maxChips; for each count, use
- *                 floor/ceil distribution (max difference 1 between denoms) and
- *                 pick the subset that minimises |actualSum - cashOnField|.
- *                 Ties are broken randomly.
- */
-function buildChipSet(cashOnField: number, denoms: number[], maxChips: number): number[] {
-  if (maxChips <= 0 || denoms.length === 0) return [];
-  const minDenom = denoms[0];
-  if (cashOnField < minDenom) return [];
-
-  const n = denoms.length;
-
-  // ── Single denomination ────────────────────────────────────────────────────
-  if (n === 1) {
-    const d = denoms[0];
-    const count = Math.max(1, Math.round(cashOnField / d));
-    return Array(Math.min(count, maxChips)).fill(d);
-  }
-
-  // ── Multiple denominations ─────────────────────────────────────────────────
-  // Need at least one chip per denomination (n chips minimum).
-  if (maxChips < n) {
-    // Not enough positions for all denoms — drop smallest until we fit.
-    return buildChipSet(cashOnField, denoms.slice(denoms.length - maxChips), maxChips);
-  }
-
-  const denomSum = denoms.reduce((a, b) => a + b, 0);
-  const bestSets: number[][] = [];
-  let bestDev = Infinity;
-
-  for (let total = n; total <= maxChips; total++) {
-    const base = Math.floor(total / n);
-    const extraCount = total % n;          // how many denoms get base+1 chips
-    const baseSum = base * denomSum;
-    const targetExtra = cashOnField - baseSum;
-
-    for (const subset of findBestSubsets(denoms, extraCount, targetExtra)) {
-      const extraSum = subset.reduce((a, b) => a + b, 0);
-      const dev = Math.abs(baseSum + extraSum - cashOnField);
-
-      const chips: number[] = [];
-      const extraMap = new Map<number, number>();
-      for (const d of subset) extraMap.set(d, (extraMap.get(d) ?? 0) + 1);
-      for (const d of denoms) {
-        const cnt = base + (extraMap.get(d) ?? 0);
-        for (let i = 0; i < cnt; i++) chips.push(d);
-      }
-
-      if (dev < bestDev) { bestDev = dev; bestSets.length = 0; bestSets.push(chips); }
-      else if (dev === bestDev) { bestSets.push(chips); }
-    }
-  }
-
-  if (bestSets.length === 0) return [];
-  // Random tie-break among equally good combinations
-  return bestSets[Math.floor(Math.random() * bestSets.length)];
-}
-
 export function generateCashChips(
   drawnNumber: number,
   cashOnField: number,
   cashChipValues: string[],
-  colorPositionIds: Set<string>,
+  _colorPositionIds: Set<string>,
+  minBet = 1,
+  maxBet = 100,
+  centerNumbersCount = 1,
 ): CashChipStack[] {
-  if (cashOnField <= 0) return [];
+  if (cashOnField <= 0 || !Number.isFinite(cashOnField)) return [];
 
-  // Deduplicate, filter invalid, sort ascending
-  const denoms = [...new Set(
-    (cashChipValues.length > 0 ? cashChipValues : ["100"]).map(Number).filter(n => n > 0 && Number.isFinite(n)),
-  )].sort((a, b) => a - b);
+  const lower = Math.max(0, Math.min(minBet, maxBet));
+  const upper = Math.max(lower, maxBet);
+  const standardDenoms = [5, 10, 25, 50, 100, 500, 1000, 5000, 10000, 50000];
+  const selected = [...new Set(cashChipValues.map(Number))]
+    .filter(n => Number.isFinite(n) && n > 0 && n >= lower && n <= upper);
+  const fallback = standardDenoms.filter(n => n >= lower && n <= upper).sort((a, b) => b - a);
+  const denoms = (selected.length > 0
+    ? selected
+    : [fallback.includes(100) ? 100 : fallback[0]])
+    .filter((n): n is number => typeof n === "number")
+    .sort((a, b) => a - b)
+    .slice(-2);
+  if (denoms.length === 0 || cashOnField < denoms[0]) return [];
 
-  if (denoms.length === 0) return [];
-  if (cashOnField < denoms[0]) return [];
+  const requestedCount = Math.min(37, Math.max(1, Math.floor(centerNumbersCount)));
+  const otherNumbers = shuffle(
+    Array.from({ length: 37 }, (_, i) => i).filter(n => n !== drawnNumber),
+  );
+  const remainingCount = requestedCount - 1;
+  const fatCount = Math.ceil(remainingCount * 0.6);
+  const fatNumbers = otherNumbers.slice(0, fatCount);
+  const thinNumbers = otherNumbers.slice(fatCount, remainingCount);
+  const centers = [drawnNumber, ...fatNumbers, ...thinNumbers];
 
-  // ── Available positions: not occupied by color chips ───────────────────────
-  const available = ALL_BET_POSITIONS.filter(p => !colorPositionIds.has(p.id));
-  if (available.length === 0) return [];
+  const positionMultiplier: Record<BetPosition["type"], number> = {
+    straight: 1, split: 2, street: 3, corner: 4, sixline: 6,
+  };
+  const positionLimit = (p: BetPosition) =>
+    Math.max(0, upper * positionMultiplier[p.type] - denoms[denoms.length - 1]);
+  const result: CashChipStack[] = [];
 
-  // Build physical chips — one chip per position, capped by available count
-  const physicalChips = buildChipSet(cashOnField, denoms, available.length);
-  if (physicalChips.length === 0) return [];
+  const winningCandidates = shuffle(
+    (POSITIONS_BY_NUMBER.get(drawnNumber) ?? [])
+      .filter(p => positionLimit(p) >= denoms[0]),
+  );
+  const winningCount = winningCandidates.length === 0
+    ? 0
+    : Math.min(winningCandidates.length, 1 + Math.floor(Math.random() * Math.min(3, winningCandidates.length)));
+  const winningPositions = winningCandidates.slice(0, winningCount);
 
-  // ── Select positions: guarantee at least one covers the drawn number ───────
-  const winningPool = shuffle(available.filter(p =>  p.numbers.includes(drawnNumber)));
-  const otherPool   = shuffle(available.filter(p => !p.numbers.includes(drawnNumber)));
-
-  const ordered: BetPosition[] = [];
-  if (winningPool.length > 0) ordered.push(winningPool[0]);  // guaranteed winning slot
-  const rest = shuffle([...winningPool.slice(1), ...otherPool]);
-  for (const pos of rest) {
-    if (ordered.length >= physicalChips.length) break;
-    ordered.push(pos);
+  const positionMap = new Map<string, BetPosition>();
+  for (const p of winningPositions) positionMap.set(p.id, p);
+  for (const center of centers.slice(1)) {
+    for (const p of (POSITIONS_BY_NUMBER.get(center) ?? [])) {
+      // A position containing the winning number may only be selected from
+      // winningCandidates, so the winning-number occupancy stays at 1–3.
+      if (!p.numbers.includes(drawnNumber) && positionLimit(p) >= denoms[0]) {
+        positionMap.set(p.id, p);
+      }
+    }
   }
-  if (ordered.length === 0) return [];
+  const positions = shuffle([...positionMap.values()]);
+  positions.sort((a, b) => {
+    const aw = winningPositions.some(p => p.id === a.id) ? 0 : 1;
+    const bw = winningPositions.some(p => p.id === b.id) ? 0 : 1;
+    return aw - bw;
+  });
 
-  // Shuffle chips so denomination types are distributed randomly across positions
-  const shuffled = shuffle([...physicalChips]);
-  const count = Math.min(ordered.length, shuffled.length);
+  let remaining = cashOnField;
+  const amountByPosition = new Map<string, number>();
+  for (const position of positions) {
+    if (remaining < denoms[0]) break;
+    const limit = positionLimit(position);
+    let current = amountByPosition.get(position.id) ?? 0;
+    while (remaining >= denoms[0]) {
+      const fitting = denoms.filter(d => d <= remaining && current + d <= limit);
+      if (fitting.length === 0) break;
+      // Usually prefer larger values, but occasionally choose a smaller value
+      // so mixed stacks such as 100 + 25 can naturally occur.
+      const denomination = Math.random() < 0.35
+        ? fitting[Math.floor(Math.random() * fitting.length)]
+        : fitting[fitting.length - 1];
+      result.push({ positionId: position.id, denomination });
+      current += denomination;
+      remaining -= denomination;
+      amountByPosition.set(position.id, current);
+      if (Math.random() < 0.28) break;
+    }
+  }
 
-  return Array.from({ length: count }, (_, i) => ({
-    positionId: ordered[i].id,
-    denomination: shuffled[i],
-  }));
+  // Use only the already selected positions for any remaining representable sum.
+  for (const position of positions) {
+    if (remaining < denoms[0]) break;
+    const current = amountByPosition.get(position.id) ?? 0;
+    const fitting = denoms.filter(d => d <= remaining && current + d <= positionLimit(position));
+    if (fitting.length === 0) continue;
+    const denomination = fitting[fitting.length - 1];
+    result.push({ positionId: position.id, denomination });
+    amountByPosition.set(position.id, current + denomination);
+    remaining -= denomination;
+  }
+  return result;
 }
 
 // ── Core game functions ───────────────────────────────────────────────────────

@@ -1964,21 +1964,40 @@ export default function RouletteTable({
       }
     }
 
-    // Generate color chips using the new number-center algorithm
+    // Generate cash first. Cash owns physical positions, while color is
+    // generated afterwards and excludes those positions.
+    const cashOnField = settings.cashOnField ?? 0;
+    const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
+    const cashChipStacks = generateCashChips(
+      drawnNumber,
+      cashOnField,
+      cashChipValues,
+      new Set<string>(),
+      settings.minBet,
+      settings.maxBet,
+      settings.colorNumbersCount,
+    );
+    const cashPositionIds = new Set(cashChipStacks.map(c => c.positionId));
+
+    // Generate color chips using the existing number-center algorithm.
+    // Only the already occupied cash positions are excluded; other positions
+    // for the same center number remain available.
     const colorNumbersCount = Math.max(0, Math.floor(settings.colorNumbersCount ?? 1));
     const colorChips = generateColorChips(
       drawnNumber,
       colorNumbersCount,
       chipCount,
-      excludedIds.size > 0 ? excludedIds : new Set<string>(),
+      new Set([...excludedIds, ...cashPositionIds]),
     );
 
-    const base = spinGame(chipCount, chipValue, payoutMap, excludedIds.size > 0 ? excludedIds : undefined, drawnNumber, colorChips);
-
-    const colorPositionIds = new Set(colorChips.map(c => c.positionId));
-    const cashOnField = settings.cashOnField ?? 0;
-    const cashChipValues = settings.cashChipValues?.length ? settings.cashChipValues : ["100"];
-    const cashChipStacks = generateCashChips(drawnNumber, cashOnField, cashChipValues, colorPositionIds);
+    const base = spinGame(
+      chipCount,
+      chipValue,
+      payoutMap,
+      excludedIds.size > 0 ? excludedIds : undefined,
+      drawnNumber,
+      colorChips,
+    );
 
     const newGameState: GameState = { ...base, trackBets, dozenCompleteBet, numberCompleteBets, cashChipStacks, neighboursBets };
     setGame(newGameState);
