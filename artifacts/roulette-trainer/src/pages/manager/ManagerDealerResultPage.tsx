@@ -11,6 +11,12 @@ import { formatDateTime } from "@/lib/dateFormatting";
 import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
 import SpinReport from "@/components/SpinReport";
 
+function formatDuration(seconds: number): string {
+  const negative = seconds < 0;
+  const absolute = Math.abs(Math.round(seconds));
+  return `${negative ? "-" : ""}${String(Math.floor(absolute / 60)).padStart(2, "0")}:${String(absolute % 60).padStart(2, "0")}`;
+}
+
 function BackToAttestation({ templateId }: { templateId: string }) {
   return (
     <Link
@@ -140,6 +146,15 @@ export default function ManagerDealerResultPage() {
           <p><strong>Правильных ответов:</strong> {result.correctAnswers} из {result.totalQuestions}</p>
           <p><strong>Результат:</strong> {percentage}%</p>
         </div>
+        {result.actualDurationSeconds !== undefined && (
+          <div className="attestation-time-summary" aria-label="Время прохождения">
+            <h2>Время прохождения</h2>
+            <p><span>Заданное время:</span> {result.configuredTimeSeconds !== undefined ? formatDuration(result.configuredTimeSeconds) : "—"}</p>
+            <p><span>Фактическое время:</span> {formatDuration(result.actualDurationSeconds)}</p>
+            <p><span>Уложился в заданное время:</span> {result.withinTimeLimit ? "Да" : "Нет"}</p>
+            {result.overtimeSeconds ? <p><span>Превышение:</span> {formatDuration(result.overtimeSeconds)}</p> : null}
+          </div>
+        )}
       </section>
 
       <SpinReport

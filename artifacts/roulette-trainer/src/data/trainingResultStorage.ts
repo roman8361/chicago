@@ -29,6 +29,10 @@ function isTrainingResult(value: unknown): value is TrainingResult {
     typeof candidate.correctAnswers === "number" &&
     typeof candidate.createdAt === "string" &&
     typeof candidate.completedAt === "string" &&
+    (candidate.configuredTimeSeconds === undefined || typeof candidate.configuredTimeSeconds === "number") &&
+    (candidate.actualDurationSeconds === undefined || typeof candidate.actualDurationSeconds === "number") &&
+    (candidate.withinTimeLimit === undefined || typeof candidate.withinTimeLimit === "boolean") &&
+    (candidate.overtimeSeconds === undefined || typeof candidate.overtimeSeconds === "number") &&
     hasValidReportSnapshot
   );
 }

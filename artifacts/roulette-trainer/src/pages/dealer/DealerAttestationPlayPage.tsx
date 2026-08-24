@@ -5,6 +5,7 @@ import {
   completeTrainingAssignment,
   getTrainingAssignments,
   getTrainingTemplateById,
+  updateTrainingAssignmentStatus,
 } from "@/data/attestationStorage";
 import { getRouletteExerciseByAssignmentId } from "@/data/rouletteExerciseStorage";
 import {
@@ -62,6 +63,7 @@ export default function DealerAttestationPlayPage() {
   function completeAttestation(
     answers: TrainingAnswer[],
     reportSnapshot: RouletteReportSnapshot,
+    timing?: { startedAt: string; completedAt: string; configuredTimeSeconds?: number; actualDurationSeconds?: number; withinTimeLimit?: boolean; overtimeSeconds?: number },
   ): string | null {
     const latestAssignment = getTrainingAssignments().find((candidate) => candidate.id === assignmentId);
     if (!latestAssignment || latestAssignment.dealerId !== currentDealerId) {
@@ -81,7 +83,7 @@ export default function DealerAttestationPlayPage() {
     }
 
     const createdAt = new Date().toISOString();
-    const completedAt = new Date().toISOString();
+    const completedAt = timing?.completedAt ?? new Date().toISOString();
     const result = addTrainingResult({
       assignmentId: latestAssignment.id,
       answers,
@@ -89,6 +91,10 @@ export default function DealerAttestationPlayPage() {
       correctAnswers: answers.filter((answer) => answer.correct).length,
       createdAt,
       completedAt,
+      configuredTimeSeconds: timing?.configuredTimeSeconds,
+      actualDurationSeconds: timing?.actualDurationSeconds,
+      withinTimeLimit: timing?.withinTimeLimit,
+      overtimeSeconds: timing?.overtimeSeconds,
       reportSnapshot,
     });
     const updated = completeTrainingAssignment(latestAssignment.id, completedAt);
@@ -147,7 +153,11 @@ export default function DealerAttestationPlayPage() {
       attestationExercise={exercise}
       startWithSpinAnimation={startWithSpinAnimation}
       settings={template.config}
+        attestationStartedAt={assignment.startedAt}
       onCompleteAttestation={completeAttestation}
+      onAttestationStarted={(startedAt) => {
+        updateTrainingAssignmentStatus(assignment.id, "IN_PROGRESS", startedAt);
+      }}
       onOpenSettings={() => undefined}
       onOpenDebug={() => undefined}
       onBackToAttestation={() => navigate(`/dealer/attestations/${encodeURIComponent(assignment.id)}`)}

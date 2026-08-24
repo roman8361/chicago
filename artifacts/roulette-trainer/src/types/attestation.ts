@@ -78,5 +78,9 @@ export type TrainingResult = {
   correctAnswers: number;
   createdAt: string;
   completedAt: string;
+  configuredTimeSeconds?: number;
+  actualDurationSeconds?: number;
+  withinTimeLimit?: boolean;
+  overtimeSeconds?: number;
   reportSnapshot?: RouletteReportSnapshot;
 };

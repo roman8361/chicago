@@ -913,6 +913,32 @@
   margin: 0;
 }
 
+.attestation-time-summary {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 14px 18px;
+  border: 1px solid #c8a84b66;
+  border-radius: 7px;
+  background: rgba(200, 168, 75, 0.06);
+  color: #c4b57d;
+  font-size: 14px;
+}
+
+.attestation-time-summary h2 {
+  margin: 0 0 3px;
+  color: #f0d080;
+  font-size: 16px;
+}
+
+.attestation-time-summary p {
+  margin: 0;
+}
+
+.attestation-time-summary span {
+  color: #a08840;
+}
+
 .dealer-result-answers {
   display: grid;
   gap: 12px;
@@ -1191,12 +1217,50 @@
 
 /* ── Table + sidebar row ─────────────────────────────────────────── */
 .table-row {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 16px;
   width: 100%;
   max-width: 1220px;
+}
+
+.attestation-timer {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 164px;
+  width: 104px;
+  box-sizing: border-box;
+  padding: 8px 6px 9px;
+  border: 1px solid #c8a84b;
+  border-radius: 6px;
+  background: rgba(8, 22, 10, 0.94);
+  color: #c8a84b;
+  text-align: center;
+  pointer-events: none;
+}
+
+.attestation-timer span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.attestation-timer strong {
+  display: block;
+  color: #f0d080;
+  font-family: "Courier New", monospace;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.attestation-timer--disabled strong {
+  color: #a08840;
 }
 
 .roulette-wrapper {

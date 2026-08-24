@@ -125,11 +125,9 @@ export default function DealerAssignmentPage() {
     }
 
     if (latestAssignment.status === "CREATED") {
-      const startedAt = latestAssignment.startedAt ?? new Date().toISOString();
       const updated = updateTrainingAssignmentStatus(
         latestAssignment.id,
         "IN_PROGRESS",
-        startedAt,
       );
       if (!updated) {
         setActionError("Не удалось начать аттестацию. Попробуйте ещё раз.");

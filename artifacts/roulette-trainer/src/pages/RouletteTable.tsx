@@ -796,12 +796,14 @@ interface RouletteTableProps {
   readOnlyReport?: boolean;
   savedReport?: RouletteReportSnapshot;
   restoredProgress?: TrainingProgress | null;
+  attestationStartedAt?: string;
   startWithSpinAnimation?: boolean;
   autoGenerateRound?: boolean;
   onRoundGenerated?: (game: GameState) => void;
   onBackHome?: () => void;
   onBackToAttestation?: () => void;
-  onCompleteAttestation?: (answers: TrainingAnswer[], reportSnapshot: RouletteReportSnapshot) => string | null;
+  onAttestationStarted?: (startedAt: string) => void;
+  onCompleteAttestation?: (answers: TrainingAnswer[], reportSnapshot: RouletteReportSnapshot, timing?: AttestationTiming) => string | null;
   onAnswerRecorded?: (answers: TrainingAnswer[], currentQuestionIndex: number) => void;
   settings: GameSettings;
   onOpenSettings: () => void;
@@ -818,17 +820,36 @@ interface RouletteTableProps {
 
 export type RouletteMode = "PRACTICE" | "ATTESTATION";
 
+type AttestationTiming = {
+  startedAt: string;
+  completedAt: string;
+  configuredTimeSeconds?: number;
+  actualDurationSeconds?: number;
+  withinTimeLimit?: boolean;
+  overtimeSeconds?: number;
+};
+
+function formatAssessmentTime(totalSeconds: number): string {
+  const negative = totalSeconds < 0;
+  const absolute = Math.abs(totalSeconds);
+  const minutes = Math.floor(absolute / 60);
+  const seconds = absolute % 60;
+  return `${negative ? "-" : ""}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 export default function RouletteTable({
   mode = "PRACTICE",
   attestationExercise,
   readOnlyReport = false,
   savedReport,
   restoredProgress,
+  attestationStartedAt: initialAttestationStartedAt,
   startWithSpinAnimation = false,
   autoGenerateRound = false,
   onRoundGenerated,
   onBackHome,
   onBackToAttestation,
+  onAttestationStarted,
   onCompleteAttestation,
   onAnswerRecorded,
   settings, onOpenSettings, onOpenDebug,
@@ -873,7 +894,24 @@ export default function RouletteTable({
   const [acceptedNeighboursAmounts, setAcceptedNeighboursAmounts] = useState<Map<number, number> | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [attestationCompletionError, setAttestationCompletionError] = useState<string | null>(null);
+  const [attestationStartedAt, setAttestationStartedAt] = useState<string | null>(initialAttestationStartedAt ?? null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const progressAnswersRef = useRef<TrainingAnswer[]>([]);
+  const attestationStartedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (initialAttestationStartedAt) {
+      attestationStartedRef.current = initialAttestationStartedAt;
+      setAttestationStartedAt(initialAttestationStartedAt);
+    }
+  }, [initialAttestationStartedAt]);
+
+  useEffect(() => {
+    if (!isAttestationMode || !attestationStartedAt || quizPhase?.kind === "report") return;
+    setNowMs(Date.now());
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [attestationStartedAt, isAttestationMode, quizPhase?.kind]);
 
   const isSpinningRef    = useRef(false);
   const spinTimeoutRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -887,6 +925,10 @@ export default function RouletteTable({
   const { getPayouts, getTrackBetRule, getAllRules, getCompleteBetRule, getNeighboursRule } = useRouletteRules();
 
   const revealAttestationExercise = useCallback((savedGame: GameState) => {
+    const startedAt = attestationStartedRef.current ?? new Date().toISOString();
+    attestationStartedRef.current = startedAt;
+    setAttestationStartedAt(startedAt);
+    onAttestationStarted?.(startedAt);
     setGame(savedGame);
     setInitialRoundSnapshot(JSON.parse(JSON.stringify(savedGame)) as GameState);
     progressAnswersRef.current = (restoredProgress?.answers ?? []).map((answer) => ({ ...answer }));
@@ -898,7 +940,7 @@ export default function RouletteTable({
     setQuizPhase(getInitialAttestationQuizPhase(savedGame));
     setAttestationCompletionError(null);
     setEditMode(false);
-  }, [restoredProgress, setEditMode]);
+  }, [onAttestationStarted, restoredProgress, setEditMode]);
 
   const revealSavedReport = useCallback((savedGame: GameState, snapshot: RouletteReportSnapshot) => {
     setGame(savedGame);
@@ -3305,7 +3347,28 @@ export default function RouletteTable({
       setAttestationCompletionError("Не все обязательные вопросы имеют ответы.");
       return;
     }
-    const error = onCompleteAttestation(buildAttestationAnswers(), buildReportSnapshot());
+    const completionNowMs = Date.now();
+    const completedAt = new Date(completionNowMs).toISOString();
+    const startedMs = attestationStartedAt ? Date.parse(attestationStartedAt) : nowMs;
+    const actualDurationSeconds = Math.max(0, Math.floor((completionNowMs - startedMs) / 1000));
+    const configuredTimeSeconds = Number.isFinite(settings.time) && settings.time > 0
+      ? Math.floor(settings.time * 60)
+      : undefined;
+    const overtimeSeconds = configuredTimeSeconds === undefined
+      ? undefined
+      : Math.max(0, actualDurationSeconds - configuredTimeSeconds);
+    const error = onCompleteAttestation(
+      buildAttestationAnswers(),
+      buildReportSnapshot(),
+      {
+        startedAt: attestationStartedAt ?? completedAt,
+        completedAt,
+        configuredTimeSeconds,
+        actualDurationSeconds,
+        withinTimeLimit: configuredTimeSeconds === undefined || actualDurationSeconds <= configuredTimeSeconds,
+        overtimeSeconds,
+      },
+    );
     setAttestationCompletionError(error);
   }
 
@@ -3458,6 +3521,16 @@ export default function RouletteTable({
       <div className={showReportField ? "spin-report-table" : ""}>
       {/* Table + info sidebar */}
       <div className="table-row">
+      {!showReportField && isAttestationMode && attestationStartedAt && quizPhase && (
+        <div className={`attestation-timer ${settings.time > 0 ? "" : "attestation-timer--disabled"}`} aria-live="off">
+          <span>ВРЕМЯ</span>
+          <strong>
+            {settings.time > 0
+              ? formatAssessmentTime(Math.floor(settings.time * 60 - (nowMs - Date.parse(attestationStartedAt)) / 1000))
+              : "—"}
+          </strong>
+        </div>
+      )}
       {/* Table image + SVG overlay */}
       <div className="roulette-wrapper">
         {isSpinning && (
