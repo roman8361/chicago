@@ -1,4 +1,5 @@
 export interface GameSettings {
+  time: number;
   minBet: number;
   maxBet: number;
   neighborsCount: number;
@@ -21,6 +22,7 @@ export interface GameSettings {
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
+  time: 5,
   minBet: 1,
   maxBet: 100,
   neighborsCount: 5,

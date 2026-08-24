@@ -103,6 +103,7 @@ export default function SettingsScreen({
   onCancel,
   header,
 }: Props) {
+  const [time, setTime] = useState(String(initialSettings.time ?? DEFAULT_SETTINGS.time));
   const [minBet, setMinBet] = useState(String(initialSettings.minBet));
   const [maxBet, setMaxBet] = useState(String(initialSettings.maxBet));
   const [neighborsCount, setNeighborsCount] = useState(String(initialSettings.neighborsCount));
@@ -182,6 +183,7 @@ export default function SettingsScreen({
     const raw = parseNum(multiplicity, DEFAULT_SETTINGS.multiplicity);
     const parsedMultiplicity = raw < 10 ? 10 : raw > 1000 ? 1000 : raw;
     return {
+      time: Math.max(1, Math.floor(parseNum(time, DEFAULT_SETTINGS.time))),
       minBet: parseNum(minBet, DEFAULT_SETTINGS.minBet),
       maxBet: parseNum(maxBet, DEFAULT_SETTINGS.maxBet),
       neighborsCount: parseNum(neighborsCount, DEFAULT_SETTINGS.neighborsCount),
@@ -208,6 +210,7 @@ export default function SettingsScreen({
     if (onChange) onChange(getSettings());
   }, [
     onChange,
+    time,
     minBet,
     maxBet,
     neighborsCount,
@@ -240,6 +243,33 @@ export default function SettingsScreen({
         {header}
         <div className="settings-divider" />
 
+        <div className="settings-section-title">Общие настройки</div>
+        <div className="settings-grid-2">
+          <div className="settings-field">
+            <label className="settings-label">Время</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="number"
+                className="settings-input"
+                value={time}
+                placeholder={String(DEFAULT_SETTINGS.time)}
+                min={1}
+                step={1}
+                inputMode="numeric"
+                onKeyDown={(e) => {
+                  if (e.key === "-" || e.key === "." || e.key === ",") e.preventDefault();
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^\d*$/.test(value)) setTime(value);
+                }}
+              />
+              <span>мин.</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-divider" />
         <div className="settings-section-title">Лимиты рулетки</div>
         <div className="settings-grid-2">
           <NumField label="Минимум рулетки" value={minBet} defaultVal={DEFAULT_SETTINGS.minBet} onChange={setMinBet} />
