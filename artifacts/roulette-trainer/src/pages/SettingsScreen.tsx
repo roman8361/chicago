@@ -246,7 +246,7 @@ export default function SettingsScreen({
         <div className="settings-section-title">Общие настройки</div>
         <div className="settings-grid-2">
           <div className="settings-field">
-            <label className="settings-label">Время</label>
+            <label className="settings-label">Время (минуты)</label>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="number"
