@@ -895,6 +895,7 @@ export default function RouletteTable({
   const [isSpinning, setIsSpinning] = useState(false);
   const [attestationCompletionError, setAttestationCompletionError] = useState<string | null>(null);
   const [attestationStartedAt, setAttestationStartedAt] = useState<string | null>(initialAttestationStartedAt ?? null);
+  const [practiceStartedAt] = useState(() => new Date().toISOString());
   const [nowMs, setNowMs] = useState(() => Date.now());
   const progressAnswersRef = useRef<TrainingAnswer[]>([]);
   const attestationStartedRef = useRef<string | null>(null);
@@ -907,11 +908,12 @@ export default function RouletteTable({
   }, [initialAttestationStartedAt]);
 
   useEffect(() => {
-    if (!isAttestationMode || !attestationStartedAt || quizPhase?.kind === "report") return;
+    const timerStartedAt = isAttestationMode ? attestationStartedAt : practiceStartedAt;
+    if (!timerStartedAt || (isAttestationMode && quizPhase?.kind === "report")) return;
     setNowMs(Date.now());
     const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(interval);
-  }, [attestationStartedAt, isAttestationMode, quizPhase?.kind]);
+  }, [attestationStartedAt, isAttestationMode, practiceStartedAt, quizPhase?.kind]);
 
   const isSpinningRef    = useRef(false);
   const spinTimeoutRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3521,16 +3523,20 @@ export default function RouletteTable({
       <div className={showReportField ? "spin-report-table" : ""}>
       {/* Table + info sidebar */}
       <div className="table-row">
-      {!showReportField && isAttestationMode && attestationStartedAt && quizPhase && (
+      {!showReportField && (() => {
+        const timerStartedAt = isAttestationMode ? attestationStartedAt : practiceStartedAt;
+        if (!timerStartedAt || (isAttestationMode && !quizPhase)) return null;
+        return (
         <div className={`attestation-timer ${settings.time > 0 ? "" : "attestation-timer--disabled"}`} aria-live="off">
           <span>ВРЕМЯ</span>
           <strong>
             {settings.time > 0
-              ? formatAssessmentTime(Math.floor(settings.time * 60 - (nowMs - Date.parse(attestationStartedAt)) / 1000))
+              ? formatAssessmentTime(Math.floor(settings.time * 60 - (nowMs - Date.parse(timerStartedAt)) / 1000))
               : "—"}
           </strong>
         </div>
-      )}
+        );
+      })()}
       {/* Table image + SVG overlay */}
       <div className="roulette-wrapper">
         {isSpinning && (
