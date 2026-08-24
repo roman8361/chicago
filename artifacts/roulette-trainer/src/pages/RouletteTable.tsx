@@ -895,7 +895,7 @@ export default function RouletteTable({
   const [isSpinning, setIsSpinning] = useState(false);
   const [attestationCompletionError, setAttestationCompletionError] = useState<string | null>(null);
   const [attestationStartedAt, setAttestationStartedAt] = useState<string | null>(initialAttestationStartedAt ?? null);
-  const [practiceStartedAt] = useState(() => new Date().toISOString());
+  const [practiceStartedAt, setPracticeStartedAt] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const progressAnswersRef = useRef<TrainingAnswer[]>([]);
   const attestationStartedRef = useRef<string | null>(null);
@@ -906,6 +906,12 @@ export default function RouletteTable({
       setAttestationStartedAt(initialAttestationStartedAt);
     }
   }, [initialAttestationStartedAt]);
+
+  useEffect(() => {
+    if (!isAttestationMode && quizPhase && !practiceStartedAt) {
+      setPracticeStartedAt(new Date().toISOString());
+    }
+  }, [isAttestationMode, practiceStartedAt, quizPhase]);
 
   useEffect(() => {
     const timerStartedAt = isAttestationMode ? attestationStartedAt : practiceStartedAt;
