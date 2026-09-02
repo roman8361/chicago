@@ -2120,6 +2120,27 @@ input[type="number"] {
   color: #ffe87a;
 }
 
+/* Report typography: enlarge only the completed-spin report content. */
+.spin-report-drawn .quiz-series-title {
+  font-size: 18.75px;
+}
+
+.spin-report-results .quiz-report-name {
+  font-size: 16.25px;
+}
+
+.spin-report-results .quiz-report-verdict {
+  font-size: 17.5px;
+}
+
+.spin-report-results .quiz-report-detail {
+  font-size: 16.25px;
+}
+
+.spin-report-results .quiz-report-calc {
+  font-size: 15px;
+}
+
 /* ── Breakdown table ───────────────────────────────────────────── */
 
 .game-breakdown {
