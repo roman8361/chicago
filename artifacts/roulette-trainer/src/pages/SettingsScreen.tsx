@@ -457,7 +457,7 @@ export default function SettingsScreen({
                 style={{ marginBottom: 0, cursor: "pointer" }}
                 onClick={() => setShowBetBeforeChange(v => !v)}
               >
-                Показывать ставку без сдачи (комплиты, серии, соседи)
+                Показывать ставку без сдачи (комплиты, серии)
               </span>
             </label>
           </div>
