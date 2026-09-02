@@ -7,6 +7,7 @@ import { GameSettings } from "@/types/gameSettings";
 import type { RouletteExercise, RouletteReportSnapshot, TrainingAnswer, TrainingProgress } from "@/types/attestation";
 import { BET_POSITIONS_MAP, ALL_BET_POSITIONS } from "@/data/betPositions";
 import { spinGame, calculatePayout, getNumberColor, generateColorChips, generateCashChips, type GameState, type TrackBet, type DozenCompleteBet, type NumberCompleteBet, type NeighboursBet } from "@/lib/rouletteGame";
+import { getCashChipVisual } from "@/lib/cashChipVisual";
 import { useRouletteRules } from "@/lib/rulesContext";
 const SERIES_QUIZ_ORDER: TrackBet["type"][] = [
   "SERIE_5_8", "ORPHELINS", "SERIE_0_2_3", "ZERO_SPIEL",
@@ -3791,12 +3792,13 @@ export default function RouletteTable({
             const len = amt.length;
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
+            const visual = getCashChipVisual(stack.denomination);
             return (
                 <g key={`cash-${stack.positionId}`} style={{ pointerEvents: "none" }}>
                 {/* Outer glow ring */}
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
                 {/* Main body */}
-                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill={visual.bodyFill} stroke="#B87333" strokeWidth="2.8" />
                 {/* Inner decorative ring */}
                 <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
                 {/* Dashed rim accent — distinct chip pattern */}
@@ -3804,8 +3806,8 @@ export default function RouletteTable({
                   strokeDasharray="3 3" opacity="0.5" />
                 {/* Amount text */}
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
-                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  fontSize={fs} fontWeight="800" fill={visual.textFill}
+                  stroke={visual.textStroke} strokeWidth="0.6" paintOrder="stroke"
                   letterSpacing="0.3">
                   {amt}
                 </text>
@@ -3841,16 +3843,17 @@ export default function RouletteTable({
             const len = amt.length;
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
+            const visual = getCashChipVisual(entry.amount);
             return (
               <g key={`wf-cash-${entry.positionId}`} style={{ pointerEvents: "none" }}>
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
-                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill={visual.bodyFill} stroke="#B87333" strokeWidth="2.8" />
                 <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
                 <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#D9D9D9" strokeWidth="1"
                   strokeDasharray="3 3" opacity="0.5" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
-                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  fontSize={fs} fontWeight="800" fill={visual.textFill}
+                  stroke={visual.textStroke} strokeWidth="0.6" paintOrder="stroke"
                   letterSpacing="0.3">
                   {amt}
                 </text>
@@ -3866,16 +3869,17 @@ export default function RouletteTable({
             const len = amt.length;
             const fs = len >= 6 ? "8" : len >= 5 ? "9.5" : len >= 4 ? "11" : len >= 3 ? "12.5" : "13.5";
             const r = 22;
+            const visual = getCashChipVisual(entry.amount);
             return (
               <g key={`wf-merged-${entry.positionId}`} style={{ pointerEvents: "none" }}>
                 <circle cx={pos.x} cy={pos.y} r={r + 3} fill="none" stroke="#B87333" strokeWidth="1.6" opacity="0.45" />
-                <circle cx={pos.x} cy={pos.y} r={r} fill="#111418" stroke="#B87333" strokeWidth="2.8" />
+                <circle cx={pos.x} cy={pos.y} r={r} fill={visual.bodyFill} stroke="#B87333" strokeWidth="2.8" />
                 <circle cx={pos.x} cy={pos.y} r={r - 5} fill="none" stroke="#D9D9D9" strokeWidth="0.8" opacity="0.6" />
                 <circle cx={pos.x} cy={pos.y} r={r - 2} fill="none" stroke="#D9D9D9" strokeWidth="1"
                   strokeDasharray="3 3" opacity="0.5" />
                 <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={fs} fontWeight="800" fill="#D9D9D9"
-                  stroke="rgba(0,0,0,0.75)" strokeWidth="0.6" paintOrder="stroke"
+                  fontSize={fs} fontWeight="800" fill={visual.textFill}
+                  stroke={visual.textStroke} strokeWidth="0.6" paintOrder="stroke"
                   letterSpacing="0.3">
                   {amt}
                 </text>
