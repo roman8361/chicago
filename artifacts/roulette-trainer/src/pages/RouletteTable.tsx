@@ -4204,18 +4204,26 @@ export default function RouletteTable({
             <div className="info-sidebar-row">
               <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800, fontSize: "1.1em" }}>Комплиты</span>
             </div>
-            {game.numberCompleteBets.map(ncb => (
-              <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
-                <span className="info-sidebar-value info-sidebar-complete-number" style={{ color: "#E0C060", fontWeight: 700 }}>№{ncb.number}</span>
-                <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
-                  {showReportField
-                    ? (initialRoundSnapshot?.numberCompleteBets.find(n => n.number === ncb.number)?.amount ?? ncb.amount)
-                    : (completesDisplayAmounts?.has(`Комплит №${ncb.number}`)
-                      ? completesDisplayAmounts.get(`Комплит №${ncb.number}`)
-                      : ncb.amount)}
-                </span>
-              </div>
-            ))}
+            {game.numberCompleteBets.map(ncb => {
+              const numberColor = getNumberColor(ncb.number);
+              const completeNumberColor = numberColor === "red"
+                ? "#ef4444"
+                : numberColor === "green"
+                  ? "#22c55e"
+                  : "#E0C060";
+              return (
+                <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
+                  <span className="info-sidebar-value info-sidebar-complete-number" style={{ color: completeNumberColor, fontWeight: 700 }}>№{ncb.number}</span>
+                  <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
+                    {showReportField
+                      ? (initialRoundSnapshot?.numberCompleteBets.find(n => n.number === ncb.number)?.amount ?? ncb.amount)
+                      : (completesDisplayAmounts?.has(`Комплит №${ncb.number}`)
+                        ? completesDisplayAmounts.get(`Комплит №${ncb.number}`)
+                        : ncb.amount)}
+                  </span>
+                </div>
+              );
+            })}
           </>
         )}
         {(game?.dozenCompleteBet || (game?.numberCompleteBets && game.numberCompleteBets.length > 0)) && (
