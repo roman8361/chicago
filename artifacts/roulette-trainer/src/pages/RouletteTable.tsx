@@ -4213,7 +4213,9 @@ export default function RouletteTable({
                   : "#E0C060";
               return (
                 <div key={`sidebar-ncb-${ncb.number}`} className="info-sidebar-row">
-                  <span className="info-sidebar-value info-sidebar-complete-number" style={{ color: completeNumberColor, fontWeight: 700 }}>№{ncb.number}</span>
+                  <span className="info-sidebar-value info-sidebar-complete-number" style={{ color: completeNumberColor, fontWeight: 700 }}>
+                    <span className="info-sidebar-complete-number-prefix">№</span>{ncb.number}
+                  </span>
                   <span className="info-sidebar-value" style={{ color: "#E0C060", fontWeight: 800 }}>
                     {showReportField
                       ? (initialRoundSnapshot?.numberCompleteBets.find(n => n.number === ncb.number)?.amount ?? ncb.amount)

@@ -1340,6 +1340,10 @@
   font-size: 1.28em;
 }
 
+.info-sidebar-complete-number-prefix {
+  color: #E0C060;
+}
+
 .roulette-image {
   width: 100%;
   height: auto;
