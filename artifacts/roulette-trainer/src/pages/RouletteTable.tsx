@@ -908,10 +908,19 @@ export default function RouletteTable({
   }, [initialAttestationStartedAt]);
 
   useEffect(() => {
-    if (!isAttestationMode && quizPhase && !practiceStartedAt) {
+    if (!isAttestationMode && quizPhase && quizPhase.kind !== "report" && !practiceStartedAt) {
       setPracticeStartedAt(new Date().toISOString());
     }
   }, [isAttestationMode, practiceStartedAt, quizPhase]);
+
+  // A completed practice spin must not keep its timer alive while the report
+  // is shown or carry its start time into the next spin.
+  useEffect(() => {
+    if (!isAttestationMode && quizPhase?.kind === "report" && practiceStartedAt) {
+      setPracticeStartedAt(null);
+      setNowMs(Date.now());
+    }
+  }, [isAttestationMode, practiceStartedAt, quizPhase?.kind]);
 
   useEffect(() => {
     const timerStartedAt = isAttestationMode ? attestationStartedAt : practiceStartedAt;
@@ -2219,6 +2228,11 @@ export default function RouletteTable({
   const handleSpin = useCallback(() => {
     if (isAttestationMode) return;
 
+    // Clear the previous spin's active timer before the new spin animation.
+    // The timer will start again when the first question appears.
+    setPracticeStartedAt(null);
+    setNowMs(Date.now());
+
     // Immediately exit report/quiz layout so the full-size field shows at once
     setQuizPhase(null);
     setGame(null);
@@ -3378,6 +3392,13 @@ export default function RouletteTable({
       },
     );
     setAttestationCompletionError(error);
+    if (!error) {
+      // The timing payload above is already persisted by the parent. Clear
+      // only the active timer state; the completed spin's result is retained.
+      attestationStartedRef.current = null;
+      setAttestationStartedAt(null);
+      setNowMs(Date.now());
+    }
   }
 
   // ── Export ──────────────────────────────────────────────────────────────────
