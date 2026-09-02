@@ -26,7 +26,7 @@ function NumericKeypad({ value, onChange }: { value: string; onChange: (value: s
 
   return (
     <div className="numeric-keypad" aria-label="Цифровая панель">
-      {["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].map(digit => (
+      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(digit => (
         <button
           key={digit}
           type="button"
