@@ -1336,6 +1336,10 @@
   margin-top: 2px;
 }
 
+.info-sidebar-complete-number {
+  font-size: 1.28em;
+}
+
 .roulette-image {
   width: 100%;
   height: auto;
