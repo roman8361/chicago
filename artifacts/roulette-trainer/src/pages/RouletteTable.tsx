@@ -3915,24 +3915,19 @@ export default function RouletteTable({
               return (
                 <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
                   <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                    fill="rgba(0, 212, 255, 0.42)"
-                    stroke="#00D4FF"
-                    strokeWidth="3" />
+                    fill="rgba(0, 212, 255, 0.42)" />
                 </g>
               );
             }
             return (
               <g key={`ncb-hl-${ncb.number}`} style={{ pointerEvents: "none" }}>
                 <polygon points={wz.pts}
-                  fill="rgba(0, 212, 255, 0.42)"
-                  stroke="#00D4FF"
-                  strokeWidth="3"
-                  strokeLinejoin="round" />
+                  fill="rgba(0, 212, 255, 0.42)" />
               </g>
             );
           })}
 
-          {/* Number complete — pass 2: cyan border for winning+complete, then "C" for all */}
+          {/* Number complete — pass 2: lightweight "C" watermark for all completes */}
           {fieldSource && fieldSource.numberCompleteBets.map(ncb => {
             const wz = gridZones.find(z => z.number === ncb.number);
             if (!wz) return null;
@@ -3950,25 +3945,22 @@ export default function RouletteTable({
               return (
                 <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
                   {isWinning ? (
-                    // Winning zero: full compact badge — yellow fill + cyan border + C
+                    // Winning zero: full compact badge — yellow fill + C
                     <>
-                      <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
-                        fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
                       <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                        fill="rgba(255,255,60,0.82)" stroke="#00D4FF" strokeWidth="5" opacity="0.95"
-                        style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.60))" }} />
+                        fill="rgba(255,255,60,0.82)" opacity="0.95" />
                     </>
                   ) : (
-                    // Non-winning zero: cyan border
+                    // Non-winning zero: preserve the complete fill
                     <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={rx}
-                      fill="none" stroke="#00D4FF" strokeWidth="3" />
+                      fill="rgba(0, 212, 255, 0.42)" />
                   )}
                   {/* "C" symbol */}
                   <text x={wz.cx} y={wz.cy}
                     textAnchor="middle" dominantBaseline="central"
-                    fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                    fontSize={Math.round(bh * 0.80)} fontWeight="500"
                     fill="#D8F4FF"
-                    stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                    stroke="rgba(0,200,255,0.45)" strokeWidth="1" paintOrder="stroke"
                     opacity={isWinning ? 0.92 : 0.72}
                     style={{ pointerEvents: "none" }}>
                     C
@@ -3983,21 +3975,12 @@ export default function RouletteTable({
             const cFontSize = Math.round(cellH * 0.85);
             return (
               <g key={`ncb-post-${ncb.number}`} style={{ pointerEvents: "none" }}>
-                {/* Cyan stroke border — only when this complete number is also the winning number */}
-                {isWinning && (
-                  <polygon points={wz.pts}
-                    fill="none"
-                    stroke="#00D4FF"
-                    strokeWidth="5"
-                    strokeLinejoin="round"
-                    opacity="0.95" />
-                )}
                 {/* "C" watermark */}
                 <text
                   x={wz.cx} y={wz.cy}
                   textAnchor="middle" dominantBaseline="central"
-                  fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
-                  stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                  fontSize={cFontSize} fontWeight="500" fill="#D8F4FF"
+                  stroke="rgba(0,200,255,0.45)" strokeWidth="1" paintOrder="stroke"
                   opacity="0.72"
                   style={{ pointerEvents: "none" }}>
                   C
@@ -4013,20 +3996,15 @@ export default function RouletteTable({
             const rx = 7;
             return (
               <g style={{ pointerEvents: "none" }}>
-                {/* Outer glow */}
-                <rect x={x - bw / 2 - 3} y={y - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={rx + 2}
-                  fill="none" stroke="rgba(0,212,255,0.45)" strokeWidth="3" />
                 {/* Badge body */}
                 <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={rx}
                   fill="rgba(0, 212, 255, 0.55)"
-                  stroke="rgba(160, 240, 255, 0.95)"
-                  strokeWidth="2"
-                  style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.80))" }} />
+                  stroke="none" />
                 {/* "C" letter */}
                 <text x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                  fontSize={Math.round(bh * 0.80)} fontWeight="500"
                   fill="#E8F8FF"
-                  stroke="rgba(0,180,230,0.70)" strokeWidth="2.5" paintOrder="stroke"
+                  stroke="rgba(0,180,230,0.45)" strokeWidth="1" paintOrder="stroke"
                   opacity="0.92"
                   style={{ pointerEvents: "none" }}>
                   C
@@ -4108,21 +4086,17 @@ export default function RouletteTable({
                     const { bw, bh, brx } = getZeroDims();
                     return (
                       <g style={{ pointerEvents: "none" }}>
-                        {/* Zero winning+complete: yellow fill + cyan border (pass-1 highlight) */}
+                        {/* Zero winning+complete: preserve the complete fill */}
                         <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={brx}
-                          fill="rgba(0, 212, 255, 0.42)"
-                          stroke="#00D4FF"
-                          strokeWidth="3" />
-                        {/* Pass-2 badge: yellow fill + cyan border + C */}
-                        <rect x={wz.cx - bw / 2 - 3} y={wz.cy - bh / 2 - 3} width={bw + 6} height={bh + 6} rx={brx + 2}
-                          fill="none" stroke="rgba(255,229,0,0.45)" strokeWidth="3" />
+                          fill="rgba(0, 212, 255, 0.42)" />
+                        {/* Pass-2 badge: yellow fill + C */}
                         <rect x={wz.cx - bw / 2} y={wz.cy - bh / 2} width={bw} height={bh} rx={brx}
-                          fill="rgba(255,255,60,0.82)" stroke="#00D4FF" strokeWidth="5" opacity="0.95" />
+                          fill="rgba(255,255,60,0.82)" opacity="0.95" />
                         <text x={wz.cx} y={wz.cy}
                           textAnchor="middle" dominantBaseline="central"
-                          fontSize={Math.round(bh * 0.80)} fontWeight="900"
+                          fontSize={Math.round(bh * 0.80)} fontWeight="500"
                           fill="#D8F4FF"
-                          stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                          stroke="rgba(0,200,255,0.45)" strokeWidth="1" paintOrder="stroke"
                           opacity="0.92"
                           style={{ pointerEvents: "none" }}>
                           C
@@ -4131,29 +4105,20 @@ export default function RouletteTable({
                     );
                   }
 
-                  // Numbers 1–36: yellow cell already drawn above; add cyan border + C watermark (pass-2)
+                  // Numbers 1–36: yellow cell already drawn above; add complete fill + C watermark
                   const ysInPts = wz.pts.split(/\s+/).map(p => Number(p.split(",")[1])).filter(n => !isNaN(n));
                   const cellH = ysInPts.length >= 2 ? Math.max(...ysInPts) - Math.min(...ysInPts) : 60;
                   const cFontSize = Math.round(cellH * 0.85);
                   return (
                     <g style={{ pointerEvents: "none" }}>
-                      {/* Cyan fill highlight (pass-1 equivalent — not skipped here because yellow is already painted) */}
+                      {/* Complete fill (pass-1 equivalent — not skipped here because yellow is already painted) */}
                       <polygon points={wz.pts}
-                        fill="rgba(0, 212, 255, 0.42)"
-                        stroke="#00D4FF"
-                        strokeWidth="3"
-                        strokeLinejoin="round" />
-                      {/* Cyan border + C watermark (pass-2) */}
-                      <polygon points={wz.pts}
-                        fill="none"
-                        stroke="#00D4FF"
-                        strokeWidth="5"
-                        strokeLinejoin="round"
-                        opacity="0.95" />
+                        fill="rgba(0, 212, 255, 0.42)" />
+                      {/* C watermark (pass-2) */}
                       <text x={wz.cx} y={wz.cy}
                         textAnchor="middle" dominantBaseline="central"
-                        fontSize={cFontSize} fontWeight="900" fill="#D8F4FF"
-                        stroke="rgba(0,200,255,0.65)" strokeWidth="3" paintOrder="stroke"
+                        fontSize={cFontSize} fontWeight="500" fill="#D8F4FF"
+                        stroke="rgba(0,200,255,0.45)" strokeWidth="1" paintOrder="stroke"
                         opacity="0.72"
                         style={{ pointerEvents: "none" }}>
                         C
