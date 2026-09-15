@@ -1369,7 +1369,7 @@
 .cards-hand {
   position: absolute;
   z-index: 2;
-  top: 60%;
+  top: 70%;
   left: 50%;
   --cards-gap: clamp(4px, 0.8vw, 10px);
   display: flex;
