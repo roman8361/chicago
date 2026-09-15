@@ -1,5 +1,23 @@
 import { Link } from "wouter";
 
+const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
+
+function CardsHand({ cardCodes }: { cardCodes: readonly string[] }) {
+  return (
+    <div className="cards-hand" aria-label="Демонстрационный ряд карт">
+      {cardCodes.map((code) => (
+        <img
+          key={code}
+          className="cards-hand-card"
+          src={`/assets/cards/${code}.png`}
+          alt={`Карта ${code}`}
+          draggable={false}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function CardsPage() {
   return (
     <main className="roulette-page cards-page">
@@ -23,6 +41,7 @@ export default function CardsPage() {
             className="cards-table-image"
             draggable={false}
           />
+          <CardsHand cardCodes={DEMO_CARD_CODES} />
         </div>
 
         <aside className="table-info-sidebar cards-help-sidebar" aria-labelledby="cards-help-title">
