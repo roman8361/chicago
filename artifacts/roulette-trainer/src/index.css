@@ -1371,10 +1371,11 @@
   z-index: 2;
   top: 60%;
   left: 50%;
+  --cards-gap: clamp(4px, 0.8vw, 10px);
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
-  gap: clamp(4px, 0.8vw, 10px);
+  gap: var(--cards-gap);
   width: min(78%, 760px);
   transform: translate(-50%, -50%);
 }
@@ -1386,6 +1387,10 @@
   height: auto;
   object-fit: contain;
   user-select: none;
+}
+
+.cards-hand-card:last-child {
+  margin-left: clamp(16px, 3.2vw, 40px);
 }
 
 .cards-table-wrapper::after {
