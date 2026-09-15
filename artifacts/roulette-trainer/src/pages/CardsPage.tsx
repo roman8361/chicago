@@ -2,9 +2,16 @@ import { useState } from "react";
 import { Link } from "wouter";
 import CardsSettingsScreen from "@/pages/CardsSettingsScreen";
 import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSettingsStorage";
-import type { CardTableSettings } from "@/types/cardTableSettings";
+import type { CardTableSettings, PokerGameId } from "@/types/cardTableSettings";
 
 const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
+
+function getConfiguredPokerGame(settings: CardTableSettings): PokerGameId | null {
+  const configuredGames: Array<[PokerGameId, { enabled: boolean }]> = [
+    ["russianPoker", settings.pokerGames.russianPoker],
+  ];
+  return configuredGames.find(([, game]) => game.enabled)?.[0] ?? null;
+}
 
 function CardsHand({ cardCodes }: { cardCodes: readonly string[] }) {
   return (
@@ -25,11 +32,21 @@ function CardsHand({ cardCodes }: { cardCodes: readonly string[] }) {
 export default function CardsPage() {
   const [settings, setSettings] = useState<CardTableSettings>(loadCardTableSettings);
   const [screen, setScreen] = useState<"table" | "settings">("table");
+  const [roundStarted, setRoundStarted] = useState(false);
+  const [startedPokerGame, setStartedPokerGame] = useState<PokerGameId | null>(null);
 
   function handleSettingsSave(nextSettings: CardTableSettings) {
     saveCardTableSettings(nextSettings);
     setSettings(nextSettings);
+    setRoundStarted(false);
+    setStartedPokerGame(null);
     setScreen("table");
+  }
+
+  function handleStart() {
+    const configuredPokerGame = getConfiguredPokerGame(settings);
+    setStartedPokerGame(configuredPokerGame);
+    setRoundStarted(configuredPokerGame !== null);
   }
 
   if (screen === "settings") {
@@ -45,7 +62,7 @@ export default function CardsPage() {
   return (
     <main className="roulette-page cards-page">
       <div className="controls-bar" aria-label="Управление карточным столом">
-        <button className="grid-toggle-btn spin-btn" type="button" disabled>
+        <button className="grid-toggle-btn spin-btn" type="button" onClick={handleStart}>
           ▶ Старт
         </button>
         <Link className="grid-toggle-btn" href="/">
@@ -68,7 +85,7 @@ export default function CardsPage() {
             className="cards-table-image"
             draggable={false}
           />
-          {settings.pokerGames.russianPoker.enabled && (
+          {roundStarted && startedPokerGame === "russianPoker" && (
             <CardsHand cardCodes={DEMO_CARD_CODES} />
           )}
         </div>
