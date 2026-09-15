@@ -1364,6 +1364,15 @@
   user-select: none;
 }
 
+.cards-table-wrapper::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: rgba(3, 39, 16, 0.18);
+  mix-blend-mode: multiply;
+}
+
 .cards-help-empty {
   flex: 1;
   min-height: 220px;
