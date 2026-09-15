@@ -43,7 +43,7 @@
 
 .home-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 30px;
 }
@@ -90,6 +90,12 @@
 .home-action-card--secondary:focus-visible {
   border-color: #a9e3b2;
   background: rgba(61, 128, 75, 0.2);
+}
+
+@media (max-width: 720px) {
+  .home-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .account-eyebrow {

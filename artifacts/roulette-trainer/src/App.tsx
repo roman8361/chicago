@@ -5,6 +5,7 @@ import { RulesProvider } from "@/lib/rulesContext";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import PracticeRoulettePage from "@/pages/PracticeRoulettePage";
+import CardsPage from "@/pages/CardsPage";
 import LoginPage from "@/pages/LoginPage";
 import ManagerPage from "@/pages/manager/ManagerPage";
 import DealersPage from "@/pages/manager/DealersPage";
@@ -33,6 +34,7 @@ function AppContent() {
     <TrainingWizardProvider>
       <Switch>
       <Route path="/roulette" component={PracticeRoulettePage} />
+      <Route path="/cards" component={CardsPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/manager/training/new/game" component={SelectGamePage} />
       <Route path="/manager/training/new/settings" component={GameSettingsPlaceholderPage} />

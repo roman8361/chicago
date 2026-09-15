@@ -18,6 +18,10 @@ export default function HomePage() {
               Открыть тренировочный стол Roulette, настроить ставки и запустить тренировочный Spin.
             </span>
           </Link>
+          <Link className="home-action-card home-action-card--secondary" href="/cards">
+            <strong>Карточный стол</strong>
+            <span>Раздел находится в разработке.</span>
+          </Link>
           <Link className="home-action-card home-action-card--secondary" href="/login">
             <strong>Войти в систему</strong>
             <span>Вход в личный кабинет руководителя или дилера.</span>
