@@ -747,7 +747,17 @@ function loadGrid(): GridParams {
 function loadTrack(): TrackParams {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_TRACK);
-    if (raw) return { ...DEFAULT_TRACK_PARAMS, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<TrackParams>;
+      const track = { ...DEFAULT_TRACK_PARAMS, ...saved };
+      // Migrate the previous default row position without overwriting any
+      // other track adjustments the user may have saved.
+      if (saved.topY1 === 689 && saved.topY2 === 749) {
+        track.topY1 = DEFAULT_TRACK_PARAMS.topY1;
+        track.topY2 = DEFAULT_TRACK_PARAMS.topY2;
+      }
+      return track;
+    }
   } catch { /* ignore */ }
   return DEFAULT_TRACK_PARAMS;
 }
@@ -5067,8 +5077,8 @@ export default function RouletteTable({
               {/* Vertical bounds */}
               <div className="editor-section">
                 <div className="editor-section-title">Общие границы трека</div>
-                <SliderRow label="Верхний ряд — верх (topY1)" value={trackParams.topY1} min={500} max={700} onChange={v => setTP("topY1", v)} />
-                <SliderRow label="Верхний ряд — низ (topY2)"  value={trackParams.topY2} min={550} max={800} onChange={v => setTP("topY2", v)} />
+                <SliderRow label="Верхний ряд — верх (topY1)" value={trackParams.topY1} min={500} max={760} onChange={v => setTP("topY1", v)} />
+                <SliderRow label="Верхний ряд — низ (topY2)"  value={trackParams.topY2} min={550} max={840} onChange={v => setTP("topY2", v)} />
                 <SliderRow label="Нижний ряд — верх (botY1)"  value={trackParams.botY1} min={700} max={1000} onChange={v => setTP("botY1", v)} />
                 <SliderRow label="Нижний ряд — низ (botY2)"   value={trackParams.botY2} min={900} max={1063} onChange={v => setTP("botY2", v)} />
               </div>

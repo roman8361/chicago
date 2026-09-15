@@ -131,8 +131,9 @@ export interface TrackParams {
 }
 
 export const DEFAULT_TRACK_PARAMS: TrackParams = {
-  topY1:  689,
-  topY2:  749,
+  // The upper row sits below the ante boundary in the source table artwork.
+  topY1:  713,
+  topY2:  773,
   botY1:  860,
   botY2:  923,
 
