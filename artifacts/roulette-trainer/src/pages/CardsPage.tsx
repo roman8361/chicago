@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "wouter";
 import CardsSettingsScreen from "@/pages/CardsSettingsScreen";
 import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSettingsStorage";
@@ -72,9 +72,18 @@ export default function CardsPage() {
     };
   });
   const [screen, setScreen] = useState<"table" | "settings">("table");
+  const shuffleVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (runtime.roundState !== "FLIPPING") return;
+
+    const shuffleVideo = shuffleVideoRef.current;
+    if (shuffleVideo) {
+      shuffleVideo.currentTime = 0;
+      void shuffleVideo.play().catch(() => {
+        // The flip is still usable if a browser blocks media playback.
+      });
+    }
 
     const flipTimer = window.setTimeout(() => {
       setRuntime((current) => (
@@ -84,7 +93,13 @@ export default function CardsPage() {
       ));
     }, FLIP_DURATION_MS + FLIP_STAGGER_MS * (DEMO_CARD_CODES.length - 1));
 
-    return () => window.clearTimeout(flipTimer);
+    return () => {
+      window.clearTimeout(flipTimer);
+      if (shuffleVideo) {
+        shuffleVideo.pause();
+        shuffleVideo.currentTime = 0;
+      }
+    };
   }, [runtime.roundState]);
 
   function handleSettingsSave(nextSettings: CardTableSettings) {
@@ -128,6 +143,14 @@ export default function CardsPage() {
 
   return (
     <main className="roulette-page cards-page">
+      <video
+        ref={shuffleVideoRef}
+        className="cards-shuffle-video"
+        src="/assets/card-shuffle.mp4"
+        preload="auto"
+        playsInline
+        aria-hidden="true"
+      />
       <div className="controls-bar" aria-label="Управление карточным столом">
         <button className="grid-toggle-btn spin-btn" type="button" onClick={handleStart}>
           ▶ Старт
