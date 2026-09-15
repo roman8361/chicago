@@ -1,4 +1,8 @@
+import { useState } from "react";
 import { Link } from "wouter";
+import CardsSettingsScreen from "@/pages/CardsSettingsScreen";
+import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSettingsStorage";
+import type { CardTableSettings } from "@/types/cardTableSettings";
 
 const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
 
@@ -19,6 +23,25 @@ function CardsHand({ cardCodes }: { cardCodes: readonly string[] }) {
 }
 
 export default function CardsPage() {
+  const [settings, setSettings] = useState<CardTableSettings>(loadCardTableSettings);
+  const [screen, setScreen] = useState<"table" | "settings">("table");
+
+  function handleSettingsSave(nextSettings: CardTableSettings) {
+    saveCardTableSettings(nextSettings);
+    setSettings(nextSettings);
+    setScreen("table");
+  }
+
+  if (screen === "settings") {
+    return (
+      <CardsSettingsScreen
+        initialSettings={settings}
+        onSave={handleSettingsSave}
+        onBack={() => setScreen("table")}
+      />
+    );
+  }
+
   return (
     <main className="roulette-page cards-page">
       <div className="controls-bar" aria-label="Управление карточным столом">
@@ -28,7 +51,11 @@ export default function CardsPage() {
         <Link className="grid-toggle-btn" href="/">
           ← На главную
         </Link>
-        <button className="grid-toggle-btn settings-open-btn" type="button" disabled>
+        <button
+          className="grid-toggle-btn settings-open-btn"
+          type="button"
+          onClick={() => setScreen("settings")}
+        >
           ⚙ Настройки
         </button>
       </div>
@@ -41,7 +68,9 @@ export default function CardsPage() {
             className="cards-table-image"
             draggable={false}
           />
-          <CardsHand cardCodes={DEMO_CARD_CODES} />
+          {settings.pokerGames.russianPoker.enabled && (
+            <CardsHand cardCodes={DEMO_CARD_CODES} />
+          )}
         </div>
 
         <aside className="table-info-sidebar cards-help-sidebar" aria-labelledby="cards-help-title">

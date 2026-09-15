@@ -1411,6 +1411,33 @@
   background: rgba(200, 168, 75, 0.025);
 }
 
+.cards-poker-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #f0d080;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.cards-poker-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #c8a84b;
+  cursor: pointer;
+}
+
+.cards-settings-description {
+  margin: 10px 0 0;
+  color: #a08840;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.cards-settings-footer {
+  gap: 12px;
+}
+
 .cards-page .grid-toggle-btn:disabled {
   opacity: 0.55;
 }
