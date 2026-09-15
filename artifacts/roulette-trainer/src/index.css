@@ -1357,6 +1357,25 @@
   user-select: none;
 }
 
+.cards-table-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+}
+
+.cards-help-empty {
+  flex: 1;
+  min-height: 220px;
+  border: 1px dashed rgba(200, 168, 75, 0.38);
+  border-radius: 5px;
+  background: rgba(200, 168, 75, 0.025);
+}
+
+.cards-page .grid-toggle-btn:disabled {
+  opacity: 0.55;
+}
+
 .roulette-overlay {
   position: absolute;
   top: 0;
@@ -1485,6 +1504,18 @@
 @media (max-width: 700px) {
   .editor-grid  { grid-template-columns: 1fr; }
   .editor-grid-4 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .cards-table-row {
+    flex-direction: column;
+  }
+
+  .cards-help-sidebar {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 150px;
+  }
 }
 
 .editor-section-title {
