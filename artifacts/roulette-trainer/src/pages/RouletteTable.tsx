@@ -750,9 +750,9 @@ function loadTrack(): TrackParams {
     if (raw) {
       const saved = JSON.parse(raw) as Partial<TrackParams>;
       const track = { ...DEFAULT_TRACK_PARAMS, ...saved };
-      // Migrate the previous default row position without overwriting any
-      // other track adjustments the user may have saved.
-      if (saved.topY1 === 689 && saved.topY2 === 749) {
+      // Migrate the accidentally lowered row without overwriting any other
+      // track adjustments the user may have saved.
+      if (saved.topY1 === 713 && saved.topY2 === 773) {
         track.topY1 = DEFAULT_TRACK_PARAMS.topY1;
         track.topY2 = DEFAULT_TRACK_PARAMS.topY2;
       }
