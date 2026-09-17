@@ -175,6 +175,11 @@ export default function CardsPage() {
             className="cards-table-image"
             draggable={false}
           />
+          {(runtime.roundState === "FLIPPING" || runtime.roundState === "OPEN") && (
+            <div className="cards-ante-chip" role="img" aria-label="Фишка 5000">
+              <span>5000</span>
+            </div>
+          )}
           {runtime.activePokerGame === "russianPoker" && runtime.roundState !== "HIDDEN" && (
             <CardsHand
               cardCodes={DEMO_CARD_CODES}

@@ -1374,6 +1374,46 @@
   pointer-events: none;
 }
 
+.cards-ante-chip {
+  position: absolute;
+  z-index: 3;
+  top: 44%;
+  left: 50%;
+  width: clamp(44px, 5.2vw, 76px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  border: clamp(3px, 0.35vw, 5px) solid #222;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #4f4f4f 0%, #222 34%, #070707 72%, #000 100%);
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 2px #777,
+    inset 0 0 0 5px #111;
+  color: #fff;
+  font-family: "Courier New", monospace;
+  font-size: clamp(10px, 1.15vw, 17px);
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+  animation: cards-ante-chip-appear 260ms ease-out both;
+}
+
+@keyframes cards-ante-chip-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 .cards-hand {
   position: absolute;
   z-index: 2;
