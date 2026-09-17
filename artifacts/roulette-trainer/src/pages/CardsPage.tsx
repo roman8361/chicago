@@ -170,7 +170,7 @@ export default function CardsPage() {
       <div className="table-row cards-table-row">
         <div className="roulette-wrapper cards-table-wrapper">
           <img
-            src="/card-table.png"
+            src="/card-table-felt-stars.png"
             alt="Карточный стол"
             className="cards-table-image"
             draggable={false}
