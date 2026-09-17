@@ -1403,6 +1403,44 @@
   animation: cards-ante-chip-appear 260ms ease-out both;
 }
 
+.cards-star-chips {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cards-star-chip {
+  width: clamp(26px, 3vw, 44px);
+  font-size: clamp(7px, 0.78vw, 11px);
+  letter-spacing: -0.12em;
+}
+
+.cards-star-chip:nth-child(1) {
+  top: 35%;
+  left: 26.9%;
+}
+
+.cards-star-chip:nth-child(2) {
+  top: 25%;
+  left: 36.6%;
+}
+
+.cards-star-chip:nth-child(3) {
+  top: 17.5%;
+  left: 50%;
+}
+
+.cards-star-chip:nth-child(4) {
+  top: 25%;
+  left: 63.4%;
+}
+
+.cards-star-chip:nth-child(5) {
+  top: 35%;
+  left: 73.1%;
+}
+
 @keyframes cards-ante-chip-appear {
   from {
     opacity: 0;

@@ -5,6 +5,7 @@ import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSe
 import type { CardTableSettings, PokerGameId } from "@/types/cardTableSettings";
 
 const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
+const STAR_CHIP_VALUES = [100, 200, 300, 400, 500];
 const FLIP_DURATION_MS = 650;
 const FLIP_STAGGER_MS = 70;
 
@@ -176,9 +177,23 @@ export default function CardsPage() {
             draggable={false}
           />
           {(runtime.roundState === "FLIPPING" || runtime.roundState === "OPEN") && (
-            <div className="cards-ante-chip" role="img" aria-label="Фишка 5000">
-              <span>5000</span>
-            </div>
+            <>
+              <div className="cards-ante-chip" role="img" aria-label="Фишка 5000">
+                <span>5000</span>
+              </div>
+              <div className="cards-star-chips" aria-label="Фишки внутри звёзд">
+                {STAR_CHIP_VALUES.map((value) => (
+                  <div
+                    key={value}
+                    className="cards-ante-chip cards-star-chip"
+                    role="img"
+                    aria-label={`Фишка ${value}`}
+                  >
+                    <span>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           {runtime.activePokerGame === "russianPoker" && runtime.roundState !== "HIDDEN" && (
             <CardsHand
