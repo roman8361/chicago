@@ -5,7 +5,7 @@ import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSe
 import type { CardTableSettings, PokerGameId } from "@/types/cardTableSettings";
 
 const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
-const FLIP_DURATION_MS = 420;
+const FLIP_DURATION_MS = 650;
 const FLIP_STAGGER_MS = 70;
 
 type CardsRoundState = "HIDDEN" | "CLOSED" | "FLIPPING" | "OPEN";

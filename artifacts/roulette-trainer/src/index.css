@@ -1416,7 +1416,7 @@
 }
 
 .cards-hand-card-flip--flipping {
-  animation: cards-hand-flip 420ms ease-in-out var(--cards-flip-delay) both;
+  animation: cards-hand-flip 650ms ease-in-out var(--cards-flip-delay) both;
 }
 
 .cards-hand-card-face {
