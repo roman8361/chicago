@@ -1429,6 +1429,9 @@
 .cards-star-chip:nth-child(3) {
   top: 17.5%;
   left: 50%;
+  width: clamp(44px, 5.2vw, 76px);
+  font-size: clamp(10px, 1.15vw, 17px);
+  letter-spacing: -0.08em;
 }
 
 .cards-star-chip:nth-child(4) {
