@@ -1357,6 +1357,16 @@
   user-select: none;
 }
 
+.roulette-brand-logo {
+  position: absolute;
+  top: 1.5%;
+  left: 1.1%;
+  width: min(7.2%, 200px);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
 .cards-table-image {
   width: 100%;
   height: auto;

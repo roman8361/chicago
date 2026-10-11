@@ -3614,6 +3614,13 @@ export default function RouletteTable({
           </div>
         )}
         <img src={ruletImage} alt="Roulette table" className="roulette-image" draggable={false} />
+        <img
+          src="/assets/casino-skills-logo.png"
+          alt=""
+          aria-hidden="true"
+          className="roulette-brand-logo"
+          draggable={false}
+        />
         <svg className="roulette-overlay"
           viewBox={`0 0 ${BASE_WIDTH} ${BASE_HEIGHT}`}
           preserveAspectRatio="none"
