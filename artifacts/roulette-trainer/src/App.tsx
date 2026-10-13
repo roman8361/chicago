@@ -34,7 +34,7 @@ function AppContent() {
     <TrainingWizardProvider>
       <Switch>
       <Route path="/roulette" component={PracticeRoulettePage} />
-      <Route path="/cards" component={CardsPage} />
+      <Route path="/cards/*?" component={CardsPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/manager/training/new/game" component={SelectGamePage} />
       <Route path="/manager/training/new/settings" component={GameSettingsPlaceholderPage} />

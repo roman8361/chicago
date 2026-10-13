@@ -1,13 +1,20 @@
 import { useState } from "react";
 import type { CardTableSettings } from "@/types/cardTableSettings";
+import type { CombinationGameId } from "@/poker/combinationCatalog";
 
 interface Props {
   initialSettings: CardTableSettings;
   onSave: (settings: CardTableSettings) => void;
   onBack: () => void;
+  onViewCombinations: (gameId: CombinationGameId) => void;
 }
 
-export default function CardsSettingsScreen({ initialSettings, onSave, onBack }: Props) {
+export default function CardsSettingsScreen({
+  initialSettings,
+  onSave,
+  onBack,
+  onViewCombinations,
+}: Props) {
   const [russianPokerEnabled, setRussianPokerEnabled] = useState(
     initialSettings.pokerGames.russianPoker.enabled,
   );
@@ -47,6 +54,19 @@ export default function CardsSettingsScreen({ initialSettings, onSave, onBack }:
         <p className="cards-settings-description">
           Показывать ряд из шести карт русского покера на карточном столе.
         </p>
+
+        <div className="cards-combinations-row">
+          <span data-testid="text-combinations-label">Комбинации</span>
+          <button
+            className="grid-toggle-btn cards-combinations-button"
+            type="button"
+            onClick={() => onViewCombinations("russian-poker")}
+            data-testid="button-view-russian-poker-combinations"
+            aria-label="Посмотреть комбинации русского покера"
+          >
+            Посмотреть
+          </button>
+        </div>
 
         <div className="settings-divider" />
         <div className="settings-footer cards-settings-footer">

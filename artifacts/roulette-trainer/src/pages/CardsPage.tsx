@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import CardsSettingsScreen from "@/pages/CardsSettingsScreen";
+import CombinationReferencePage from "@/pages/CombinationReferencePage";
 import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSettingsStorage";
 import type { CardTableSettings, PokerGameId } from "@/types/cardTableSettings";
+import NotFound from "@/pages/not-found";
 
 const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
 const STAR_CHIP_VALUES = [100, 200, 300, 400, 500];
@@ -63,6 +65,10 @@ function CardsHand({
 }
 
 export default function CardsPage() {
+  const [location, navigate] = useLocation();
+  const combinationRoute = location.match(/^\/cards\/combinations\/([^/]+)\/?$/);
+  const combinationGameId = combinationRoute?.[1] ?? null;
+  const isCardsRootRoute = location === "/cards" || location === "/cards/";
   const [runtime, setRuntime] = useState<CardsRuntimeState>(() => {
     const settings = loadCardTableSettings();
     const configuredPokerGame = getConfiguredPokerGame(settings);
@@ -72,7 +78,9 @@ export default function CardsPage() {
       activePokerGame: configuredPokerGame,
     };
   });
-  const [screen, setScreen] = useState<"table" | "settings">("table");
+  const [screen, setScreen] = useState<"table" | "settings">(
+    () => (combinationGameId ? "settings" : "table"),
+  );
   const shuffleVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -132,84 +140,99 @@ export default function CardsPage() {
     }));
   }
 
-  if (screen === "settings") {
-    return (
-      <CardsSettingsScreen
-        initialSettings={runtime.settings}
-        onSave={handleSettingsSave}
-        onBack={() => setScreen("table")}
-      />
-    );
-  }
+  if (!isCardsRootRoute && !combinationGameId) return <NotFound />;
 
   return (
-    <main className="roulette-page cards-page">
-      <video
-        ref={shuffleVideoRef}
-        className="cards-shuffle-video"
-        src="/assets/card-shuffle.mp4"
-        preload="auto"
-        playsInline
-        aria-hidden="true"
-      />
-      <div className="controls-bar" aria-label="Управление карточным столом">
-        <button className="grid-toggle-btn spin-btn" type="button" onClick={handleStart}>
-          ▶ Старт
-        </button>
-        <Link className="grid-toggle-btn" href="/">
-          ← На главную
-        </Link>
-        <button
-          className="grid-toggle-btn settings-open-btn"
-          type="button"
-          onClick={() => setScreen("settings")}
+    <>
+      {(screen === "settings" || combinationGameId) && (
+        <div
+          hidden={Boolean(combinationGameId)}
+          aria-hidden={Boolean(combinationGameId)}
         >
-          ⚙ Настройки
-        </button>
-      </div>
-
-      <div className="table-row cards-table-row">
-        <div className="roulette-wrapper cards-table-wrapper">
-          <img
-            src="/card-table-felt-stars.png"
-            alt="Карточный стол"
-            className="cards-table-image"
-            draggable={false}
+          <CardsSettingsScreen
+            initialSettings={runtime.settings}
+            onSave={handleSettingsSave}
+            onBack={() => setScreen("table")}
+            onViewCombinations={(gameId) => navigate(`/cards/combinations/${gameId}`)}
           />
-          {(runtime.roundState === "FLIPPING" || runtime.roundState === "OPEN") && (
-            <>
-              <div className="cards-ante-chip" role="img" aria-label="Фишка 5000">
-                <span>5000</span>
-              </div>
-              <div className="cards-star-chips" aria-label="Фишки внутри звёзд">
-                {STAR_CHIP_VALUES.map((value) => (
-                  <div
-                    key={value}
-                    className="cards-ante-chip cards-star-chip"
-                    role="img"
-                    aria-label={`Фишка ${value}`}
-                  >
-                    <span>{value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          {runtime.activePokerGame === "russianPoker" && runtime.roundState !== "HIDDEN" && (
-            <CardsHand
-              cardCodes={DEMO_CARD_CODES}
-              roundState={runtime.roundState}
-            />
-          )}
         </div>
+      )}
 
-        <aside className="table-info-sidebar cards-help-sidebar" aria-labelledby="cards-help-title">
-          <div id="cards-help-title" className="info-sidebar-title">
-            Справка
+      {combinationGameId ? (
+        <CombinationReferencePage
+          gameId={combinationGameId}
+          onBack={() => navigate("/cards")}
+        />
+      ) : screen === "settings" ? null : (
+        <main className="roulette-page cards-page">
+          <video
+            ref={shuffleVideoRef}
+            className="cards-shuffle-video"
+            src="/assets/card-shuffle.mp4"
+            preload="auto"
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="controls-bar" aria-label="Управление карточным столом">
+            <button className="grid-toggle-btn spin-btn" type="button" onClick={handleStart}>
+              ▶ Старт
+            </button>
+            <Link className="grid-toggle-btn" href="/">
+              ← На главную
+            </Link>
+            <button
+              className="grid-toggle-btn settings-open-btn"
+              type="button"
+              onClick={() => setScreen("settings")}
+            >
+              ⚙ Настройки
+            </button>
           </div>
-          <div className="cards-help-empty" aria-hidden="true" />
-        </aside>
-      </div>
-    </main>
+
+          <div className="table-row cards-table-row">
+            <div className="roulette-wrapper cards-table-wrapper">
+              <img
+                src="/card-table-felt-stars.png"
+                alt="Карточный стол"
+                className="cards-table-image"
+                draggable={false}
+              />
+              {(runtime.roundState === "FLIPPING" || runtime.roundState === "OPEN") && (
+                <>
+                  <div className="cards-ante-chip" role="img" aria-label="Фишка 5000">
+                    <span>5000</span>
+                  </div>
+                  <div className="cards-star-chips" aria-label="Фишки внутри звёзд">
+                    {STAR_CHIP_VALUES.map((value) => (
+                      <div
+                        key={value}
+                        className="cards-ante-chip cards-star-chip"
+                        role="img"
+                        aria-label={`Фишка ${value}`}
+                      >
+                        <span>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {runtime.activePokerGame === "russianPoker" && runtime.roundState !== "HIDDEN" && (
+                <CardsHand
+                  cardCodes={DEMO_CARD_CODES}
+                  roundState={runtime.roundState}
+                />
+              )}
+            </div>
+
+            <aside className="table-info-sidebar cards-help-sidebar" aria-labelledby="cards-help-title">
+              <div id="cards-help-title" className="info-sidebar-title">
+                Справка
+              </div>
+              <div className="cards-help-empty" aria-hidden="true" />
+            </aside>
+          </div>
+        </main>
+      )}
+    </>
   );
 }
