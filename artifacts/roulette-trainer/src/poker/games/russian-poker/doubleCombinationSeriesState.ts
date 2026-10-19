@@ -1,4 +1,4 @@
-export type SeriesDisplayState = "HIDDEN" | "CLOSED" | "FLIPPING" | "OPEN";
+export type SeriesDisplayState = "HIDDEN" | "CLOSED" | "CLOSING" | "FLIPPING" | "OPEN";
 
 export function getNextSeriesRoundIndex({
   currentRoundIndex,

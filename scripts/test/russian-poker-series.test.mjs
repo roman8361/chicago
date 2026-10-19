@@ -226,6 +226,12 @@ test("13. проверки блокируют пустой выбор, повт�
     roundState: "OPEN",
     transitionLocked: true,
   }), null);
+  assert.equal(getNextSeriesRoundIndex({
+    currentRoundIndex: 0,
+    totalRounds: 2,
+    roundState: "CLOSING",
+    transitionLocked: true,
+  }), null);
   assert.equal(isSeriesComplete(1, 2, "OPEN"), true);
   assert.equal(isSeriesComplete(1, 2, "FLIPPING"), false);
   assert.equal(isSeriesComplete(0, 2, "OPEN"), false);

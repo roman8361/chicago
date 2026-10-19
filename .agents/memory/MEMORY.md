@@ -6,3 +6,4 @@
 - [Attestation persistence](attestation-persistence.md) — one localStorage template owns shared settings; assignments link selected dealers without duplicating config.
 - [Three-complete generation](three-complete-generation.md) — first two completes define the winning intersection; the third is selected after the draw and must be physically losing.
 - [Card row position](card-row-position.md) — the 7, 8, 9, 10, J, Q row is approved at 70% vertical placement below the ANTE area.
+- [Card flip continuity](card-flip-continuity.md) — advancing to the next deal should smoothly close the current hand before revealing the next, matching the Start animation.

@@ -1563,6 +1563,10 @@
   transform: rotateY(180deg);
 }
 
+.cards-hand-card-flip--closing {
+  animation: cards-hand-close 350ms ease-in-out both;
+}
+
 .cards-hand-card-flip--flipping {
   animation: cards-hand-flip 650ms ease-in-out var(--cards-flip-delay) both;
 }
@@ -1595,7 +1599,15 @@
   100% { transform: rotateY(180deg); }
 }
 
+@keyframes cards-hand-close {
+  0% { transform: rotateY(180deg); }
+  45% { transform: rotateY(90deg); }
+  55% { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cards-hand-card-flip--closing,
   .cards-hand-card-flip--flipping {
     animation-duration: 1ms;
     animation-delay: 0ms;

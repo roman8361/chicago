@@ -21,9 +21,10 @@ import {
 const STAR_CHIP_VALUES = [100, 200, 300, 400, 500];
 const FLIP_DURATION_MS = 650;
 const FLIP_STAGGER_MS = 70;
+const CLOSE_DURATION_MS = 350;
 const FLIP_COMPLETION_FALLBACK_MS = 500;
 
-type CardsRoundState = "HIDDEN" | "CLOSED" | "FLIPPING" | "OPEN";
+type CardsRoundState = "HIDDEN" | "CLOSED" | "CLOSING" | "FLIPPING" | "OPEN";
 
 interface CardsRuntimeState {
   settings: CardTableSettings;
@@ -52,7 +53,7 @@ function CardsHand({
   cardCodes: readonly (string | null)[];
   roundState: Exclude<CardsRoundState, "HIDDEN">;
   onNext: () => void;
-  onFlipAnimationEnd: (index: number) => void;
+  onFlipAnimationEnd: (index: number, animationName: string) => void;
   currentRoundNumber: number;
   totalRounds: number;
   seriesComplete: boolean;
@@ -68,7 +69,7 @@ function CardsHand({
             className={`cards-hand-card-flip cards-hand-card-flip--${roundState.toLowerCase()}`}
             style={{ "--cards-flip-delay": `${index * FLIP_STAGGER_MS}ms` } as CSSProperties}
             onAnimationEnd={(event) => {
-              if (event.animationName === "cards-hand-flip") onFlipAnimationEnd(index);
+              onFlipAnimationEnd(index, event.animationName);
             }}
           >
             <img
@@ -136,6 +137,7 @@ export default function CardsPage() {
   const shuffleVideoRef = useRef<HTMLVideoElement>(null);
   const nextFlipPendingRef = useRef(false);
   const transitionLockRef = useRef(false);
+  const pendingNextRoundIndexRef = useRef<number | null>(null);
   const completedFlipIndexesRef = useRef(new Set<number>());
   const [startError, setStartError] = useState<string | null>(null);
 
@@ -150,6 +152,15 @@ export default function CardsPage() {
         ));
       });
       return () => window.cancelAnimationFrame(frameId);
+    }
+
+    if (runtime.roundState === "CLOSING") {
+      completedFlipIndexesRef.current.clear();
+      const closeTimer = window.setTimeout(
+        finishCardClose,
+        CLOSE_DURATION_MS + FLIP_COMPLETION_FALLBACK_MS,
+      );
+      return () => window.clearTimeout(closeTimer);
     }
 
     if (runtime.roundState !== "FLIPPING") return;
@@ -181,6 +192,7 @@ export default function CardsPage() {
     saveCardTableSettings(nextSettings);
     const configuredPokerGame = getConfiguredPokerGame(nextSettings);
     transitionLockRef.current = false;
+    pendingNextRoundIndexRef.current = null;
     completedFlipIndexesRef.current.clear();
     nextFlipPendingRef.current = false;
     setStartError(null);
@@ -247,11 +259,11 @@ export default function CardsPage() {
     });
     if (nextRoundIndex === null) return;
     transitionLockRef.current = true;
-    nextFlipPendingRef.current = true;
+    pendingNextRoundIndexRef.current = nextRoundIndex;
+    completedFlipIndexesRef.current.clear();
     setRuntime((current) => ({
       ...current,
-      roundState: "CLOSED",
-      currentRoundIndex: nextRoundIndex,
+      roundState: "CLOSING",
     }));
   }
 
@@ -265,11 +277,31 @@ export default function CardsPage() {
     transitionLockRef.current = false;
   }
 
-  function handleCardFlipAnimationEnd(index: number) {
-    if (runtime.roundState !== "FLIPPING") return;
+  function finishCardClose() {
+    const nextRoundIndex = pendingNextRoundIndexRef.current;
+    if (nextRoundIndex === null) return;
+    pendingNextRoundIndexRef.current = null;
+    nextFlipPendingRef.current = true;
+    completedFlipIndexesRef.current.clear();
+    setRuntime((current) => (
+      current.roundState === "CLOSING"
+        ? { ...current, roundState: "CLOSED", currentRoundIndex: nextRoundIndex }
+        : current
+    ));
+  }
+
+  function handleCardFlipAnimationEnd(index: number, animationName: string) {
+    const isClosing = animationName === "cards-hand-close";
+    const isFlipping = animationName === "cards-hand-flip";
+    if (!isClosing && !isFlipping) return;
+    if (runtime.roundState !== (isClosing ? "CLOSING" : "FLIPPING")) return;
+
     const completedIndexes = completedFlipIndexesRef.current;
     completedIndexes.add(index);
-    if (completedIndexes.size === 6) finishCardFlip();
+    if (completedIndexes.size === 6) {
+      if (isClosing) finishCardClose();
+      else finishCardFlip();
+    }
   }
 
   const currentRound = runtime.seriesPlan[runtime.currentRoundIndex];
@@ -317,7 +349,7 @@ export default function CardsPage() {
               className="grid-toggle-btn spin-btn"
               type="button"
               onClick={handleStart}
-              disabled={runtime.roundState === "FLIPPING"}
+              disabled={runtime.roundState === "FLIPPING" || runtime.roundState === "CLOSING"}
             >
               ▶ Старт
             </button>
