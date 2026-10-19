@@ -1777,18 +1777,6 @@
   .editor-grid-4 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 900px) {
-  .cards-table-row {
-    flex-direction: column;
-  }
-
-  .cards-help-sidebar {
-    width: 100%;
-    box-sizing: border-box;
-    min-height: 150px;
-  }
-}
-
 .editor-section-title {
   font-size: 12px;
   font-weight: 700;
