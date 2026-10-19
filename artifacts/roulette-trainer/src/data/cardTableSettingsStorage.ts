@@ -9,14 +9,32 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function loadCardTableSettings(): CardTableSettings {
+export function loadCardTableSettings(defaultGroupIds: readonly string[] = []): CardTableSettings {
   try {
     const raw = window.localStorage.getItem(CARD_TABLE_SETTINGS_STORAGE_KEY);
-    if (!raw) return DEFAULT_CARD_TABLE_SETTINGS;
+    if (!raw) {
+      return {
+        ...DEFAULT_CARD_TABLE_SETTINGS,
+        pokerGames: {
+          russianPoker: {
+            ...DEFAULT_CARD_TABLE_SETTINGS.pokerGames.russianPoker,
+            selectedGroupIds: [...defaultGroupIds],
+          },
+        },
+      };
+    }
 
     const parsed: unknown = JSON.parse(raw);
     if (!isObject(parsed) || !isObject(parsed.pokerGames)) {
-      return DEFAULT_CARD_TABLE_SETTINGS;
+      return {
+        ...DEFAULT_CARD_TABLE_SETTINGS,
+        pokerGames: {
+          russianPoker: {
+            ...DEFAULT_CARD_TABLE_SETTINGS.pokerGames.russianPoker,
+            selectedGroupIds: [...defaultGroupIds],
+          },
+        },
+      };
     }
 
     const russianPoker = isObject(parsed.pokerGames.russianPoker)
@@ -30,11 +48,25 @@ export function loadCardTableSettings(): CardTableSettings {
         russianPoker: {
           ...DEFAULT_CARD_TABLE_SETTINGS.pokerGames.russianPoker,
           enabled: russianPoker.enabled === true,
+          dealCount: typeof russianPoker.dealCount === "number"
+            ? russianPoker.dealCount
+            : DEFAULT_CARD_TABLE_SETTINGS.pokerGames.russianPoker.dealCount,
+          selectedGroupIds: Array.isArray(russianPoker.selectedGroupIds)
+            ? [...new Set(russianPoker.selectedGroupIds.filter((value): value is string => typeof value === "string"))]
+            : [...defaultGroupIds],
         },
       },
     };
   } catch {
-    return DEFAULT_CARD_TABLE_SETTINGS;
+    return {
+      ...DEFAULT_CARD_TABLE_SETTINGS,
+      pokerGames: {
+        russianPoker: {
+          ...DEFAULT_CARD_TABLE_SETTINGS.pokerGames.russianPoker,
+          selectedGroupIds: [...defaultGroupIds],
+        },
+      },
+    };
   }
 }
 

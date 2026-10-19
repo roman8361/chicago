@@ -1480,11 +1480,9 @@
 }
 
 .cards-hand-next-button {
-  position: absolute;
+  position: static;
   z-index: 3;
-  top: calc(100% + 9px);
-  left: 50%;
-  transform: translateX(-50%);
+  transform: none;
   line-height: 1.2;
   white-space: nowrap;
   border-color: #c8a84b;
@@ -1503,6 +1501,46 @@
 .cards-hand-next-button:focus-visible {
   outline: 2px solid #ffe87a;
   outline-offset: 3px;
+}
+
+.cards-round-controls {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 9px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.cards-round-counter {
+  color: #f0d080;
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #000;
+}
+
+.cards-series-complete {
+  color: #a8df9c;
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #000;
+}
+
+.cards-start-error {
+  max-width: 760px;
+  margin: -8px 0 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(230, 94, 78, 0.55);
+  border-radius: 5px;
+  background: rgba(75, 16, 12, 0.72);
+  color: #ffb0a4;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .cards-hand-card-slot {
@@ -1610,6 +1648,121 @@
   color: #a08840;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.cards-russian-poker-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.cards-deal-count-input {
+  width: 112px;
+  box-sizing: border-box;
+}
+
+.cards-combination-group-settings {
+  margin-top: 20px;
+}
+
+.cards-combination-group-heading,
+.cards-combination-group-actions {
+  display: flex;
+  align-items: center;
+}
+
+.cards-combination-group-heading {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.cards-combination-group-actions {
+  gap: 12px;
+}
+
+.cards-text-action {
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #f0d080;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cards-text-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cards-combination-group-list {
+  display: grid;
+  gap: 5px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: 1px solid rgba(200, 168, 75, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.cards-combination-group-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 27px;
+  color: #d4b96a;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cards-combination-group-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #c8a84b;
+}
+
+.cards-combination-group-option--unavailable {
+  color: #8a7a5a;
+  cursor: not-allowed;
+}
+
+.cards-combination-group-count {
+  color: #a08840;
+  font-size: 11px;
+  text-align: right;
+}
+
+.cards-catalog-error {
+  margin: 12px 0;
+  color: #ff9c8e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.cards-catalog-warnings {
+  margin-top: 10px;
+  color: #d4b96a;
+  font-size: 12px;
+}
+
+.cards-catalog-warnings summary {
+  cursor: pointer;
+}
+
+.cards-catalog-warnings ul {
+  max-height: 160px;
+  overflow: auto;
+  padding-left: 20px;
+}
+
+.cards-catalog-warnings li {
+  margin: 4px 0;
 }
 
 .cards-combinations-row {

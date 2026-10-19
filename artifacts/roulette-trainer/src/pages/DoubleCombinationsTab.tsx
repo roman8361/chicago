@@ -1,11 +1,12 @@
 import { useState } from "react";
-import doubleCombinations from "@/poker/games/russian-poker/double-combinations.json";
+import { getDoubleCombinationCatalog } from "@/poker/games/russian-poker/doubleCombinationCatalog";
 
 export default function DoubleCombinationsTab() {
+  const catalog = getDoubleCombinationCatalog();
   const [selectedGroupId, setSelectedGroupId] = useState(
-    () => doubleCombinations.groups[0]?.id ?? "",
+    () => catalog.groups[0]?.id ?? "",
   );
-  const selectedGroup = doubleCombinations.groups.find(
+  const selectedGroup = catalog.groups.find(
     (group) => group.id === selectedGroupId,
   );
 
@@ -13,14 +14,16 @@ export default function DoubleCombinationsTab() {
     <section className="cards-double-combinations" data-testid="double-combinations-panel">
       <h2 className="cards-double-combinations-heading">Двойные комбинации</h2>
 
-      {doubleCombinations.groups.length > 0 ? (
+      {catalog.fatalError ? (
+        <p className="cards-catalog-error" role="alert">{catalog.fatalError}</p>
+      ) : catalog.groups.length > 0 ? (
         <div
           className="cards-double-group-tabs"
           role="tablist"
           aria-label="Группы двойных комбинаций"
           data-testid="double-combinations-groups"
         >
-          {doubleCombinations.groups.map((group) => {
+          {catalog.groups.map((group) => {
             const selected = group.id === selectedGroupId;
             return (
               <button
@@ -43,6 +46,15 @@ export default function DoubleCombinationsTab() {
         <p className="cards-double-combinations-empty" role="status">
           Справочник двойных комбинаций пока не заполнен
         </p>
+      )}
+
+      {catalog.errors.length > 0 && (
+        <details className="cards-catalog-warnings">
+          <summary>Ошибки данных справочника: {catalog.errors.length}</summary>
+          <ul>
+            {catalog.errors.map((error, index) => <li key={`${index}-${error}`}>{error}</li>)}
+          </ul>
+        </details>
       )}
 
       {selectedGroup && (

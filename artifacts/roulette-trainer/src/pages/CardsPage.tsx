@@ -5,8 +5,19 @@ import CombinationReferencePage from "@/pages/CombinationReferencePage";
 import { loadCardTableSettings, saveCardTableSettings } from "@/data/cardTableSettingsStorage";
 import type { CardTableSettings, PokerGameId } from "@/types/cardTableSettings";
 import NotFound from "@/pages/not-found";
+import {
+  getDoubleCombinationCatalog,
+  getUniqueCardDeals,
+} from "@/poker/games/russian-poker/doubleCombinationCatalog";
+import {
+  generateRussianPokerSeries,
+  type RussianPokerSeriesRound,
+} from "@/poker/games/russian-poker/doubleCombinationSeriesGenerator";
+import {
+  getNextSeriesRoundIndex,
+  isSeriesComplete,
+} from "@/poker/games/russian-poker/doubleCombinationSeriesState";
 
-const DEMO_CARD_CODES = ["c7", "c8", "c9", "c10", "hj", "hq"];
 const STAR_CHIP_VALUES = [100, 200, 300, 400, 500];
 const FLIP_DURATION_MS = 650;
 const FLIP_STAGGER_MS = 70;
@@ -17,6 +28,8 @@ interface CardsRuntimeState {
   settings: CardTableSettings;
   roundState: CardsRoundState;
   activePokerGame: PokerGameId | null;
+  seriesPlan: RussianPokerSeriesRound[];
+  currentRoundIndex: number;
 }
 
 function getConfiguredPokerGame(settings: CardTableSettings): PokerGameId | null {
@@ -30,16 +43,22 @@ function CardsHand({
   cardCodes,
   roundState,
   onNext,
+  currentRoundNumber,
+  totalRounds,
+  seriesComplete,
 }: {
-  cardCodes: readonly string[];
+  cardCodes: readonly (string | null)[];
   roundState: Exclude<CardsRoundState, "HIDDEN">;
   onNext: () => void;
+  currentRoundNumber: number;
+  totalRounds: number;
+  seriesComplete: boolean;
 }) {
   return (
-    <div className="cards-hand" aria-label="Демонстрационный ряд карт">
-      {cardCodes.map((code, index) => (
+    <div className="cards-hand" aria-label="Карты раздачи русского покера">
+      {Array.from({ length: 6 }, (_, index) => cardCodes[index] ?? null).map((code, index) => (
         <div
-          key={code}
+          key={index}
           className="cards-hand-card-slot"
         >
           <div
@@ -48,29 +67,40 @@ function CardsHand({
           >
             <img
               className="cards-hand-card-face cards-hand-card-face--back"
-              src="/assets/cards/casino-skills-card-back.png"
+              src="/assets/cards/back.png"
               alt=""
               aria-hidden="true"
               draggable={false}
             />
-            <img
-              className="cards-hand-card-face cards-hand-card-face--front"
-              src={`/assets/cards/${code}.png`}
-              alt={`Карта ${code}`}
-              draggable={false}
-            />
+            {code && (
+              <img
+                className="cards-hand-card-face cards-hand-card-face--front"
+                src={`/assets/cards/${code}.png`}
+                alt={`Карта ${code}`}
+                draggable={false}
+              />
+            )}
           </div>
         </div>
       ))}
       {roundState === "OPEN" && (
-        <button
-          className="grid-toggle-btn cards-hand-next-button"
-          type="button"
-          onClick={onNext}
-          data-testid="button-cards-next"
-        >
-          Дальше
-        </button>
+        <div className="cards-round-controls">
+          <span className="cards-round-counter">
+            Раздача {currentRoundNumber} из {totalRounds}
+          </span>
+          {seriesComplete ? (
+            <span className="cards-series-complete" role="status">Серия завершена</span>
+          ) : (
+            <button
+              className="grid-toggle-btn cards-hand-next-button"
+              type="button"
+              onClick={onNext}
+              data-testid="button-cards-next"
+            >
+              Дальше
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -81,21 +111,42 @@ export default function CardsPage() {
   const combinationRoute = location.match(/^\/cards\/combinations\/([^/]+)\/?$/);
   const combinationGameId = combinationRoute?.[1] ?? null;
   const isCardsRootRoute = location === "/cards" || location === "/cards/";
+  const catalog = getDoubleCombinationCatalog();
+  const defaultGroupIds = catalog.groups
+    .filter((group) => getUniqueCardDeals(group.deals).length > 0)
+    .map((group) => group.id);
   const [runtime, setRuntime] = useState<CardsRuntimeState>(() => {
-    const settings = loadCardTableSettings();
+    const settings = loadCardTableSettings(defaultGroupIds);
     const configuredPokerGame = getConfiguredPokerGame(settings);
     return {
       settings,
       roundState: configuredPokerGame ? "CLOSED" : "HIDDEN",
       activePokerGame: configuredPokerGame,
+      seriesPlan: [],
+      currentRoundIndex: 0,
     };
   });
   const [screen, setScreen] = useState<"table" | "settings">(
     () => (combinationGameId ? "settings" : "table"),
   );
   const shuffleVideoRef = useRef<HTMLVideoElement>(null);
+  const nextFlipPendingRef = useRef(false);
+  const transitionLockRef = useRef(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (runtime.roundState === "CLOSED" && nextFlipPendingRef.current) {
+      const frameId = window.requestAnimationFrame(() => {
+        nextFlipPendingRef.current = false;
+        setRuntime((current) => (
+          current.roundState === "CLOSED"
+            ? { ...current, roundState: "FLIPPING" }
+            : current
+        ));
+      });
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
     if (runtime.roundState !== "FLIPPING") return;
 
     const shuffleVideo = shuffleVideoRef.current;
@@ -112,7 +163,8 @@ export default function CardsPage() {
           ? { ...current, roundState: "OPEN" }
           : current
       ));
-    }, FLIP_DURATION_MS + FLIP_STAGGER_MS * (DEMO_CARD_CODES.length - 1));
+      transitionLockRef.current = false;
+    }, FLIP_DURATION_MS + FLIP_STAGGER_MS * 5);
 
     return () => {
       window.clearTimeout(flipTimer);
@@ -126,35 +178,86 @@ export default function CardsPage() {
   function handleSettingsSave(nextSettings: CardTableSettings) {
     saveCardTableSettings(nextSettings);
     const configuredPokerGame = getConfiguredPokerGame(nextSettings);
+    transitionLockRef.current = false;
+    nextFlipPendingRef.current = false;
+    setStartError(null);
     setRuntime({
       settings: nextSettings,
       roundState: configuredPokerGame ? "CLOSED" : "HIDDEN",
       activePokerGame: configuredPokerGame,
+      seriesPlan: [],
+      currentRoundIndex: 0,
     });
     setScreen("table");
   }
 
   function handleStart() {
+    if (transitionLockRef.current) return;
     const configuredPokerGame = getConfiguredPokerGame(runtime.settings);
     if (!configuredPokerGame) {
+      setStartError(null);
       setRuntime((current) => ({
         ...current,
         roundState: "HIDDEN",
         activePokerGame: null,
+        seriesPlan: [],
+        currentRoundIndex: 0,
       }));
       return;
     }
 
+    if (catalog.fatalError) {
+      setStartError(catalog.fatalError);
+      return;
+    }
+
+    const pokerSettings = runtime.settings.pokerGames.russianPoker;
+    let seriesPlan: RussianPokerSeriesRound[];
+    try {
+      seriesPlan = generateRussianPokerSeries({
+        groups: catalog.groups,
+        selectedGroupIds: pokerSettings.selectedGroupIds,
+        roundCount: pokerSettings.dealCount,
+      });
+    } catch (error) {
+      setStartError(error instanceof Error ? error.message : "Не удалось подготовить серию раздач.");
+      return;
+    }
+
+    setStartError(null);
+    transitionLockRef.current = true;
     setRuntime((current) => ({
       ...current,
       roundState: "FLIPPING",
       activePokerGame: configuredPokerGame,
+      seriesPlan,
+      currentRoundIndex: 0,
     }));
   }
 
   function handleNext() {
-    // The next gameplay step will be added here; this button is intentionally a no-op for now.
+    const nextRoundIndex = getNextSeriesRoundIndex({
+      currentRoundIndex: runtime.currentRoundIndex,
+      totalRounds: runtime.seriesPlan.length,
+      roundState: runtime.roundState,
+      transitionLocked: transitionLockRef.current,
+    });
+    if (nextRoundIndex === null) return;
+    transitionLockRef.current = true;
+    nextFlipPendingRef.current = true;
+    setRuntime((current) => ({
+      ...current,
+      roundState: "CLOSED",
+      currentRoundIndex: nextRoundIndex,
+    }));
   }
+
+  const currentRound = runtime.seriesPlan[runtime.currentRoundIndex];
+  const seriesComplete = isSeriesComplete(
+    runtime.currentRoundIndex,
+    runtime.seriesPlan.length,
+    runtime.roundState,
+  );
 
   if (!isCardsRootRoute && !combinationGameId) return <NotFound />;
 
@@ -190,7 +293,12 @@ export default function CardsPage() {
             aria-hidden="true"
           />
           <div className="controls-bar" aria-label="Управление карточным столом">
-            <button className="grid-toggle-btn spin-btn" type="button" onClick={handleStart}>
+            <button
+              className="grid-toggle-btn spin-btn"
+              type="button"
+              onClick={handleStart}
+              disabled={runtime.roundState === "FLIPPING"}
+            >
               ▶ Старт
             </button>
             <Link className="grid-toggle-btn" href="/">
@@ -204,6 +312,9 @@ export default function CardsPage() {
               ⚙ Настройки
             </button>
           </div>
+            {startError && (
+              <p className="cards-start-error" role="alert">{startError}</p>
+            )}
 
           <div className="table-row cards-table-row">
             <div className="roulette-wrapper cards-table-wrapper">
@@ -234,9 +345,12 @@ export default function CardsPage() {
               )}
               {runtime.activePokerGame === "russianPoker" && runtime.roundState !== "HIDDEN" && (
                 <CardsHand
-                  cardCodes={DEMO_CARD_CODES}
+                  cardCodes={currentRound?.cards ?? []}
                   roundState={runtime.roundState}
                   onNext={handleNext}
+                  currentRoundNumber={runtime.currentRoundIndex + 1}
+                  totalRounds={runtime.seriesPlan.length}
+                  seriesComplete={seriesComplete}
                 />
               )}
             </div>
