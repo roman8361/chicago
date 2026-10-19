@@ -1,0 +1,1975 @@
+{
+  "version": 1,
+  "gameId": "russian-poker",
+  "type": "double-combinations",
+  "source": {
+    "workbook": "attached_assets/Принцип_построения_базы_бонусов_1792433247834.xlsx",
+    "worksheet": "Двойные комбинации в РП",
+    "usedColumns": {
+      "group": "D",
+      "bonusCombinations": "E",
+      "cards": "F:K",
+      "resultCombination": "Y",
+      "sourceOrdinal": "Z"
+    },
+    "uninterpretedColumns": "L:X",
+    "unclassifiedCardRows": [
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172
+    ]
+  },
+  "groups": [
+    {
+      "id": "akq-5-cards-same-color",
+      "name": "AKQ, 5 Cards Same Color",
+      "sourceName": "AKQ,       5 Cards Same Color",
+      "deals": [
+        {
+          "id": "akq-5-cards-same-color-001",
+          "sourceRow": 5,
+          "sourceRows": [
+            5,
+            6
+          ],
+          "sourceOrdinal": 1,
+          "cards": [
+            "dq",
+            "hk",
+            "hj",
+            "ha",
+            "d9",
+            "h10"
+          ],
+          "bonusCombinations": [
+            "AKQ",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "akq-5-cards-same-color-002",
+          "sourceRow": 7,
+          "sourceRows": [
+            7,
+            8
+          ],
+          "sourceOrdinal": 2,
+          "cards": [
+            "sa",
+            "s9",
+            "sq",
+            "ck",
+            "s10",
+            "sj"
+          ],
+          "bonusCombinations": [
+            "AKQ",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Flush+Straight"
+        },
+        {
+          "id": "akq-5-cards-same-color-003",
+          "sourceRow": 9,
+          "sourceRows": [
+            9,
+            10
+          ],
+          "sourceOrdinal": 3,
+          "cards": [
+            "dk",
+            "dj",
+            "h9",
+            "dq",
+            "ha",
+            "d10"
+          ],
+          "bonusCombinations": [
+            "AKQ",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "akq-5-cards-same-color-004",
+          "sourceRow": 11,
+          "sourceRows": [
+            11,
+            12
+          ],
+          "sourceOrdinal": 4,
+          "cards": [
+            "ca",
+            "ck",
+            "sq",
+            "cj",
+            "s9",
+            "c10"
+          ],
+          "bonusCombinations": [
+            "AKQ",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "akq-5-cards-same-color-005",
+          "sourceRow": 13,
+          "sourceRows": [
+            13,
+            14
+          ],
+          "sourceOrdinal": 5,
+          "cards": [
+            "c10",
+            "c9",
+            "ca",
+            "sq",
+            "ck",
+            "cj"
+          ],
+          "bonusCombinations": [
+            "AKQ",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Flush+Straight"
+        }
+      ]
+    },
+    {
+      "id": "two-pairs",
+      "name": "Two pairs",
+      "sourceName": "Two pairs",
+      "deals": [
+        {
+          "id": "two-pairs-001",
+          "sourceRow": 15,
+          "sourceRows": [
+            15,
+            16,
+            17
+          ],
+          "sourceOrdinal": 6,
+          "cards": [
+            "dj",
+            "sk",
+            "ck",
+            "hj",
+            "sq",
+            "dq"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+KK)",
+            "Two pairs (+2 pairs of picture)",
+            "5 Pictures"
+          ],
+          "resultCombination": "3 Pairs"
+        },
+        {
+          "id": "two-pairs-002",
+          "sourceRow": 18,
+          "sourceRows": [
+            18,
+            19,
+            20
+          ],
+          "sourceOrdinal": 7,
+          "cards": [
+            "dq",
+            "dk",
+            "cq",
+            "hk",
+            "hj",
+            "sk"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+KK)",
+            "Two pairs (+2 pairs of picture)",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House"
+        },
+        {
+          "id": "two-pairs-003",
+          "sourceRow": 21,
+          "sourceRows": [
+            21,
+            22,
+            23
+          ],
+          "sourceOrdinal": 8,
+          "cards": [
+            "ck",
+            "c7",
+            "sk",
+            "s7",
+            "c2",
+            "s2"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+KK)",
+            "Two pairs (+1 pairs of picture)",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "3 Pairs"
+        },
+        {
+          "id": "two-pairs-004",
+          "sourceRow": 24,
+          "sourceRows": [
+            24,
+            25
+          ],
+          "sourceOrdinal": 9,
+          "cards": [
+            "dj",
+            "sq",
+            "hj",
+            "dk",
+            "hq",
+            "hk"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+2 pairs of picture)",
+            "5 Pictures"
+          ],
+          "resultCombination": "3 Pairs"
+        },
+        {
+          "id": "two-pairs-005",
+          "sourceRow": 26,
+          "sourceRows": [
+            26,
+            27
+          ],
+          "sourceOrdinal": 10,
+          "cards": [
+            "sq",
+            "c5",
+            "cq",
+            "s2",
+            "s5",
+            "c2"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+1 pair of picture)",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "3 Pairs"
+        },
+        {
+          "id": "two-pairs-006",
+          "sourceRow": 28,
+          "sourceRows": [
+            28,
+            29,
+            30
+          ],
+          "sourceOrdinal": 11,
+          "cards": [
+            "dk",
+            "sk",
+            "sq",
+            "hj",
+            "cj",
+            "dq"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+KK)",
+            "Two pairs (+2 pairs of picture)",
+            "5 Pictures"
+          ],
+          "resultCombination": "3 Pairs"
+        },
+        {
+          "id": "two-pairs-007",
+          "sourceRow": 31,
+          "sourceRows": [
+            31,
+            32,
+            33
+          ],
+          "sourceOrdinal": 12,
+          "cards": [
+            "ck",
+            "c7",
+            "sk",
+            "s7",
+            "c2",
+            "d7"
+          ],
+          "bonusCombinations": [
+            "Two pairs (+KK)",
+            "Two pairs (+1 pairs of picture)",
+            "5 Cards Same Color"
+          ],
+          "resultCombination": "Full House"
+        }
+      ]
+    },
+    {
+      "id": "three-of-a-kind",
+      "name": "Three of a kind",
+      "sourceName": "Three of a kind",
+      "deals": [
+        {
+          "id": "three-of-a-kind-001",
+          "sourceRow": 34,
+          "sourceRows": [
+            34,
+            35
+          ],
+          "sourceOrdinal": 13,
+          "cards": [
+            "d2",
+            "ck",
+            "hk",
+            "s3",
+            "sk",
+            "ca"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "Three of a kind (+KKK)"
+          ],
+          "resultCombination": "Three of a kind+AK"
+        },
+        {
+          "id": "three-of-a-kind-002",
+          "sourceRow": 36,
+          "sourceRows": [
+            36,
+            37
+          ],
+          "sourceOrdinal": 14,
+          "cards": [
+            "c7",
+            "sk",
+            "hk",
+            "dk",
+            "h3",
+            "d7"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "Three of a kind (+KKK)"
+          ],
+          "resultCombination": "Full House"
+        },
+        {
+          "id": "three-of-a-kind-003",
+          "sourceRow": 38,
+          "sourceRows": [
+            38,
+            39,
+            40
+          ],
+          "sourceOrdinal": 15,
+          "cards": [
+            "cj",
+            "sq",
+            "hk",
+            "dk",
+            "ck",
+            "ha"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "Three of a kind (+KKK)",
+            "5 Pictures"
+          ],
+          "resultCombination": "Three of a kind+AK"
+        },
+        {
+          "id": "three-of-a-kind-004",
+          "sourceRow": 41,
+          "sourceRows": [
+            41
+          ],
+          "sourceOrdinal": 16,
+          "cards": [
+            "d9",
+            "s9",
+            "c9",
+            "sa",
+            "d8",
+            "hk"
+          ],
+          "bonusCombinations": [
+            "Three of a kind"
+          ],
+          "resultCombination": "Three of a kind+AK"
+        },
+        {
+          "id": "three-of-a-kind-005",
+          "sourceRow": 42,
+          "sourceRows": [
+            42,
+            43
+          ],
+          "sourceOrdinal": 17,
+          "cards": [
+            "hj",
+            "hq",
+            "dq",
+            "ck",
+            "sq",
+            "sk"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House"
+        },
+        {
+          "id": "three-of-a-kind-006",
+          "sourceRow": 44,
+          "sourceRows": [
+            44
+          ],
+          "sourceOrdinal": 18,
+          "cards": [
+            "h7",
+            "c7",
+            "ca",
+            "d7",
+            "s10",
+            "ck"
+          ],
+          "bonusCombinations": [
+            "Three of a kind"
+          ],
+          "resultCombination": "Three of a kind+AK"
+        },
+        {
+          "id": "three-of-a-kind-007",
+          "sourceRow": 45,
+          "sourceRows": [
+            45,
+            46
+          ],
+          "sourceOrdinal": 19,
+          "cards": [
+            "hj",
+            "dq",
+            "dj",
+            "ck",
+            "sj",
+            "sa"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "5 Pictures"
+          ],
+          "resultCombination": "Three of a kind+AK"
+        },
+        {
+          "id": "three-of-a-kind-008",
+          "sourceRow": 47,
+          "sourceRows": [
+            47
+          ],
+          "sourceOrdinal": 20,
+          "cards": [
+            "d2",
+            "c2",
+            "dk",
+            "h2",
+            "ca",
+            "ck"
+          ],
+          "bonusCombinations": [
+            "Three of a kind"
+          ],
+          "resultCombination": "Full House+AK"
+        },
+        {
+          "id": "three-of-a-kind-009",
+          "sourceRow": 48,
+          "sourceRows": [
+            48,
+            49
+          ],
+          "sourceOrdinal": 21,
+          "cards": [
+            "c4",
+            "sk",
+            "ha",
+            "dk",
+            "ck",
+            "d4"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "Three of a kind (+KKK)"
+          ],
+          "resultCombination": "Full House+AK",
+          "cardCorrections": [
+            {
+              "sourceCell": "J48",
+              "sourceValue": "K♠",
+              "replacementCode": "ck"
+            }
+          ]
+        },
+        {
+          "id": "three-of-a-kind-010",
+          "sourceRow": 50,
+          "sourceRows": [
+            50,
+            51
+          ],
+          "sourceOrdinal": 22,
+          "cards": [
+            "h3",
+            "sk",
+            "hk",
+            "s9",
+            "dk",
+            "s3"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "Three of a kind (+KKK)"
+          ],
+          "resultCombination": "Full House"
+        },
+        {
+          "id": "three-of-a-kind-011",
+          "sourceRow": 52,
+          "sourceRows": [
+            52,
+            53
+          ],
+          "sourceOrdinal": 23,
+          "cards": [
+            "hj",
+            "dq",
+            "dj",
+            "ck",
+            "sj",
+            "sq"
+          ],
+          "bonusCombinations": [
+            "Three of a kind",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House"
+        }
+      ]
+    },
+    {
+      "id": "straight",
+      "name": "Straight",
+      "sourceName": "Straight",
+      "deals": [
+        {
+          "id": "straight-001",
+          "sourceRow": 54,
+          "sourceRows": [
+            54,
+            55
+          ],
+          "sourceOrdinal": 24,
+          "cards": [
+            "h10",
+            "sj",
+            "d9",
+            "hk",
+            "cq",
+            "h8"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "straight-002",
+          "sourceRow": 56,
+          "sourceRows": [
+            56,
+            57
+          ],
+          "sourceOrdinal": 25,
+          "cards": [
+            "hj",
+            "dq",
+            "ck",
+            "c10",
+            "h9",
+            "sq"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Straight+Pair"
+        },
+        {
+          "id": "straight-003",
+          "sourceRow": 58,
+          "sourceRows": [
+            58,
+            59
+          ],
+          "sourceOrdinal": 26,
+          "cards": [
+            "hj",
+            "da",
+            "dq",
+            "s10",
+            "ck",
+            "d10"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Straight+Pair",
+          "cardCorrections": [
+            {
+              "sourceCell": "K58",
+              "sourceValue": "10♠",
+              "replacementCode": "d10"
+            }
+          ]
+        },
+        {
+          "id": "straight-004",
+          "sourceRow": 60,
+          "sourceRows": [
+            60,
+            61
+          ],
+          "sourceOrdinal": 27,
+          "cards": [
+            "h10",
+            "cq",
+            "dk",
+            "d9",
+            "sj",
+            "sa"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "straight-005",
+          "sourceRow": 62,
+          "sourceRows": [
+            62,
+            63
+          ],
+          "sourceOrdinal": 28,
+          "cards": [
+            "h10",
+            "hj",
+            "hq",
+            "hk",
+            "d9",
+            "ha"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Royal Flush+Straight"
+        },
+        {
+          "id": "straight-006",
+          "sourceRow": 64,
+          "sourceRows": [
+            64,
+            65
+          ],
+          "sourceOrdinal": 29,
+          "cards": [
+            "c10",
+            "cj",
+            "cq",
+            "ck",
+            "s9",
+            "ca"
+          ],
+          "bonusCombinations": [
+            "Straight",
+            "Straight (+K)"
+          ],
+          "resultCombination": "Royal Flush+Straight"
+        },
+        {
+          "id": "straight-007",
+          "sourceRow": 66,
+          "sourceRows": [
+            66
+          ],
+          "sourceOrdinal": 30,
+          "cards": [
+            "d2",
+            "s3",
+            "s4",
+            "h5",
+            "ca",
+            "ck"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight+AK"
+        },
+        {
+          "id": "straight-008",
+          "sourceRow": 67,
+          "sourceRows": [
+            67
+          ],
+          "sourceOrdinal": 31,
+          "cards": [
+            "d5",
+            "s4",
+            "d2",
+            "ca",
+            "s3",
+            "dk"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight+AK"
+        },
+        {
+          "id": "straight-009",
+          "sourceRow": 68,
+          "sourceRows": [
+            68
+          ],
+          "sourceOrdinal": 32,
+          "cards": [
+            "h7",
+            "c8",
+            "s10",
+            "d6",
+            "c9",
+            "c5"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight+Straight"
+        },
+        {
+          "id": "straight-010",
+          "sourceRow": 69,
+          "sourceRows": [
+            69
+          ],
+          "sourceOrdinal": 33,
+          "cards": [
+            "s8",
+            "h5",
+            "d4",
+            "d7",
+            "c6",
+            "h4"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight+Pair"
+        },
+        {
+          "id": "straight-011",
+          "sourceRow": 70,
+          "sourceRows": [
+            70
+          ],
+          "sourceOrdinal": 34,
+          "cards": [
+            "h4",
+            "h8",
+            "h6",
+            "d7",
+            "h5",
+            "hq"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Flush+Straight"
+        },
+        {
+          "id": "straight-012",
+          "sourceRow": 71,
+          "sourceRows": [
+            71
+          ],
+          "sourceOrdinal": 35,
+          "cards": [
+            "c10",
+            "c6",
+            "s8",
+            "c7",
+            "c9",
+            "c2"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Flush+Straight"
+        },
+        {
+          "id": "straight-013",
+          "sourceRow": 72,
+          "sourceRows": [
+            72
+          ],
+          "sourceOrdinal": 36,
+          "cards": [
+            "d2",
+            "d3",
+            "d4",
+            "ha",
+            "d5",
+            "d6"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight Flush+Straight"
+        },
+        {
+          "id": "straight-014",
+          "sourceRow": 73,
+          "sourceRows": [
+            73
+          ],
+          "sourceOrdinal": 37,
+          "cards": [
+            "s6",
+            "s7",
+            "c10",
+            "s9",
+            "s8",
+            "s5"
+          ],
+          "bonusCombinations": [
+            "Straight"
+          ],
+          "resultCombination": "Straight Flush+Straight"
+        }
+      ]
+    },
+    {
+      "id": "flush",
+      "name": "Flush",
+      "sourceName": "Flush",
+      "deals": [
+        {
+          "id": "flush-001",
+          "sourceRow": 74,
+          "sourceRows": [
+            74,
+            75
+          ],
+          "sourceOrdinal": 38,
+          "cards": [
+            "c10",
+            "c3",
+            "ck",
+            "c8",
+            "c9",
+            "ha"
+          ],
+          "bonusCombinations": [
+            "Flush",
+            "Flush (+K)"
+          ],
+          "resultCombination": "Flush+AK"
+        },
+        {
+          "id": "flush-002",
+          "sourceRow": 76,
+          "sourceRows": [
+            76,
+            77
+          ],
+          "sourceOrdinal": 39,
+          "cards": [
+            "h4",
+            "hk",
+            "h5",
+            "hj",
+            "h9",
+            "da"
+          ],
+          "bonusCombinations": [
+            "Flush",
+            "Flush (+K)"
+          ],
+          "resultCombination": "Flush+AK"
+        },
+        {
+          "id": "flush-003",
+          "sourceRow": 78,
+          "sourceRows": [
+            78,
+            79
+          ],
+          "sourceOrdinal": 40,
+          "cards": [
+            "d7",
+            "d2",
+            "dq",
+            "dk",
+            "d10",
+            "h2"
+          ],
+          "bonusCombinations": [
+            "Flush",
+            "Flush (+K)"
+          ],
+          "resultCombination": "Flush+Pair"
+        },
+        {
+          "id": "flush-004",
+          "sourceRow": 80,
+          "sourceRows": [
+            80
+          ],
+          "sourceOrdinal": 41,
+          "cards": [
+            "sj",
+            "s8",
+            "s10",
+            "s7",
+            "s6",
+            "c8"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Flush+Pair"
+        },
+        {
+          "id": "flush-005",
+          "sourceRow": 81,
+          "sourceRows": [
+            81
+          ],
+          "sourceOrdinal": 42,
+          "cards": [
+            "ha",
+            "hk",
+            "h6",
+            "h5",
+            "h7",
+            "d6"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Flush+Pair"
+        },
+        {
+          "id": "flush-006",
+          "sourceRow": 82,
+          "sourceRows": [
+            82
+          ],
+          "sourceOrdinal": 43,
+          "cards": [
+            "c6",
+            "c8",
+            "c10",
+            "c7",
+            "cj",
+            "s9"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Flush+Straight"
+        },
+        {
+          "id": "flush-007",
+          "sourceRow": 83,
+          "sourceRows": [
+            83
+          ],
+          "sourceOrdinal": 44,
+          "cards": [
+            "sq",
+            "s7",
+            "s10",
+            "sj",
+            "s9",
+            "c8"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Flush+Straight"
+        },
+        {
+          "id": "flush-008",
+          "sourceRow": 84,
+          "sourceRows": [
+            84
+          ],
+          "sourceOrdinal": 45,
+          "cards": [
+            "ha",
+            "h6",
+            "h2",
+            "h4",
+            "h3",
+            "h5"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        },
+        {
+          "id": "flush-009",
+          "sourceRow": 85,
+          "sourceRows": [
+            85
+          ],
+          "sourceOrdinal": 46,
+          "cards": [
+            "d10",
+            "d7",
+            "d6",
+            "d8",
+            "d5",
+            "d9"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        },
+        {
+          "id": "flush-010",
+          "sourceRow": 86,
+          "sourceRows": [
+            86
+          ],
+          "sourceOrdinal": 47,
+          "cards": [
+            "c6",
+            "c7",
+            "c8",
+            "c3",
+            "c4",
+            "c5"
+          ],
+          "bonusCombinations": [
+            "Flush"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        }
+      ]
+    },
+    {
+      "id": "full-house",
+      "name": "Full House",
+      "sourceName": "Full House",
+      "deals": [
+        {
+          "id": "full-house-001",
+          "sourceRow": 87,
+          "sourceRows": [
+            87,
+            88
+          ],
+          "sourceOrdinal": 48,
+          "cards": [
+            "dk",
+            "c2",
+            "hk",
+            "ck",
+            "d2",
+            "ca"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KKK)"
+          ],
+          "resultCombination": "Full House+AK"
+        },
+        {
+          "id": "full-house-002",
+          "sourceRow": 89,
+          "sourceRows": [
+            89,
+            90
+          ],
+          "sourceOrdinal": 49,
+          "cards": [
+            "ck",
+            "d6",
+            "h6",
+            "hk",
+            "dk",
+            "s6"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KKK)"
+          ],
+          "resultCombination": "Full House+Full House"
+        },
+        {
+          "id": "full-house-003",
+          "sourceRow": 91,
+          "sourceRows": [
+            91,
+            92,
+            93
+          ],
+          "sourceOrdinal": 50,
+          "cards": [
+            "ck",
+            "sj",
+            "dj",
+            "hk",
+            "dk",
+            "ca"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KKK)",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House+AK"
+        },
+        {
+          "id": "full-house-004",
+          "sourceRow": 94,
+          "sourceRows": [
+            94,
+            95,
+            96
+          ],
+          "sourceOrdinal": 51,
+          "cards": [
+            "ck",
+            "sj",
+            "dj",
+            "hk",
+            "cj",
+            "da"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KK)",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House+AK"
+        },
+        {
+          "id": "full-house-005",
+          "sourceRow": 97,
+          "sourceRows": [
+            97,
+            98,
+            99
+          ],
+          "sourceOrdinal": 52,
+          "cards": [
+            "sq",
+            "hk",
+            "ck",
+            "dq",
+            "cq",
+            "sk"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KK)",
+            "5 Pictures"
+          ],
+          "resultCombination": "Full House+Full House"
+        },
+        {
+          "id": "full-house-006",
+          "sourceRow": 100,
+          "sourceRows": [
+            100,
+            101
+          ],
+          "sourceOrdinal": 53,
+          "cards": [
+            "ck",
+            "c7",
+            "h7",
+            "hk",
+            "s7",
+            "sk"
+          ],
+          "bonusCombinations": [
+            "Full House",
+            "Full House (+KK)"
+          ],
+          "resultCombination": "Full House+Full House"
+        },
+        {
+          "id": "full-house-007",
+          "sourceRow": 102,
+          "sourceRows": [
+            102
+          ],
+          "sourceOrdinal": 54,
+          "cards": [
+            "d9",
+            "cj",
+            "hj",
+            "h9",
+            "dj",
+            "sj"
+          ],
+          "bonusCombinations": [
+            "Full House"
+          ],
+          "resultCombination": "Four of a kind+Full House"
+        },
+        {
+          "id": "full-house-008",
+          "sourceRow": 103,
+          "sourceRows": [
+            103
+          ],
+          "sourceOrdinal": 55,
+          "cards": [
+            "d8",
+            "c8",
+            "d6",
+            "h8",
+            "s6",
+            "h6"
+          ],
+          "bonusCombinations": [
+            "Full House"
+          ],
+          "resultCombination": "Full House+Full House"
+        },
+        {
+          "id": "full-house-009",
+          "sourceRow": 104,
+          "sourceRows": [
+            104
+          ],
+          "sourceOrdinal": 56,
+          "cards": [
+            "s10",
+            "s8",
+            "c10",
+            "c8",
+            "h10",
+            "h8"
+          ],
+          "bonusCombinations": [
+            "Full House"
+          ],
+          "resultCombination": "Full House+Full House"
+        },
+        {
+          "id": "full-house-010",
+          "sourceRow": 105,
+          "sourceRows": [
+            105
+          ],
+          "sourceOrdinal": 57,
+          "cards": [
+            "hq",
+            "d9",
+            "dq",
+            "h9",
+            "cq",
+            "s9"
+          ],
+          "bonusCombinations": [
+            "Full House"
+          ],
+          "resultCombination": "Full House+Full House"
+        }
+      ]
+    },
+    {
+      "id": "four-of-a-kind",
+      "name": "Four of a kind",
+      "sourceName": "Four      of a kind",
+      "deals": [
+        {
+          "id": "four-of-a-kind-001",
+          "sourceRow": 106,
+          "sourceRows": [
+            106,
+            107
+          ],
+          "sourceOrdinal": 58,
+          "cards": [
+            "ha",
+            "sk",
+            "hk",
+            "ck",
+            "dk",
+            "c2"
+          ],
+          "bonusCombinations": [
+            "Four of a kind",
+            "Four of a kind (+KKKK)"
+          ],
+          "resultCombination": "Four of a kind+AK"
+        },
+        {
+          "id": "four-of-a-kind-002",
+          "sourceRow": 108,
+          "sourceRows": [
+            108,
+            109
+          ],
+          "sourceOrdinal": 59,
+          "cards": [
+            "dk",
+            "sk",
+            "h7",
+            "ck",
+            "hk",
+            "d7"
+          ],
+          "bonusCombinations": [
+            "Four of a kind",
+            "Four of a kind (+KKKK)"
+          ],
+          "resultCombination": "Four of a kind+Full House",
+          "cardCorrections": [
+            {
+              "sourceCell": "J108",
+              "sourceValue": "K♦",
+              "replacementCode": "hk"
+            }
+          ]
+        },
+        {
+          "id": "four-of-a-kind-003",
+          "sourceRow": 110,
+          "sourceRows": [
+            110,
+            111
+          ],
+          "sourceOrdinal": 60,
+          "cards": [
+            "hk",
+            "ca",
+            "dk",
+            "sk",
+            "ck",
+            "ha"
+          ],
+          "bonusCombinations": [
+            "Four of a kind",
+            "Four of a kind (+KKKK)"
+          ],
+          "resultCombination": "Four of a kind+Full House",
+          "cardCorrections": [
+            {
+              "sourceCell": "J110",
+              "sourceValue": "K♦",
+              "replacementCode": "ck"
+            }
+          ]
+        },
+        {
+          "id": "four-of-a-kind-004",
+          "sourceRow": 112,
+          "sourceRows": [
+            112,
+            113
+          ],
+          "sourceOrdinal": 61,
+          "cards": [
+            "dk",
+            "sk",
+            "h7",
+            "ck",
+            "hk",
+            "ca"
+          ],
+          "bonusCombinations": [
+            "Four of a kind",
+            "Four of a kind (+KKKK)"
+          ],
+          "resultCombination": "Four of a kind+AK",
+          "cardCorrections": [
+            {
+              "sourceCell": "J112",
+              "sourceValue": "K♦",
+              "replacementCode": "hk"
+            }
+          ]
+        },
+        {
+          "id": "four-of-a-kind-005",
+          "sourceRow": 114,
+          "sourceRows": [
+            114
+          ],
+          "sourceOrdinal": 62,
+          "cards": [
+            "d10",
+            "c10",
+            "h10",
+            "s10",
+            "da",
+            "hk"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+AK"
+        },
+        {
+          "id": "four-of-a-kind-006",
+          "sourceRow": 115,
+          "sourceRows": [
+            115
+          ],
+          "sourceOrdinal": 63,
+          "cards": [
+            "sa",
+            "sj",
+            "hj",
+            "dj",
+            "cj",
+            "dk"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+AK"
+        },
+        {
+          "id": "four-of-a-kind-007",
+          "sourceRow": 116,
+          "sourceRows": [
+            116
+          ],
+          "sourceOrdinal": 64,
+          "cards": [
+            "d9",
+            "h9",
+            "d6",
+            "s9",
+            "c9",
+            "h6"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+Full House"
+        },
+        {
+          "id": "four-of-a-kind-008",
+          "sourceRow": 117,
+          "sourceRows": [
+            117
+          ],
+          "sourceOrdinal": 65,
+          "cards": [
+            "d4",
+            "s4",
+            "h4",
+            "da",
+            "c4",
+            "sa"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+Full House",
+          "cardCorrections": [
+            {
+              "sourceCell": "H117",
+              "sourceValue": "4♦",
+              "replacementCode": "h4"
+            }
+          ]
+        },
+        {
+          "id": "four-of-a-kind-009",
+          "sourceRow": 118,
+          "sourceRows": [
+            118
+          ],
+          "sourceOrdinal": 66,
+          "cards": [
+            "h8",
+            "ck",
+            "c8",
+            "s8",
+            "d8",
+            "da"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+AK"
+        },
+        {
+          "id": "four-of-a-kind-010",
+          "sourceRow": 119,
+          "sourceRows": [
+            119
+          ],
+          "sourceOrdinal": 67,
+          "cards": [
+            "hq",
+            "cq",
+            "dk",
+            "dq",
+            "sq",
+            "sa"
+          ],
+          "bonusCombinations": [
+            "Four of a kind"
+          ],
+          "resultCombination": "Four of a kind+AK"
+        }
+      ]
+    },
+    {
+      "id": "straight-flush",
+      "name": "Straight Flush",
+      "sourceName": "Straight Flush",
+      "deals": [
+        {
+          "id": "straight-flush-001",
+          "sourceRow": 120,
+          "sourceRows": [
+            120,
+            121
+          ],
+          "sourceOrdinal": 68,
+          "cards": [
+            "h10",
+            "hj",
+            "hq",
+            "hk",
+            "h9",
+            "ha"
+          ],
+          "bonusCombinations": [
+            "Straight Flush",
+            "Straight Flush (+K)"
+          ],
+          "resultCombination": "Royal Flush+Straight Flush"
+        },
+        {
+          "id": "straight-flush-002",
+          "sourceRow": 122,
+          "sourceRows": [
+            122,
+            123
+          ],
+          "sourceOrdinal": 69,
+          "cards": [
+            "s10",
+            "sk",
+            "sj",
+            "s9",
+            "sq",
+            "c8"
+          ],
+          "bonusCombinations": [
+            "Straight Flush",
+            "Straight Flush (+K)"
+          ],
+          "resultCombination": "Straight Flush+Straight"
+        },
+        {
+          "id": "straight-flush-003",
+          "sourceRow": 124,
+          "sourceRows": [
+            124,
+            125
+          ],
+          "sourceOrdinal": 70,
+          "cards": [
+            "dk",
+            "d9",
+            "dq",
+            "dj",
+            "d10",
+            "d7"
+          ],
+          "bonusCombinations": [
+            "Straight Flush",
+            "Straight Flush (+K)"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        },
+        {
+          "id": "straight-flush-004",
+          "sourceRow": 126,
+          "sourceRows": [
+            126,
+            127
+          ],
+          "sourceOrdinal": 71,
+          "cards": [
+            "c9",
+            "cj",
+            "cq",
+            "ck",
+            "c10",
+            "c6"
+          ],
+          "bonusCombinations": [
+            "Straight Flush",
+            "Straight Flush (+K)"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        },
+        {
+          "id": "straight-flush-005",
+          "sourceRow": 128,
+          "sourceRows": [
+            128,
+            129
+          ],
+          "sourceOrdinal": 72,
+          "cards": [
+            "c9",
+            "cj",
+            "cq",
+            "ck",
+            "c10",
+            "s8"
+          ],
+          "bonusCombinations": [
+            "Straight Flush",
+            "Straight Flush (+K)"
+          ],
+          "resultCombination": "Straight Flush+Straight"
+        },
+        {
+          "id": "straight-flush-006",
+          "sourceRow": 130,
+          "sourceRows": [
+            130
+          ],
+          "sourceOrdinal": 73,
+          "cards": [
+            "c2",
+            "ca",
+            "c4",
+            "c3",
+            "c5",
+            "c6"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Straight Flush"
+        },
+        {
+          "id": "straight-flush-007",
+          "sourceRow": 131,
+          "sourceRows": [
+            131
+          ],
+          "sourceOrdinal": 74,
+          "cards": [
+            "h4",
+            "h8",
+            "h7",
+            "h6",
+            "h5",
+            "h9"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Straight Flush"
+        },
+        {
+          "id": "straight-flush-008",
+          "sourceRow": 132,
+          "sourceRows": [
+            132
+          ],
+          "sourceOrdinal": 75,
+          "cards": [
+            "d5",
+            "d8",
+            "d9",
+            "d6",
+            "d7",
+            "d10"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Straight Flush"
+        },
+        {
+          "id": "straight-flush-009",
+          "sourceRow": 133,
+          "sourceRows": [
+            133
+          ],
+          "sourceOrdinal": 76,
+          "cards": [
+            "s7",
+            "s9",
+            "s10",
+            "s8",
+            "s6",
+            "sj"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Straight Flush"
+        },
+        {
+          "id": "straight-flush-010",
+          "sourceRow": 134,
+          "sourceRows": [
+            134
+          ],
+          "sourceOrdinal": 77,
+          "cards": [
+            "h8",
+            "h9",
+            "hj",
+            "hq",
+            "h10",
+            "h6"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        },
+        {
+          "id": "straight-flush-011",
+          "sourceRow": 135,
+          "sourceRows": [
+            135
+          ],
+          "sourceOrdinal": 78,
+          "cards": [
+            "c6",
+            "c7",
+            "c9",
+            "c10",
+            "c8",
+            "s5"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Straight"
+        },
+        {
+          "id": "straight-flush-012",
+          "sourceRow": 136,
+          "sourceRows": [
+            136
+          ],
+          "sourceOrdinal": 79,
+          "cards": [
+            "h5",
+            "h6",
+            "h7",
+            "h8",
+            "h4",
+            "h2"
+          ],
+          "bonusCombinations": [
+            "Straight Flush"
+          ],
+          "resultCombination": "Straight Flush+Flush"
+        }
+      ]
+    },
+    {
+      "id": "royal-flush",
+      "name": "Royal Flush",
+      "sourceName": "Royal Flush",
+      "deals": [
+        {
+          "id": "royal-flush-001",
+          "sourceRow": 137,
+          "sourceRows": [
+            137
+          ],
+          "sourceOrdinal": 80,
+          "cards": [
+            "ha",
+            "hj",
+            "hk",
+            "h10",
+            "hq",
+            "h9"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Straight Flush"
+        },
+        {
+          "id": "royal-flush-002",
+          "sourceRow": 138,
+          "sourceRows": [
+            138
+          ],
+          "sourceOrdinal": 81,
+          "cards": [
+            "cj",
+            "cq",
+            "ca",
+            "c10",
+            "ck",
+            "s9"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Straight"
+        },
+        {
+          "id": "royal-flush-003",
+          "sourceRow": 139,
+          "sourceRows": [
+            139
+          ],
+          "sourceOrdinal": 82,
+          "cards": [
+            "dj",
+            "dq",
+            "dk",
+            "d10",
+            "da",
+            "d8"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Flush"
+        },
+        {
+          "id": "royal-flush-004",
+          "sourceRow": 140,
+          "sourceRows": [
+            140
+          ],
+          "sourceOrdinal": 83,
+          "cards": [
+            "sk",
+            "sa",
+            "s10",
+            "sj",
+            "sq",
+            "c9"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Straight"
+        },
+        {
+          "id": "royal-flush-005",
+          "sourceRow": 141,
+          "sourceRows": [
+            141
+          ],
+          "sourceOrdinal": 84,
+          "cards": [
+            "hj",
+            "hq",
+            "hk",
+            "ha",
+            "h10",
+            "h8"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Flush"
+        },
+        {
+          "id": "royal-flush-006",
+          "sourceRow": 142,
+          "sourceRows": [
+            142
+          ],
+          "sourceOrdinal": 85,
+          "cards": [
+            "ck",
+            "ca",
+            "c10",
+            "cq",
+            "cj",
+            "c6"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Flush",
+          "cardCorrections": [
+            {
+              "sourceCell": "J142",
+              "sourceValue": "10♣",
+              "replacementCode": "cj"
+            }
+          ]
+        },
+        {
+          "id": "royal-flush-007",
+          "sourceRow": 143,
+          "sourceRows": [
+            143
+          ],
+          "sourceOrdinal": 86,
+          "cards": [
+            "dj",
+            "dk",
+            "dq",
+            "d10",
+            "da",
+            "d9"
+          ],
+          "bonusCombinations": [
+            "Royal Flush"
+          ],
+          "resultCombination": "Royal Flush+Straight Flush"
+        }
+      ]
+    }
+  ]
+}
