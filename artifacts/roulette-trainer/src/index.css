@@ -1479,6 +1479,32 @@
   transform: translate(-50%, -50%);
 }
 
+.cards-hand-next-button {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 1.2;
+  white-space: nowrap;
+  border-color: #c8a84b;
+  background: rgba(8, 22, 10, 0.94);
+  color: #ffe87a;
+  box-shadow: 0 0 14px rgba(200, 168, 75, 0.18);
+}
+
+.cards-hand-next-button:hover {
+  border-color: #f0d080;
+  background: rgba(200, 168, 75, 0.28);
+  color: #fff5a0;
+  box-shadow: 0 0 20px rgba(200, 168, 75, 0.32);
+}
+
+.cards-hand-next-button:focus-visible {
+  outline: 2px solid #ffe87a;
+  outline-offset: 3px;
+}
+
 .cards-hand-card-slot {
   display: block;
   width: calc((100% - 50px) / 6);

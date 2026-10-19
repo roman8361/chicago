@@ -29,9 +29,11 @@ function getConfiguredPokerGame(settings: CardTableSettings): PokerGameId | null
 function CardsHand({
   cardCodes,
   roundState,
+  onNext,
 }: {
   cardCodes: readonly string[];
   roundState: Exclude<CardsRoundState, "HIDDEN">;
+  onNext: () => void;
 }) {
   return (
     <div className="cards-hand" aria-label="Демонстрационный ряд карт">
@@ -60,6 +62,16 @@ function CardsHand({
           </div>
         </div>
       ))}
+      {roundState === "OPEN" && (
+        <button
+          className="grid-toggle-btn cards-hand-next-button"
+          type="button"
+          onClick={onNext}
+          data-testid="button-cards-next"
+        >
+          Дальше
+        </button>
+      )}
     </div>
   );
 }
@@ -138,6 +150,10 @@ export default function CardsPage() {
       roundState: "FLIPPING",
       activePokerGame: configuredPokerGame,
     }));
+  }
+
+  function handleNext() {
+    // The next gameplay step will be added here; this button is intentionally a no-op for now.
   }
 
   if (!isCardsRootRoute && !combinationGameId) return <NotFound />;
@@ -220,6 +236,7 @@ export default function CardsPage() {
                 <CardsHand
                   cardCodes={DEMO_CARD_CODES}
                   roundState={runtime.roundState}
+                  onNext={handleNext}
                 />
               )}
             </div>
