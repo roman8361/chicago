@@ -85,9 +85,6 @@ function CardsHand({
       ))}
       {roundState === "OPEN" && (
         <div className="cards-round-controls">
-          <span className="cards-round-counter">
-            Раздача {currentRoundNumber} из {totalRounds}
-          </span>
           {seriesComplete ? (
             <span className="cards-series-complete" role="status">Серия завершена</span>
           ) : (
@@ -96,6 +93,7 @@ function CardsHand({
               type="button"
               onClick={onNext}
               data-testid="button-cards-next"
+              aria-label={`Перейти к раздаче ${currentRoundNumber + 1} из ${totalRounds}`}
             >
               Дальше
             </button>
