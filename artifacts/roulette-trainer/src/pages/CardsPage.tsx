@@ -46,7 +46,7 @@ function CardsHand({
           >
             <img
               className="cards-hand-card-face cards-hand-card-face--back"
-              src="/assets/cards/back.png"
+              src="/assets/cards/casino-skills-card-back.png"
               alt=""
               aria-hidden="true"
               draggable={false}

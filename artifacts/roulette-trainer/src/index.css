@@ -1522,6 +1522,11 @@
   -webkit-backface-visibility: hidden;
 }
 
+.cards-hand-card-face--back {
+  object-fit: cover;
+  object-position: center;
+}
+
 .cards-hand-card-face--front {
   transform: rotateY(180deg);
 }
