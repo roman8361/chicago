@@ -21,6 +21,7 @@ import {
 const STAR_CHIP_VALUES = [100, 200, 300, 400, 500];
 const FLIP_DURATION_MS = 650;
 const FLIP_STAGGER_MS = 70;
+const FLIP_COMPLETION_FALLBACK_MS = 500;
 
 type CardsRoundState = "HIDDEN" | "CLOSED" | "FLIPPING" | "OPEN";
 
@@ -43,6 +44,7 @@ function CardsHand({
   cardCodes,
   roundState,
   onNext,
+  onFlipAnimationEnd,
   currentRoundNumber,
   totalRounds,
   seriesComplete,
@@ -50,6 +52,7 @@ function CardsHand({
   cardCodes: readonly (string | null)[];
   roundState: Exclude<CardsRoundState, "HIDDEN">;
   onNext: () => void;
+  onFlipAnimationEnd: (index: number) => void;
   currentRoundNumber: number;
   totalRounds: number;
   seriesComplete: boolean;
@@ -64,6 +67,9 @@ function CardsHand({
           <div
             className={`cards-hand-card-flip cards-hand-card-flip--${roundState.toLowerCase()}`}
             style={{ "--cards-flip-delay": `${index * FLIP_STAGGER_MS}ms` } as CSSProperties}
+            onAnimationEnd={(event) => {
+              if (event.animationName === "cards-hand-flip") onFlipAnimationEnd(index);
+            }}
           >
             <img
               className="cards-hand-card-face cards-hand-card-face--back"
@@ -130,6 +136,7 @@ export default function CardsPage() {
   const shuffleVideoRef = useRef<HTMLVideoElement>(null);
   const nextFlipPendingRef = useRef(false);
   const transitionLockRef = useRef(false);
+  const completedFlipIndexesRef = useRef(new Set<number>());
   const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -146,6 +153,7 @@ export default function CardsPage() {
     }
 
     if (runtime.roundState !== "FLIPPING") return;
+    completedFlipIndexesRef.current.clear();
 
     const shuffleVideo = shuffleVideoRef.current;
     if (shuffleVideo) {
@@ -155,14 +163,10 @@ export default function CardsPage() {
       });
     }
 
-    const flipTimer = window.setTimeout(() => {
-      setRuntime((current) => (
-        current.roundState === "FLIPPING"
-          ? { ...current, roundState: "OPEN" }
-          : current
-      ));
-      transitionLockRef.current = false;
-    }, FLIP_DURATION_MS + FLIP_STAGGER_MS * 5);
+    const flipTimer = window.setTimeout(
+      finishCardFlip,
+      FLIP_DURATION_MS + FLIP_STAGGER_MS * 5 + FLIP_COMPLETION_FALLBACK_MS,
+    );
 
     return () => {
       window.clearTimeout(flipTimer);
@@ -177,6 +181,7 @@ export default function CardsPage() {
     saveCardTableSettings(nextSettings);
     const configuredPokerGame = getConfiguredPokerGame(nextSettings);
     transitionLockRef.current = false;
+    completedFlipIndexesRef.current.clear();
     nextFlipPendingRef.current = false;
     setStartError(null);
     setRuntime({
@@ -248,6 +253,23 @@ export default function CardsPage() {
       roundState: "CLOSED",
       currentRoundIndex: nextRoundIndex,
     }));
+  }
+
+  function finishCardFlip() {
+    completedFlipIndexesRef.current.clear();
+    setRuntime((current) => (
+      current.roundState === "FLIPPING"
+        ? { ...current, roundState: "OPEN" }
+        : current
+    ));
+    transitionLockRef.current = false;
+  }
+
+  function handleCardFlipAnimationEnd(index: number) {
+    if (runtime.roundState !== "FLIPPING") return;
+    const completedIndexes = completedFlipIndexesRef.current;
+    completedIndexes.add(index);
+    if (completedIndexes.size === 6) finishCardFlip();
   }
 
   const currentRound = runtime.seriesPlan[runtime.currentRoundIndex];
@@ -346,6 +368,7 @@ export default function CardsPage() {
                   cardCodes={currentRound?.cards ?? []}
                   roundState={runtime.roundState}
                   onNext={handleNext}
+                  onFlipAnimationEnd={handleCardFlipAnimationEnd}
                   currentRoundNumber={runtime.currentRoundIndex + 1}
                   totalRounds={runtime.seriesPlan.length}
                   seriesComplete={seriesComplete}
