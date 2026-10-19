@@ -1544,7 +1544,7 @@
   perspective: 800px;
 }
 
-.cards-hand-card-slot:last-child {
+.cards-hand-card-slot:nth-child(6) {
   margin-left: clamp(16px, 3.2vw, 40px);
 }
 
