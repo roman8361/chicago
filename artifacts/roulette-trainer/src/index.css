@@ -2521,8 +2521,8 @@ input[type="number"] {
 /* Answer area */
 .game-answer-area {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-rows: 48px 34px auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   align-items: start;
   gap: 10px;
   flex: 1;
@@ -2533,35 +2533,114 @@ input[type="number"] {
   grid-column: 1 / -1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: repeat(11, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+  width: min(100%, 650px);
   min-width: 0;
+  margin-inline: auto;
+  padding: 12px;
+  border: 1px solid rgba(164, 171, 181, 0.62);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 38%),
+    linear-gradient(160deg, #263140 0%, #1d2531 58%, #171d27 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 2px rgba(11, 15, 22, 0.44),
+    0 8px 18px rgba(0, 0, 0, 0.34);
 }
 
 .numeric-keypad-btn {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1.45 / 1;
   min-width: 0;
-  max-height: 34px;
-  padding: 0;
-  border: 1px solid #c8a84b77;
-  border-radius: 5px;
-  background: rgba(200,168,75,0.12);
-  color: #ffe87a;
-  font-size: 14px;
-  font-weight: 700;
+  min-height: 48px;
+  padding: 3px 8px;
+  border: 2px solid #90796e;
+  border-radius: 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 27%),
+    linear-gradient(180deg, #514c4a 0%, #373230 47%, #211f20 100%);
+  color: #e8b874;
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 500;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(18, 11, 8, 0.86);
+  box-shadow:
+    0 0 0 2px rgba(12, 14, 19, 0.92),
+    0 3px 0 #1a1718,
+    0 5px 7px rgba(0, 0, 0, 0.46),
+    inset 0 2px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -4px 5px rgba(0, 0, 0, 0.72);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: filter 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
 }
 
-.numeric-keypad-btn:hover {
-  background: rgba(200,168,75,0.3);
+.numeric-keypad-btn:hover,
+.numeric-keypad-action:hover {
+  filter: brightness(1.14);
+  transform: translateY(-1px);
+}
+
+.numeric-keypad-btn:active,
+.numeric-keypad-action:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 0 0 2px rgba(12, 14, 19, 0.92),
+    0 1px 0 #1a1718,
+    0 2px 3px rgba(0, 0, 0, 0.42),
+    inset 0 2px 3px rgba(0, 0, 0, 0.48);
+}
+
+.numeric-keypad-btn:focus-visible,
+.numeric-keypad-action:focus-visible {
+  outline: 2px solid #e8b874;
+  outline-offset: 4px;
 }
 
 .numeric-keypad-btn--backspace {
-  border-color: #c8a84b;
-  background: rgba(200,168,75,0.2);
-  font-size: 17px;
+  grid-column: 3;
+  grid-row: 3;
+  color: #df2632;
+  font-size: clamp(29px, 3vw, 42px);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(35, 0, 0, 0.85);
+}
+
+.numeric-keypad-action--check {
+  grid-column: 1 / span 2;
+  grid-row: 3;
+  min-height: 48px;
+  font-size: clamp(19px, 2.2vw, 30px);
+  font-weight: 500;
+}
+
+.numeric-keypad-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 2px solid #90796e;
+  border-radius: 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 27%),
+    linear-gradient(180deg, #514c4a 0%, #373230 47%, #211f20 100%);
+  color: #e8b874;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(18, 11, 8, 0.86);
+  box-shadow:
+    0 0 0 2px rgba(12, 14, 19, 0.92),
+    0 3px 0 #1a1718,
+    0 5px 7px rgba(0, 0, 0, 0.46),
+    inset 0 2px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -4px 5px rgba(0, 0, 0, 0.72);
+  cursor: pointer;
+  transition: filter 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.numeric-keypad-action.numeric-keypad-btn--backspace {
+  color: #df2632;
 }
 
 .game-answer-label {
@@ -2572,6 +2651,7 @@ input[type="number"] {
 }
 
 .game-answer-input {
+  grid-column: 1;
   grid-row: 3;
   padding: 8px 12px;
   width: 130px;

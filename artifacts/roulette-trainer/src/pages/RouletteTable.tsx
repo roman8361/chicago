@@ -21,7 +21,15 @@ function calcSeriesResult(amount: number, divisor: number, multiplicity: number)
   return { playPerUnit, change, acceptedAmount, rawPerUnit };
 }
 
-function NumericKeypad({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function NumericKeypad({
+  value,
+  onChange,
+  onCheck,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onCheck: () => void;
+}) {
   const appendDigit = (digit: string) => onChange(`${value}${digit}`);
   const removeLastDigit = () => onChange(value.slice(0, -1));
 
@@ -40,11 +48,18 @@ function NumericKeypad({ value, onChange }: { value: string; onChange: (value: s
       ))}
       <button
         type="button"
-        className="numeric-keypad-btn numeric-keypad-btn--backspace"
+        className="numeric-keypad-action numeric-keypad-action--check"
+        onClick={onCheck}
+      >
+        Проверить
+      </button>
+      <button
+        type="button"
+        className="numeric-keypad-btn numeric-keypad-btn--backspace numeric-keypad-action"
         onClick={removeLastDigit}
         aria-label="Удалить последнюю цифру"
       >
-        ⌫
+        ←
       </button>
     </div>
   );
@@ -4285,7 +4300,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">1. Посчитайте сдачу с кратности приема ставок «комплит».</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-                <NumericKeypad value={completesInput} onChange={setCompletesInput} />
+                <NumericKeypad value={completesInput} onChange={setCompletesInput} onCheck={handleCheckCompletes} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4296,7 +4311,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setCompletesInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckCompletes}>Проверить</button>
               </div>
             )}
 
@@ -4307,7 +4321,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">2. Посчитайте общую сдачу с поля, без учета трека.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-                <NumericKeypad value={intersectionInput} onChange={setIntersectionInput} />
+                <NumericKeypad value={intersectionInput} onChange={setIntersectionInput} onCheck={handleCheckCompletesIntersection} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4318,7 +4332,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckCompletesIntersection}>Проверить</button>
               </div>
             )}
 
@@ -4329,7 +4342,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{seriesBaseNum}. Посчитайте общую сдачу с кратности приема серий.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-                <NumericKeypad value={seriesInput} onChange={setSeriesInput} />
+                <NumericKeypad value={seriesInput} onChange={setSeriesInput} onCheck={handleCheckSeries} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4340,7 +4353,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setSeriesInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckSeries}>Проверить</button>
               </div>
             )}
 
@@ -4351,7 +4363,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{trackIntQuestionNum}. Посчитайте общую сдачу с трека, без учета ставок на поле</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-                <NumericKeypad value={trackIntersectionInput} onChange={setTrackIntersectionInput} />
+                <NumericKeypad value={trackIntersectionInput} onChange={setTrackIntersectionInput} onCheck={handleCheckTrackIntersection} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4362,7 +4374,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setTrackIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckTrackIntersection}>Проверить</button>
               </div>
             )}
 
@@ -4373,7 +4384,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{trackFieldIntQuestionNum}. Посчитайте сдачу с пересечений ставок на треке со ставками на поле.</span>
                   <span className="quiz-series-sub">Общая сдача</span>
                 </div>
-                <NumericKeypad value={trackFieldIntersectionInput} onChange={setTrackFieldIntersectionInput} />
+                <NumericKeypad value={trackFieldIntersectionInput} onChange={setTrackFieldIntersectionInput} onCheck={handleCheckTrackFieldIntersection} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4384,7 +4395,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setTrackFieldIntersectionInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckTrackFieldIntersection}>Проверить</button>
               </div>
             )}
 
@@ -4395,7 +4405,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{completeNumberPayoutQuestionNum}. Какую общую сумму нужно поставить в номер с выигрышных ставок «комплит»?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
-                <NumericKeypad value={completeNumberPayoutInput} onChange={setCompleteNumberPayoutInput} />
+                <NumericKeypad value={completeNumberPayoutInput} onChange={setCompleteNumberPayoutInput} onCheck={handleCheckCompleteNumberPayout} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4406,7 +4416,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setCompleteNumberPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckCompleteNumberPayout}>Проверить</button>
               </div>
             )}
 
@@ -4417,7 +4426,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{seriesFieldPayoutQuestionNum}. Какую общую сумму нужно выставить в поле с выигрышных серий?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
-                <NumericKeypad value={seriesFieldPayoutInput} onChange={setSeriesFieldPayoutInput} />
+                <NumericKeypad value={seriesFieldPayoutInput} onChange={setSeriesFieldPayoutInput} onCheck={handleCheckSeriesFieldPayout} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4428,7 +4437,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setSeriesFieldPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckSeriesFieldPayout}>Проверить</button>
               </div>
             )}
 
@@ -4439,7 +4447,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{neighboursPayoutQuestionNum}. Какую общую сумму нужно выставить в поле со ставок «соседи номера»?</span>
                   <span className="quiz-series-sub">Сумма</span>
                 </div>
-                <NumericKeypad value={neighboursPayoutInput} onChange={setNeighboursPayoutInput} />
+                <NumericKeypad value={neighboursPayoutInput} onChange={setNeighboursPayoutInput} onCheck={handleCheckNeighboursPayout} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4450,7 +4458,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setNeighboursPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckNeighboursPayout}>Проверить</button>
               </div>
             )}
 
@@ -4461,7 +4468,7 @@ export default function RouletteTable({
                   <span className="quiz-series-title">{fieldQuestionNum}. Посчитайте общую сумму выплаты.</span>
                   <span className="quiz-series-sub">Сумма выплаты</span>
                 </div>
-                <NumericKeypad value={fieldInput} onChange={setFieldInput} />
+                <NumericKeypad value={fieldInput} onChange={setFieldInput} onCheck={handleCheckField} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4472,7 +4479,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setFieldInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckField}>Проверить</button>
               </div>
             )}
 
@@ -4485,7 +4491,7 @@ export default function RouletteTable({
                   </span>
                   <span className="quiz-series-sub">Количество фишек</span>
                 </div>
-                <NumericKeypad value={colorPayoutInput} onChange={setColorPayoutInput} />
+                <NumericKeypad value={colorPayoutInput} onChange={setColorPayoutInput} onCheck={handleCheckColorPayout} />
                 <input
                   type="number"
                   className="game-answer-input"
@@ -4496,7 +4502,6 @@ export default function RouletteTable({
                   onChange={e => { const v = e.target.value; setColorPayoutInput(v !== "" && Number(v) < 0 ? "" : v); }}
                   autoFocus
                 />
-                <button className="game-check-btn" onClick={handleCheckColorPayout}>Проверить</button>
               </div>
             )}
 
